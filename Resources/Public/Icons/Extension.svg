@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2025-2026 Netresearch DTT GmbH
+  SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none">
+  <!-- Key body (passkey symbol) -->
+  <circle cx="5.5" cy="8" r="3" stroke="#666" stroke-width="1.2" fill="none"/>
+  <circle cx="5.5" cy="8" r="1.2" fill="#666"/>
+  <!-- Key shank -->
+  <line x1="8.5" y1="8" x2="14" y2="8" stroke="#666" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Key teeth -->
+  <line x1="11" y1="8" x2="11" y2="10" stroke="#666" stroke-width="1.2" stroke-linecap="round"/>
+  <line x1="13" y1="8" x2="13" y2="10" stroke="#666" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- FE indicator: small user silhouette at top-right -->
+  <circle cx="13" cy="4" r="1" fill="#666"/>
+  <path d="M11 7 q1-2 4-1" stroke="#666" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+</svg>
