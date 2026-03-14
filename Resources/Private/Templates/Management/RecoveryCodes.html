@@ -1,0 +1,80 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="Content">
+<div class="nr-passkeys-fe-recovery-codes{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
+     data-nr-passkeys-fe="recovery-codes"
+     data-eid-url="{eidUrl}"
+     data-generate-url="{generateUrl}">
+
+    <h2 class="nr-passkeys-fe-recovery-codes__title">
+        <f:translate key="management.recovery.codes.title" extensionName="nr_passkeys_fe" />
+    </h2>
+
+    <f:if condition="{recoveryCodes}">
+        <f:then>
+            <div class="nr-passkeys-fe-recovery-codes__warning" role="alert">
+                <strong>
+                    <f:translate key="management.recovery.codes.warning.title" extensionName="nr_passkeys_fe" />
+                </strong>
+                <p>
+                    <f:translate key="management.recovery.codes.warning.text" extensionName="nr_passkeys_fe" />
+                </p>
+            </div>
+
+            <div class="nr-passkeys-fe-recovery-codes__grid" id="nr-passkeys-fe-codes-grid">
+                <f:for each="{recoveryCodes}" as="code">
+                    <div class="nr-passkeys-fe-recovery-codes__code">
+                        <code>{code}</code>
+                    </div>
+                </f:for>
+            </div>
+
+            <div class="nr-passkeys-fe-recovery-codes__actions">
+                <button type="button"
+                        class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary"
+                        data-action="download-codes"
+                        data-filename="recovery-codes.txt">
+                    <f:translate key="management.recovery.codes.download" extensionName="nr_passkeys_fe" />
+                </button>
+            </div>
+        </f:then>
+        <f:else>
+            <div class="nr-passkeys-fe-recovery-codes__remaining">
+                <f:translate key="management.recovery.codes.remaining" extensionName="nr_passkeys_fe" />:
+                <strong>{remainingCount}</strong>
+            </div>
+        </f:else>
+    </f:if>
+
+    <div class="nr-passkeys-fe-recovery-codes__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+    <div class="nr-passkeys-fe-recovery-codes__error" role="alert" style="display:none"></div>
+
+    <div class="nr-passkeys-fe-recovery-codes__generate">
+        <h3 class="nr-passkeys-fe-recovery-codes__subtitle">
+            <f:translate key="management.recovery.codes.generate.title" extensionName="nr_passkeys_fe" />
+        </h3>
+        <p class="nr-passkeys-fe-recovery-codes__generate-hint">
+            <f:translate key="management.recovery.codes.generate.hint" extensionName="nr_passkeys_fe" />
+        </p>
+        <button type="button"
+                class="nr-passkeys-fe-btn nr-passkeys-fe-btn--warning"
+                data-action="generate-codes">
+            <span class="nr-passkeys-fe-btn__text">
+                <f:translate key="management.recovery.codes.generate.button" extensionName="nr_passkeys_fe" />
+            </span>
+            <span class="nr-passkeys-fe-btn__loading" style="display:none" aria-hidden="true">
+                <f:translate key="management.recovery.codes.generate.generating" extensionName="nr_passkeys_fe" />
+            </span>
+        </button>
+    </div>
+
+    <nav class="nr-passkeys-fe-recovery-codes__nav">
+        <a class="nr-passkeys-fe-recovery-codes__back"
+           href="{managementUrl}">
+            <f:translate key="management.recovery.codes.back" extensionName="nr_passkeys_fe" />
+        </a>
+    </nav>
+</div>
+</f:section>
+</html>

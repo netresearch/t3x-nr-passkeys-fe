@@ -1,0 +1,54 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="Content">
+<div class="nr-passkeys-fe-login{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
+     data-nr-passkeys-fe="login"
+     data-eid-url="{eidUrl}"
+     data-site-identifier="{siteIdentifier}"
+     data-discoverable="{f:if(condition: settings.discoverableEnabled, then: '1', else: '0')}">
+
+    <f:if condition="{errorMessage}">
+        <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite">
+            {errorMessage}
+        </div>
+    </f:if>
+
+    <div class="nr-passkeys-fe-login__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+
+    <f:if condition="{showUsernameField}">
+        <div class="nr-passkeys-fe-login__field">
+            <label class="nr-passkeys-fe-login__label" for="nr-passkeys-username">
+                <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
+            </label>
+            <input type="text"
+                   id="nr-passkeys-username"
+                   name="nr_passkeys_username"
+                   class="nr-passkeys-fe-login__input"
+                   autocomplete="username webauthn"
+                   autocorrect="off"
+                   autocapitalize="none"
+                   spellcheck="false"
+                   value="{prefillUsername -> f:format.htmlspecialchars()}" />
+        </div>
+    </f:if>
+
+    <div class="nr-passkeys-fe-login__actions">
+        <f:render partial="Login/PasskeyButton" arguments="{_all}" />
+    </div>
+
+    <nav class="nr-passkeys-fe-login__links" aria-label="Authentication options">
+        <f:if condition="{settings.showPasswordFallback}">
+            <a class="nr-passkeys-fe-login__link nr-passkeys-fe-login__link--password"
+               href="{passwordFallbackUrl}">
+                <f:translate key="login.link.usePassword" extensionName="nr_passkeys_fe" />
+            </a>
+        </f:if>
+        <a class="nr-passkeys-fe-login__link nr-passkeys-fe-login__link--recovery"
+           href="{recoveryUrl}">
+            <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
+        </a>
+    </nav>
+</div>
+</f:section>
+</html>
