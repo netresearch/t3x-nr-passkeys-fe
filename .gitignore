@@ -1,0 +1,11 @@
+/.Build/
+/composer.lock
+/node_modules/
+/var/
+/.ddev/
+/.env
+/.vscode/
+/.idea/
+/.php-cs-fixer.cache
+/infection.log
+/infection-summary.log
