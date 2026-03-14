@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf">
+        <body>
+            <!-- ============================================================
+                 tx_nrpasskeysfe_credential table labels
+                 ============================================================ -->
+            <trans-unit id="tx_nrpasskeysfe_credential" resname="tx_nrpasskeysfe_credential">
+                <source>Passkey Credential</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.fe_user" resname="tx_nrpasskeysfe_credential.fe_user">
+                <source>Frontend User</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.credential_id" resname="tx_nrpasskeysfe_credential.credential_id">
+                <source>Credential ID</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.label" resname="tx_nrpasskeysfe_credential.label">
+                <source>Label</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.aaguid" resname="tx_nrpasskeysfe_credential.aaguid">
+                <source>AAGUID (Device Type)</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.site_identifier" resname="tx_nrpasskeysfe_credential.site_identifier">
+                <source>Site Identifier</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.storage_pid" resname="tx_nrpasskeysfe_credential.storage_pid">
+                <source>Storage Page</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.created_at" resname="tx_nrpasskeysfe_credential.created_at">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.last_used_at" resname="tx_nrpasskeysfe_credential.last_used_at">
+                <source>Last Used</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.revoked_at" resname="tx_nrpasskeysfe_credential.revoked_at">
+                <source>Revoked At</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_credential.revoked_by" resname="tx_nrpasskeysfe_credential.revoked_by">
+                <source>Revoked By</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 tx_nrpasskeysfe_recovery_code table labels
+                 ============================================================ -->
+            <trans-unit id="tx_nrpasskeysfe_recovery_code" resname="tx_nrpasskeysfe_recovery_code">
+                <source>Passkey Recovery Code</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_recovery_code.fe_user" resname="tx_nrpasskeysfe_recovery_code.fe_user">
+                <source>Frontend User</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_recovery_code.code_hash" resname="tx_nrpasskeysfe_recovery_code.code_hash">
+                <source>Code Hash</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_recovery_code.used_at" resname="tx_nrpasskeysfe_recovery_code.used_at">
+                <source>Used At</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysfe_recovery_code.created_at" resname="tx_nrpasskeysfe_recovery_code.created_at">
+                <source>Created</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 fe_groups TCA overrides
+                 ============================================================ -->
+            <trans-unit id="fe_groups.tab.passkeys" resname="fe_groups.tab.passkeys">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement" resname="fe_groups.passkey_enforcement">
+                <source>Passkey Enforcement</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement.description" resname="fe_groups.passkey_enforcement.description">
+                <source>Controls whether members of this group are required to set up passkeys for login.</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement.off" resname="fe_groups.passkey_enforcement.off">
+                <source>Off — Passkeys optional</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement.encourage" resname="fe_groups.passkey_enforcement.encourage">
+                <source>Encourage — Show banner to users without passkeys</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement.required" resname="fe_groups.passkey_enforcement.required">
+                <source>Required — Interstitial with grace period</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_enforcement.enforced" resname="fe_groups.passkey_enforcement.enforced">
+                <source>Enforced — Password login disabled</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_grace_period_days" resname="fe_groups.passkey_grace_period_days">
+                <source>Grace Period (days)</source>
+            </trans-unit>
+            <trans-unit id="fe_groups.passkey_grace_period_days.description" resname="fe_groups.passkey_grace_period_days.description">
+                <source>Number of days users have to set up a passkey after enforcement starts. Only applies when enforcement is "Required".</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 fe_users TCA overrides
+                 ============================================================ -->
+            <trans-unit id="fe_users.tab.passkeys" resname="fe_users.tab.passkeys">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="fe_users.passkeys.label" resname="fe_users.passkeys.label">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="fe_users.passkeys.description" resname="fe_users.passkeys.description">
+                <source>WebAuthn/FIDO2 passkeys registered for this frontend user.</source>
+            </trans-unit>
+            <trans-unit id="fe_users.passkey_grace_period_start" resname="fe_users.passkey_grace_period_start">
+                <source>Passkey Grace Period Start</source>
+            </trans-unit>
+            <trans-unit id="fe_users.passkey_nudge_until" resname="fe_users.passkey_nudge_until">
+                <source>Passkey Nudge Until</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Plugin (tt_content) labels
+                 ============================================================ -->
+            <trans-unit id="tt_content.list_type.passkey_login" resname="tt_content.list_type.passkey_login">
+                <source>Passkey Login</source>
+            </trans-unit>
+            <trans-unit id="tt_content.list_type.passkey_login.description" resname="tt_content.list_type.passkey_login.description">
+                <source>Frontend login form with WebAuthn passkey support.</source>
+            </trans-unit>
+            <trans-unit id="tt_content.list_type.passkey_management" resname="tt_content.list_type.passkey_management">
+                <source>Passkey Management</source>
+            </trans-unit>
+            <trans-unit id="tt_content.list_type.passkey_management.description" resname="tt_content.list_type.passkey_management.description">
+                <source>Lets logged-in users register, rename, and remove their passkeys and manage recovery codes.</source>
+            </trans-unit>
+            <trans-unit id="tt_content.list_type.passkey_enrollment" resname="tt_content.list_type.passkey_enrollment">
+                <source>Passkey Enrollment</source>
+            </trans-unit>
+            <trans-unit id="tt_content.list_type.passkey_enrollment.description" resname="tt_content.list_type.passkey_enrollment.description">
+                <source>Enrollment prompt shown to users who have not yet registered a passkey.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
