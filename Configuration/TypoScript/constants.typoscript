@@ -1,0 +1,7 @@
+plugin.tx_nrpasskeysfe {
+    settings {
+        loginPageUid =
+        managementPageUid =
+        enrollmentPageUid =
+    }
+}

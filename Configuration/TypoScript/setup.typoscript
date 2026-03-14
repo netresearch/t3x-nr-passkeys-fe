@@ -1,0 +1,13 @@
+plugin.tx_nrpasskeysfe {
+    view {
+        templateRootPaths.0 = EXT:nr_passkeys_fe/Resources/Private/Templates/
+        partialRootPaths.0 = EXT:nr_passkeys_fe/Resources/Private/Partials/
+        layoutRootPaths.0 = EXT:nr_passkeys_fe/Resources/Private/Layouts/
+    }
+    settings {
+        loginPage = {$plugin.tx_nrpasskeysfe.settings.loginPageUid}
+        managementPage = {$plugin.tx_nrpasskeysfe.settings.managementPageUid}
+        enrollmentPage = {$plugin.tx_nrpasskeysfe.settings.enrollmentPageUid}
+        css.includeDefault = 1
+    }
+}
