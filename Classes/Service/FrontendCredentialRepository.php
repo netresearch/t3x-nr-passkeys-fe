@@ -129,6 +129,35 @@ final class FrontendCredentialRepository
     }
 
     /**
+     * Find all credentials (including revoked) for a frontend user, across all sites.
+     *
+     * Used by backend FormEngine elements that need a complete credential history.
+     *
+     * @return list<FrontendCredential>
+     */
+    public function findAllByFeUser(int $feUserUid): array
+    {
+        $queryBuilder = $this->getQueryBuilder();
+        $rows = $queryBuilder
+            ->select('*')
+            ->from(self::TABLE)
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'fe_user',
+                    $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
+                ),
+            )
+            ->orderBy('created_at', 'DESC')
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        return \array_map(
+            static fn(array $row): FrontendCredential => FrontendCredential::fromArray($row),
+            $rows,
+        );
+    }
+
+    /**
      * Count active (non-revoked) credentials for a frontend user (across all sites).
      */
     public function countByFeUser(int $feUserUid): int
