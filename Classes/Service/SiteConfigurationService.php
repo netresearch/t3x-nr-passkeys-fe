@@ -124,6 +124,20 @@ final class SiteConfigurationService
         return $site;
     }
 
+    /**
+     * Get the enrollment page URL configured for the site.
+     *
+     * Reads `nr_passkeys_fe.enrollmentPageUrl` from site settings.
+     * Returns an empty string when not configured.
+     */
+    public function getEnrollmentPageUrl(SiteInterface $site): string
+    {
+        $settings = $site->getSettings();
+        $url = $settings->get('nr_passkeys_fe.enrollmentPageUrl', '');
+
+        return \is_string($url) ? \trim($url) : '';
+    }
+
     private function isStandardPort(string $scheme, int $port): bool
     {
         return ($scheme === 'https' && $port === 443)
