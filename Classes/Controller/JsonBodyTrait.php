@@ -1,0 +1,51 @@
+<?php
+
+/*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+declare(strict_types=1);
+
+namespace Netresearch\NrPasskeysFe\Controller;
+
+use JsonException;
+use Psr\Http\Message\ServerRequestInterface;
+
+trait JsonBodyTrait
+{
+    /**
+     * @return array<string, mixed>
+     */
+    private function getJsonBody(ServerRequestInterface $request): array
+    {
+        $body = $request->getParsedBody();
+        if (\is_array($body)) {
+            /** @var array<string, mixed> $body */
+            return $body;
+        }
+
+        $contentType = $request->getHeaderLine('Content-Type');
+        if ($contentType !== '' && !\str_contains($contentType, 'application/json')) {
+            return [];
+        }
+
+        $content = (string) $request->getBody();
+        if ($content === '') {
+            return [];
+        }
+
+        try {
+            $decoded = \json_decode($content, true, 16, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return [];
+        }
+
+        if (!\is_array($decoded)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $decoded */
+        return $decoded;
+    }
+}

@@ -229,6 +229,61 @@ final class FrontendCredentialRepository
     }
 
     /**
+     * Find a single credential by UID, verifying it belongs to the given fe_user.
+     */
+    public function findByUidAndFeUser(int $uid, int $feUserUid): ?FrontendCredential
+    {
+        $queryBuilder = $this->getQueryBuilder();
+        $row = $queryBuilder
+            ->select('*')
+            ->from(self::TABLE)
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq(
+                    'fe_user',
+                    $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq('revoked_at', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return FrontendCredential::fromArray($row);
+    }
+
+    /**
+     * Update the label of a credential.
+     */
+    public function updateLabel(int $uid, string $label): void
+    {
+        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $connection->update(
+            self::TABLE,
+            [
+                'label' => $label,
+                'tstamp' => \time(),
+            ],
+            ['uid' => $uid],
+        );
+    }
+
+    /**
+     * Hard-delete a credential record by UID.
+     */
+    public function delete(int $uid): void
+    {
+        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $connection->delete(self::TABLE, ['uid' => $uid]);
+    }
+
+    /**
      * Update the sign count after a successful assertion.
      */
     public function updateSignCount(int $uid, int $newCount): void
