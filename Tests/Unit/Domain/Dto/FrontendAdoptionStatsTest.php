@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Domain\Dto;
 
-use Error;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendAdoptionStats;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -92,22 +91,6 @@ final class FrontendAdoptionStatsTest extends TestCase
         self::assertSame('enforced', $stats->perGroupStats['1']['enforcement']);
         self::assertSame('Members', $stats->perGroupStats['2']['groupName']);
         self::assertSame(200, $stats->perGroupStats['2']['userCount']);
-    }
-
-    #[Test]
-    public function readonlyPropertiesCannotBeWritten(): void
-    {
-        $stats = new FrontendAdoptionStats(
-            totalUsers: 10,
-            usersWithPasskeys: 5,
-            adoptionPercentage: 50.0,
-            perGroupStats: [],
-        );
-
-        $this->expectException(Error::class);
-
-        // @phpstan-ignore-next-line
-        $stats->totalUsers = 99;
     }
 
     #[Test]

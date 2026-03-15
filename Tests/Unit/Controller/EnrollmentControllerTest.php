@@ -147,50 +147,26 @@ final class EnrollmentControllerTest extends TestCase
     {
         $nonce = 'valid-enrollment-nonce-abc123';
 
-        // Mock TSFE globals with a valid session nonce
-        $sessionData = ['nr_passkeys_fe_enrollment_nonce' => $nonce];
-        $feUserMock = new class ($sessionData) {
-            /** @var array<string, mixed> */
-            private array $sessionData;
-            /** @var array<string, mixed> */
-            public array $data = [];
+        // Mock FrontendUserAuthentication with session nonce
+        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser->user = ['uid' => 42];
+        $feUser->method('getKey')
+            ->with('ses', 'nr_passkeys_fe_enrollment_nonce')
+            ->willReturn($nonce);
+        $feUser->expects($this->once())
+            ->method('setKey')
+            ->with('ses', 'nr_passkeys_fe_skip_enrollment', true);
+        $feUser->expects($this->once())
+            ->method('storeSessionData');
 
-            public function __construct(array $sessionData)
-            {
-                $this->sessionData = $sessionData;
-            }
+        $request = (new ServerRequest('https://example.com/', 'POST'))
+            ->withAttribute('frontend.user', $feUser)
+            ->withParsedBody(['nonce' => $nonce]);
 
-            public function getKey(string $type, string $key): mixed
-            {
-                return $this->sessionData[$key] ?? null;
-            }
+        $response = $this->subject->skipAction($request);
 
-            public function setKey(string $type, string $key, mixed $value): void
-            {
-                $this->data[$key] = $value;
-            }
-        };
-
-        $tsfeMock = new class ($feUserMock) {
-            public object $fe_user;
-
-            public function __construct(object $feUser)
-            {
-                $this->fe_user = $feUser;
-            }
-        };
-
-        $GLOBALS['TSFE'] = $tsfeMock;
-
-        try {
-            $request = $this->buildRequestWithUser(42, ['nonce' => $nonce]);
-            $response = $this->subject->skipAction($request);
-
-            self::assertSame(200, $response->getStatusCode());
-            self::assertSame('ok', $this->decodeBody($response)['status']);
-        } finally {
-            unset($GLOBALS['TSFE']);
-        }
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('ok', $this->decodeBody($response)['status']);
     }
 
     // ---------------------------------------------------------------

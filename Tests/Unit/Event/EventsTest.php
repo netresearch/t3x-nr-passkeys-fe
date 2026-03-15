@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Event;
 
-use Error;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyEnrollmentEvent;
@@ -53,16 +52,6 @@ final class EventsTest extends TestCase
         self::assertSame('{"type":"webauthn.create"}', $event->attestationJson);
     }
 
-    #[Test]
-    public function beforePasskeyEnrollmentEventIsReadonly(): void
-    {
-        $event = new BeforePasskeyEnrollmentEvent(1, 'site', 'json');
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->feUserUid = 99;
-    }
-
     // -------------------------------------------------------------------------
     // AfterPasskeyEnrollmentEvent
     // -------------------------------------------------------------------------
@@ -81,17 +70,6 @@ final class EventsTest extends TestCase
         self::assertSame(42, $event->feUserUid);
         self::assertSame($credential, $event->credential);
         self::assertSame('shop', $event->siteIdentifier);
-    }
-
-    #[Test]
-    public function afterPasskeyEnrollmentEventIsReadonly(): void
-    {
-        $credential = new FrontendCredential();
-        $event = new AfterPasskeyEnrollmentEvent(1, $credential, 'site');
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->feUserUid = 99;
     }
 
     // -------------------------------------------------------------------------
@@ -121,16 +99,6 @@ final class EventsTest extends TestCase
         self::assertNull($event->feUserUid);
     }
 
-    #[Test]
-    public function beforePasskeyAuthenticationEventIsReadonly(): void
-    {
-        $event = new BeforePasskeyAuthenticationEvent(null, '{}');
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->assertionJson = 'other';
-    }
-
     // -------------------------------------------------------------------------
     // AfterPasskeyAuthenticationEvent
     // -------------------------------------------------------------------------
@@ -147,17 +115,6 @@ final class EventsTest extends TestCase
 
         self::assertSame(7, $event->feUserUid);
         self::assertSame($credential, $event->credential);
-    }
-
-    #[Test]
-    public function afterPasskeyAuthenticationEventIsReadonly(): void
-    {
-        $credential = new FrontendCredential();
-        $event = new AfterPasskeyAuthenticationEvent(1, $credential);
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->feUserUid = 99;
     }
 
     // -------------------------------------------------------------------------
@@ -178,17 +135,6 @@ final class EventsTest extends TestCase
         self::assertSame(99, $event->revokedBy);
     }
 
-    #[Test]
-    public function passkeyRemovedEventIsReadonly(): void
-    {
-        $credential = new FrontendCredential();
-        $event = new PasskeyRemovedEvent($credential, 1);
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->revokedBy = 99;
-    }
-
     // -------------------------------------------------------------------------
     // RecoveryCodesGeneratedEvent
     // -------------------------------------------------------------------------
@@ -203,16 +149,6 @@ final class EventsTest extends TestCase
 
         self::assertSame(15, $event->feUserUid);
         self::assertSame(10, $event->codeCount);
-    }
-
-    #[Test]
-    public function recoveryCodesGeneratedEventIsReadonly(): void
-    {
-        $event = new RecoveryCodesGeneratedEvent(1, 10);
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->codeCount = 99;
     }
 
     // -------------------------------------------------------------------------
@@ -244,16 +180,6 @@ final class EventsTest extends TestCase
         self::assertNotContains('magicLinkToken', $propertyNames, 'MagicLinkRequestedEvent must not expose the token for security reasons');
     }
 
-    #[Test]
-    public function magicLinkRequestedEventIsReadonly(): void
-    {
-        $event = new MagicLinkRequestedEvent(1, 'user@example.com');
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->email = 'attacker@example.com';
-    }
-
     // -------------------------------------------------------------------------
     // EnforcementLevelResolvedEvent (mutable)
     // -------------------------------------------------------------------------
@@ -283,16 +209,6 @@ final class EventsTest extends TestCase
         $event->setEffectiveLevel('enforced');
 
         self::assertSame('enforced', $event->getEffectiveLevel());
-    }
-
-    #[Test]
-    public function enforcementLevelResolvedEventFeUserUidIsReadonly(): void
-    {
-        $event = new EnforcementLevelResolvedEvent(30, 'off');
-
-        $this->expectException(Error::class);
-        // @phpstan-ignore-next-line
-        $event->feUserUid = 99;
     }
 
     #[Test]

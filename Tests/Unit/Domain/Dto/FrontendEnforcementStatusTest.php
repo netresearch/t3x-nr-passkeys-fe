@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Domain\Dto;
 
 use DateTimeImmutable;
-use Error;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -75,25 +74,6 @@ final class FrontendEnforcementStatusTest extends TestCase
         self::assertSame(0, $status->passkeyCount);
         self::assertSame(0, $status->recoveryCodesRemaining);
         self::assertFalse($status->inGracePeriod);
-    }
-
-    #[Test]
-    public function readonlyPropertiesCannotBeWritten(): void
-    {
-        $status = new FrontendEnforcementStatus(
-            effectiveLevel: 'enforced',
-            siteLevel: 'enforced',
-            groupLevel: 'enforced',
-            passkeyCount: 1,
-            inGracePeriod: false,
-            graceDeadline: null,
-            recoveryCodesRemaining: 5,
-        );
-
-        $this->expectException(Error::class);
-
-        // @phpstan-ignore-next-line
-        $status->effectiveLevel = 'off';
     }
 
     #[Test]

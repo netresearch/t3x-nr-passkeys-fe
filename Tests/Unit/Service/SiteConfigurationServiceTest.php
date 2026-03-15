@@ -16,6 +16,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
 use RuntimeException;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 
@@ -222,7 +223,7 @@ final class SiteConfigurationServiceTest extends TestCase
         string $baseUrl,
         string $identifier = 'test-site',
     ): SiteInterface {
-        $site = $this->createMock(SiteInterface::class);
+        $site = $this->createMock(Site::class);
 
         $settings = $this->createSettingsMock($settingsArray);
         $site->method('getSettings')->willReturn($settings);

@@ -83,7 +83,7 @@ final class AdminModuleControllerTest extends TestCase
         );
         $this->adoptionStatsService->method('getStats')->willReturn($stats);
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe', 'GET');
         $response = $this->subject->dashboardAction($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);
@@ -120,7 +120,7 @@ final class AdminModuleControllerTest extends TestCase
                     && $vars['groups'][0]['title'] === 'Editors';
             }));
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe', 'GET');
         $this->subject->dashboardAction($request);
     }
 
@@ -135,7 +135,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('loadJavaScriptModule')
             ->with('@netresearch/nr-passkeys-fe/PasskeyFeAdmin.js');
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe', 'GET');
         $this->subject->dashboardAction($request);
     }
 
@@ -166,7 +166,7 @@ final class AdminModuleControllerTest extends TestCase
                     && $groups[0]['adoptionPercentage'] === 50.0;
             }));
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe', 'GET');
         $this->subject->dashboardAction($request);
     }
 
@@ -177,7 +177,7 @@ final class AdminModuleControllerTest extends TestCase
     #[Test]
     public function helpActionReturnsResponse(): void
     {
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe/help');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe/help', 'GET');
         $response = $this->subject->helpAction($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);
@@ -192,7 +192,7 @@ final class AdminModuleControllerTest extends TestCase
             ->with('AdminModule/Help')
             ->willReturn($this->createMock(ResponseInterface::class));
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe/help');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe/help', 'GET');
         $this->subject->helpAction($request);
     }
 
@@ -204,7 +204,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('assignMultiple')
             ->with(self::callback(static fn(array $vars): bool => isset($vars['dashboardUrl'])));
 
-        $request = new ServerRequest('GET', '/typo3/module/nr-passkeys-fe/help');
+        $request = new ServerRequest('/typo3/module/nr-passkeys-fe/help', 'GET');
         $this->subject->helpAction($request);
     }
 }

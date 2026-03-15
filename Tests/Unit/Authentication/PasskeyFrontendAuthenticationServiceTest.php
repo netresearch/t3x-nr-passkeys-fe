@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Authentication;
 
+use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
@@ -43,6 +44,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
     private SiteConfigurationService&MockObject $siteConfigService;
 
+    private ChallengeService&MockObject $challengeService;
+
     private SiteInterface&MockObject $site;
 
     private LoggerInterface&MockObject $logger;
@@ -55,6 +58,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
         $this->enforcementService = $this->createMock(FrontendEnforcementService::class);
         $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $this->challengeService = $this->createMock(ChallengeService::class);
         $this->site = $this->createMock(SiteInterface::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -79,6 +83,11 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->method('getSiteIdentifier')
             ->willReturn('default');
 
+        // Default: verifyChallengeToken returns the token as raw challenge
+        $this->challengeService
+            ->method('verifyChallengeToken')
+            ->willReturnArgument(0);
+
         // Set up TYPO3_REQUEST so resolveSite() works
         $request = $this->createMock(ServerRequestInterface::class);
         $GLOBALS['TYPO3_REQUEST'] = $request;
@@ -87,6 +96,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
 
         $this->subject = new PasskeyFrontendAuthenticationService();
         $this->injectLogger($this->subject, $this->logger);
@@ -722,6 +732,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
         GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
 
         $expectedUser = ['uid' => 42, 'username' => 'frontend_user'];
         $service->expects(self::once())->method('fetchUserRecord')->willReturn($expectedUser);
