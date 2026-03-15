@@ -39,9 +39,9 @@ composer config prefer-stable true -d "$INSTALL_DIR"
 composer config repositories.nr_passkeys_be path "$BE_EXTENSION_PATH" -d "$INSTALL_DIR"
 composer config repositories.nr_passkeys_fe path "$FE_EXTENSION_PATH" -d "$INSTALL_DIR"
 
-# Install TYPO3 v14 with both extensions
+# Install TYPO3 v14 with both extensions + felogin for demo
 # t3/cms has no v14 release - use typo3/minimal + additional packages
-composer req typo3/minimal:'^14' typo3/cms-install:'^14' typo3/cms-fluid-styled-content:'^14' typo3/cms-rte-ckeditor:'^14' netresearch/nr-passkeys-be:'*@dev' netresearch/nr-passkeys-fe:'*@dev' --no-progress -n -d "$INSTALL_DIR"
+composer req typo3/minimal:'^14' typo3/cms-install:'^14' typo3/cms-fluid-styled-content:'^14' typo3/cms-rte-ckeditor:'^14' typo3/cms-felogin:'^14' netresearch/nr-passkeys-be:'*@dev' netresearch/nr-passkeys-fe:'*@dev' --no-progress -n -d "$INSTALL_DIR"
 composer req typo3/cms-extensionmanager --no-progress -n -d "$INSTALL_DIR"
 composer req --dev typo3/cms-styleguide --no-progress -n -d "$INSTALL_DIR"
 
@@ -107,11 +107,81 @@ fi
 # Generate styleguide demo content
 vendor/bin/typo3 styleguide:generate || echo "Styleguide generation skipped"
 
+# Create demo pages with passkey plugins and test FE user
+echo "Creating demo pages and test FE user..."
+vendor/bin/typo3 sql:query "$(cat <<'SQL'
+INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, is_siteroot, sorting)
+VALUES (100, 1, 'FE Users', '/fe-users', 254, 0, 512);
+
+INSERT IGNORE INTO fe_groups (uid, pid, title, passkey_enforcement)
+VALUES (1, 100, 'Demo Users', 'off');
+
+INSERT IGNORE INTO fe_users (uid, pid, username, password, usergroup, email, name, disable)
+VALUES (1, 100, 'demo', '\$2y\$12\$LY9RNkX4W2v9FpA3K1vK1eFQfSj5QrGT0mQJ6cGhKfGdNx1t6sYZO', '1', 'demo@example.com', 'Demo User', 0);
+
+INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting)
+VALUES (10, 1, 'Login', '/login', 1, 100);
+
+INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting, fe_group)
+VALUES (11, 1, 'My Account', '/my-account', 1, 200, '-2');
+
+INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting)
+VALUES (12, 1, 'Passkey Setup', '/passkey-setup', 1, 300);
+
+INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
+VALUES (10, 10, 'login', '', 'Frontend Login', 100);
+
+INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
+VALUES (11, 10, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
+
+INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
+VALUES (12, 11, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
+
+INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
+VALUES (13, 12, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
+SQL
+)" || echo "Demo data creation skipped (may already exist)"
+
+if [ -f config/sites/main/config.yaml ]; then
+    if ! grep -q "nr_passkeys_fe:" config/sites/main/config.yaml; then
+        cat >> config/sites/main/config.yaml << 'SITECFG'
+
+settings:
+  nr_passkeys_fe:
+    enforcement: 'off'
+SITECFG
+    fi
+fi
+
+cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
+
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup(
+    '@import "EXT:nr_passkeys_fe/Configuration/TypoScript/setup.typoscript"'
+);
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants(
+    '@import "EXT:nr_passkeys_fe/Configuration/TypoScript/constants.typoscript"'
+);
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants('
+plugin.tx_nrpasskeysfe.settings.loginPageUid = 10
+plugin.tx_nrpasskeysfe.settings.managementPageUid = 11
+plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = 12
+');
+TSPHP
+
 vendor/bin/typo3 cache:flush
 
 echo ""
-echo "TYPO3 $VERSION installation complete!"
+echo "========================================"
+echo " TYPO3 $VERSION installation complete!"
+echo "========================================"
+echo ""
 echo "  Frontend: https://v14.nr-passkeys-fe.ddev.site/"
 echo "  Backend:  https://v14.nr-passkeys-fe.ddev.site/typo3/"
 echo ""
-echo "Credentials: admin / Joh316!!"
+echo "  Demo pages:"
+echo "    /login          - Login page (felogin + passkey plugin)"
+echo "    /my-account     - Passkey management (requires login)"
+echo "    /passkey-setup  - Passkey enrollment"
+echo ""
+echo "  FE User: demo / password"
+echo "  BE Admin: admin / Joh316!!"
