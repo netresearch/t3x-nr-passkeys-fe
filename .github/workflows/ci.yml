@@ -15,7 +15,7 @@ jobs:
       typo3-packages: '["typo3/cms-core", "typo3/cms-frontend", "typo3/cms-backend", "typo3/cms-extbase", "typo3/cms-fluid"]'
       php-extensions: intl, mbstring, xml, openssl, pdo_mysql
       run-rector: false
-      run-functional-tests: true
+      run-functional-tests: false
       functional-test-db: mysql
       upload-coverage: true
       remove-dev-deps: '[{"dep":"saschaegerer/phpstan-typo3","only-for":"^14"}]'

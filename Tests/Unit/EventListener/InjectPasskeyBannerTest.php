@@ -272,7 +272,16 @@ final class InjectPasskeyBannerTest extends TestCase
             $request = $request->withAttribute('site', $site);
         }
 
-        return new AfterCacheableContentIsGeneratedEvent($request, $content, 'cache-key', true);
+        $event = $this->createMock(\TYPO3\CMS\Frontend\Event\AfterCacheableContentIsGeneratedEvent::class);
+        $event->method('getRequest')->willReturn($request);
+        // Track content mutations via setContent/getContent
+        $contentRef = $content;
+        $cachingDisabled = false;
+        $event->method('getContent')->willReturnCallback(function () use (&$contentRef) { return $contentRef; });
+        $event->method('setContent')->willReturnCallback(function (string $c) use (&$contentRef) { $contentRef = $c; });
+        $event->method('disableCaching')->willReturnCallback(function () use (&$cachingDisabled) { $cachingDisabled = true; });
+        $event->method('isCachingEnabled')->willReturnCallback(function () use (&$cachingDisabled) { return !$cachingDisabled; });
+        return $event;
     }
 
     private function createSite(string $identifier, string $base, string $enrollmentUrl = ''): Site
