@@ -105,42 +105,46 @@ if [ "$INTRO_INSTALLED" = "true" ] && [ -f config/sites/main/config.yaml ]; then
 fi
 
 # Generate styleguide demo content
-vendor/bin/typo3 styleguide:generate || echo "Styleguide generation skipped"
+vendor/bin/typo3 styleguide:generate --create || echo "Styleguide generation skipped"
 
 # Create demo pages with passkey plugins and test FE user
 echo "Creating demo pages and test FE user..."
-vendor/bin/typo3 sql:query "$(cat <<'SQL'
-INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, is_siteroot, sorting)
-VALUES (100, 1, 'FE Users', '/fe-users', 254, 0, 512);
+mysql -h db -u root -p"root" "$VERSION" <<'SQL'
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES (1, 'FE Users', '/fe-users-storage', 254, 9000);
+SET @storage_pid = LAST_INSERT_ID();
 
-INSERT IGNORE INTO fe_groups (uid, pid, title, passkey_enforcement)
-VALUES (1, 100, 'Demo Users', 'off');
+INSERT INTO fe_groups (pid, title, passkey_enforcement)
+VALUES (@storage_pid, 'Demo Users', 'off');
+SET @group_uid = LAST_INSERT_ID();
 
-INSERT IGNORE INTO fe_users (uid, pid, username, password, usergroup, email, name, disable)
-VALUES (1, 100, 'demo', '\$2y\$12\$LY9RNkX4W2v9FpA3K1vK1eFQfSj5QrGT0mQJ6cGhKfGdNx1t6sYZO', '1', 'demo@example.com', 'Demo User', 0);
+INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
+VALUES (@storage_pid, 'demo', '$2y$12$bY7k6WGx6H3vB9D3RNMVYOzRPj6ExQ5gRmJy0K9kqDr8s3NUcW0WG', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
-INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting)
-VALUES (10, 1, 'Login', '/login', 1, 100);
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES (1, 'Passkey Login', '/passkey-login', 1, 9100);
+SET @login_page = LAST_INSERT_ID();
 
-INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting, fe_group)
-VALUES (11, 1, 'My Account', '/my-account', 1, 200, '-2');
+INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
+VALUES (1, 'My Account', '/my-account', 1, 9200, '-2');
+SET @account_page = LAST_INSERT_ID();
 
-INSERT IGNORE INTO pages (uid, pid, title, slug, doktype, sorting)
-VALUES (12, 1, 'Passkey Setup', '/passkey-setup', 1, 300);
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES (1, 'Passkey Setup', '/passkey-setup', 1, 9300);
+SET @enrollment_page = LAST_INSERT_ID();
 
-INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
-VALUES (10, 10, 'login', '', 'Frontend Login', 100);
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@login_page, 'login', '', 'Frontend Login', 100);
 
-INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
-VALUES (11, 10, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@login_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
 
-INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
-VALUES (12, 11, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
 
-INSERT IGNORE INTO tt_content (uid, pid, CType, list_type, header, sorting)
-VALUES (13, 12, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
 SQL
-)" || echo "Demo data creation skipped (may already exist)"
 
 if [ -f config/sites/main/config.yaml ]; then
     if ! grep -q "nr_passkeys_fe:" config/sites/main/config.yaml; then
