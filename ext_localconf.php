@@ -4,8 +4,32 @@ declare(strict_types=1);
 
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
 defined('TYPO3') or die();
+
+// Configure Extbase plugins (required for rendering)
+// These Extbase controllers render Fluid templates; actual WebAuthn logic runs via eID/JavaScript.
+ExtensionUtility::configurePlugin(
+    'NrPasskeysFe',
+    'PasskeyLogin',
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController::class => 'index'],
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController::class => 'index'],
+);
+
+ExtensionUtility::configurePlugin(
+    'NrPasskeysFe',
+    'PasskeyManagement',
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\ManagementPluginController::class => 'index'],
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\ManagementPluginController::class => 'index'],
+);
+
+ExtensionUtility::configurePlugin(
+    'NrPasskeysFe',
+    'PasskeyEnrollment',
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController::class => 'index'],
+    [\Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController::class => 'index'],
+);
 
 // Register FE passkey authentication service at priority 80
 // Above SaltedPasswordService (50), below typical LDAP/SSO (90+)
