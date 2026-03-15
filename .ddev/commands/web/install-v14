@@ -203,12 +203,9 @@ VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
 -- v14: list_type removed, plugins registered directly as CType
--- Passkey login first, felogin as password fallback
+-- felogin with passkey button injected via template override
 INSERT INTO tt_content (pid, CType, header, sorting)
-VALUES (@login_page, 'nrpasskeysfe_passkeylogin', 'Sign in with Passkey', 100);
-
-INSERT INTO tt_content (pid, CType, header, sorting)
-VALUES (@login_page, 'felogin_login', 'Or use password', 200);
+VALUES (@login_page, 'felogin_login', 'Login', 100);
 
 -- Passkey-only (no felogin fallback)
 INSERT INTO tt_content (pid, CType, header, sorting)

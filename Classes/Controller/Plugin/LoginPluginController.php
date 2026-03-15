@@ -26,14 +26,19 @@ final class LoginPluginController extends ActionController
         $baseUrl = rtrim((string)($site?->getBase() ?? ''), '/');
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
 
-        $discoverableEnabled = (bool)($this->settings['discoverableEnabled'] ?? true);
+        // Default to discoverable (passkey-first). Empty string/null/missing = use default (true).
+        $discoverableRaw = $this->settings['discoverableEnabled'] ?? '';
+        $discoverableEnabled = $discoverableRaw === '' || $discoverableRaw === null ? true : (bool)$discoverableRaw;
+
+        $showPasswordRaw = $this->settings['showPasswordFallback'] ?? '';
+        $showPasswordFallback = $showPasswordRaw === '' || $showPasswordRaw === null ? true : (bool)$showPasswordRaw;
 
         $this->view->assignMultiple([
             'eidUrl' => $eidUrl,
             'siteIdentifier' => $siteIdentifier,
             'showUsernameField' => !$discoverableEnabled,
             'discoverableEnabled' => $discoverableEnabled,
-            'showPasswordFallback' => (bool)($this->settings['showPasswordFallback'] ?? true),
+            'showPasswordFallback' => $showPasswordFallback,
             'passwordFallbackUrl' => $baseUrl . '/passkey-login',
             'recoveryUrl' => '#nr-passkeys-fe-recovery',
         ]);

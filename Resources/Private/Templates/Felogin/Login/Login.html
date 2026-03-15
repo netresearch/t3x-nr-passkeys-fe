@@ -1,0 +1,111 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<f:comment>
+    felogin Login template override by EXT:nr_passkeys_fe.
+    Adds a "Sign in with Passkey" button next to the password Login button.
+    This template is registered via TypoScript templateRootPaths override.
+</f:comment>
+
+<f:flashMessages/>
+
+<f:if condition="{messageKey}">
+    <h3>
+        <f:render partial="RenderLabelOrMessage" arguments="{key: '{messageKey}_header'}"/>
+    </h3>
+    <p>
+        <f:render partial="RenderLabelOrMessage" arguments="{key: '{messageKey}_message'}"/>
+    </p>
+</f:if>
+
+<f:form target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" spellcheck="false">
+    <f:render section="content" arguments="{_all}"/>
+</f:form>
+
+<f:if condition="{settings.showForgotPassword}">
+    <f:link.action action="recovery" controller="PasswordRecovery">
+        <f:render partial="RenderLabelOrMessage" arguments="{key: 'forgot_header'}"/>
+    </f:link.action>
+</f:if>
+
+<f:section name="content">
+    <fieldset>
+        <legend>
+            <f:translate key="login"/>
+        </legend>
+        <div>
+            <label for="tx-felogin-input-username">
+                <f:translate key="username"/>
+            </label>
+            <f:form.textfield name="user" required="true" autocomplete="username" id="tx-felogin-input-username"/>
+        </div>
+        <div>
+            <label for="tx-felogin-input-password">
+                <f:translate key="password"/>
+            </label>
+            <f:form.password name="pass" required="required" autocomplete="current-password" id="tx-felogin-input-password"/>
+        </div>
+
+        <f:if condition="{permaloginStatus} > -1">
+            <div>
+                <label for="permalogin">
+                    <f:translate id="permalogin"/>
+                </label>
+                <f:if condition="{permaloginStatus} == 1">
+                    <f:then>
+                        <f:form.hidden name="permalogin" value="0" disabled="disabled"/>
+                        <f:form.checkbox name="permalogin" id="permalogin" value="1" checked="checked"/>
+                    </f:then>
+                    <f:else>
+                        <f:form.hidden name="permalogin" value="0"/>
+                        <f:form.checkbox name="permalogin" id="permalogin" value="1"/>
+                    </f:else>
+                </f:if>
+            </div>
+        </f:if>
+
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <f:form.submit value="{f:translate(key: 'login')}" name="submit"/>
+
+            <span style="color:#999;">or</span>
+
+            <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+            <f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" type="module" />
+            <div class="nr-passkeys-fe-login"
+                 data-nr-passkeys-fe="login"
+                 data-eid-url="/?eID=nr_passkeys_fe"
+                 data-site-identifier=""
+                 data-discoverable="1"
+                 style="display:inline;">
+                <div class="nr-passkeys-fe-login__error" role="alert" style="display:none"></div>
+                <div class="nr-passkeys-fe-login__status" role="status" style="display:none"></div>
+                <button type="button"
+                        id="nr-passkeys-fe-login-btn"
+                        class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey"
+                        data-action="passkey-login"
+                        style="padding:8px 16px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor" aria-hidden="true" style="vertical-align:middle; margin-right:4px;">
+                        <path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Zm760-40l-60-60v-186q-44-13-72-49.5T720-580q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T910-450l50 50-60 60 60 60-80 80Zm-440-280q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/>
+                    </svg>
+                    Passkey
+                </button>
+            </div>
+        </div>
+
+        <div class="felogin-hidden">
+            <f:form.hidden name="logintype" value="login"/>
+            <f:if condition="{redirectURL}!=''">
+                <f:form.hidden name="redirect_url" value="{redirectURL}" />
+            </f:if>
+            <f:if condition="{referer}!=''">
+                <f:form.hidden name="referer" value="{referer}" />
+            </f:if>
+            <f:if condition="{redirectReferrer}!=''">
+                <f:form.hidden name="redirectReferrer" value="off" />
+            </f:if>
+            <f:if condition="{noRedirect}!=''">
+                <f:form.hidden name="noredirect" value="1" />
+            </f:if>
+        </div>
+    </fieldset>
+</f:section>
+</html>
