@@ -40,7 +40,6 @@ return [
                 'type' => 'input',
                 'size' => 30,
                 'max' => 128,
-                'eval' => 'trim',
                 'readOnly' => true,
             ],
         ],

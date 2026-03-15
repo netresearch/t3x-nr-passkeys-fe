@@ -15,7 +15,7 @@ How site-aware RP ID works
 
 When a passkey authentication or enrollment request arrives, the
 extension resolves the current TYPO3 site from the request and reads
-the ``passkeys.rpId`` value from the site's ``config.yaml``.
+the ``nr_passkeys_fe.rpId`` value from the site's ``config.yaml``.
 
 If no per-site RP ID is configured, the extension falls back to the
 global extension setting (auto-detected from ``HTTP_HOST``).
@@ -38,21 +38,23 @@ For a TYPO3 installation with two separate domains:
     :caption: config/sites/company-intranet/config.yaml
 
     base: 'https://intranet.example.com/'
-    passkeys:
-      rpId: 'intranet.example.com'
-      rpName: 'Company Intranet'
-      origin: 'https://intranet.example.com'
-      enforcementLevel: 'enforced'
+    settings:
+      nr_passkeys_fe:
+        rpId: 'intranet.example.com'
+        origin: 'https://intranet.example.com'
+        enforcementLevel: 'enforced'
+        enrollmentPageUrl: '/passkey-setup'
 
 ..  code-block:: yaml
     :caption: config/sites/public-shop/config.yaml
 
     base: 'https://shop.example.com/'
-    passkeys:
-      rpId: 'shop.example.com'
-      rpName: 'Example Shop'
-      origin: 'https://shop.example.com'
-      enforcementLevel: 'encourage'
+    settings:
+      nr_passkeys_fe:
+        rpId: 'shop.example.com'
+        origin: 'https://shop.example.com'
+        enforcementLevel: 'encourage'
+        enrollmentPageUrl: '/passkey-setup'
 
 Shared RP ID across subdomains
 --------------------------------
@@ -66,14 +68,16 @@ To enable this, set all sites to the same parent domain:
 ..  code-block:: yaml
 
     # site-a/config.yaml
-    passkeys:
-      rpId: 'example.com'
-      origin: 'https://app.example.com'
+    settings:
+      nr_passkeys_fe:
+        rpId: 'example.com'
+        origin: 'https://app.example.com'
 
     # site-b/config.yaml
-    passkeys:
-      rpId: 'example.com'
-      origin: 'https://api.example.com'
+    settings:
+      nr_passkeys_fe:
+        rpId: 'example.com'
+        origin: 'https://api.example.com'
 
 ..  warning::
 

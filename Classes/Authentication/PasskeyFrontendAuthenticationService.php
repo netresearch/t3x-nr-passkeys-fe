@@ -11,11 +11,13 @@ namespace Netresearch\NrPasskeysFe\Authentication;
 
 use Doctrine\DBAL\ParameterType;
 use JsonException;
+use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -36,7 +38,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * auth service chain, so custom POST fields may be inaccessible. The uident
  * field is the standard TYPO3 mechanism for passing auth credentials.
  */
-class PasskeyFrontendAuthenticationService extends AbstractAuthenticationService
+final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationService
 {
     private ?FrontendWebAuthnService $webAuthnService = null;
 
@@ -45,6 +47,8 @@ class PasskeyFrontendAuthenticationService extends AbstractAuthenticationService
     private ?FrontendEnforcementService $enforcementService = null;
 
     private ?SiteConfigurationService $siteConfigService = null;
+
+    private ?ChallengeService $challengeService = null;
 
     /**
      * Decoded passkey payload from uident, cached per request.
@@ -139,10 +143,20 @@ class PasskeyFrontendAuthenticationService extends AbstractAuthenticationService
                 return 0;
             }
 
+            // Verify the challenge token HMAC/nonce/expiry and extract raw challenge
+            try {
+                $rawChallenge = $this->getChallengeService()->verifyChallengeToken($payload['challengeToken']);
+            } catch (RuntimeException $e) {
+                $this->getLogger()->warning('FE passkey auth: invalid challenge token', [
+                    'error' => $e->getMessage(),
+                ]);
+                return 0;
+            }
+
             // Verify the assertion
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
                 assertionJson: $payload['assertion'],
-                challenge: $payload['challengeToken'],
+                challenge: $rawChallenge,
                 site: $site,
             );
 
@@ -357,6 +371,15 @@ class PasskeyFrontendAuthenticationService extends AbstractAuthenticationService
         }
 
         return $this->siteConfigService;
+    }
+
+    private function getChallengeService(): ChallengeService
+    {
+        if ($this->challengeService === null) {
+            $this->challengeService = GeneralUtility::makeInstance(ChallengeService::class);
+        }
+
+        return $this->challengeService;
     }
 
     private function getLogger(): \Psr\Log\LoggerInterface

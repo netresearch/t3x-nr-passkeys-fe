@@ -68,11 +68,12 @@ Add the following to your site's :file:`config.yaml`:
 
 ..  code-block:: yaml
 
-    passkeys:
-      rpId: 'your-domain.example'
-      rpName: 'My Site'
-      origin: 'https://your-domain.example'
-      enforcementLevel: 'encourage'
+    settings:
+      nr_passkeys_fe:
+        rpId: 'your-domain.example'
+        origin: 'https://your-domain.example'
+        enforcementLevel: 'encourage'
+        enrollmentPageUrl: '/passkey-setup'
 
 Replace ``your-domain.example`` with your actual domain.
 

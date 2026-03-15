@@ -15,14 +15,14 @@ Settings are added to the site's :file:`config.yaml` file or via the
 ..  code-block:: yaml
     :caption: config/sites/my-site/config.yaml
 
-    passkeys:
-      rpId: 'example.com'
-      rpName: 'My Example Site'
-      origin: 'https://example.com'
-      enforcementLevel: 'off'
-      gracePeriodDays: 14
+    settings:
+      nr_passkeys_fe:
+        rpId: 'example.com'
+        origin: 'https://example.com'
+        enforcementLevel: 'off'
+        enrollmentPageUrl: '/passkey-setup'
 
-..  confval:: passkeys.rpId
+..  confval:: nr_passkeys_fe.rpId
 
    :type: string
    :Default: *(auto-detected from HTTP_HOST)*
@@ -35,15 +35,7 @@ Settings are added to the site's :file:`config.yaml` file or via the
       Once passkeys are registered against a specific ``rpId``, changing
       it invalidates all existing registrations. Users must re-enroll.
 
-..  confval:: passkeys.rpName
-
-   :type: string
-   :Default: ``TYPO3 Frontend``
-
-   Human-readable name shown to users during passkey registration in
-   the browser dialog.
-
-..  confval:: passkeys.origin
+..  confval:: nr_passkeys_fe.origin
 
    :type: string
    :Default: *(auto-detected from request)*
@@ -52,7 +44,7 @@ Settings are added to the site's :file:`config.yaml` file or via the
    include the scheme and port if non-standard. Leave empty for
    auto-detection.
 
-..  confval:: passkeys.enforcementLevel
+..  confval:: nr_passkeys_fe.enforcementLevel
 
    :type: string
    :Default: ``off``
@@ -69,14 +61,13 @@ Settings are added to the site's :file:`config.yaml` file or via the
    Per-group enforcement can override this for specific user groups
    (strictest level wins). See :ref:`enforcement`.
 
-..  confval:: passkeys.gracePeriodDays
+..  confval:: nr_passkeys_fe.enrollmentPageUrl
 
-   :type: int
-   :Default: ``14``
+   :type: string
+   :Default: *(empty)*
 
-   Number of days before the grace period expires for users who can
-   skip the enrollment interstitial. Applies when the level is
-   ``required``. Has no effect for ``enforced``.
+   URL path to the passkey enrollment page (e.g. ``/passkey-setup``).
+   Used by the enrollment banner to link users to the enrollment flow.
 
 Multi-site example
 ------------------
@@ -86,21 +77,21 @@ For a multi-site installation with different enforcement levels:
 ..  code-block:: yaml
     :caption: config/sites/main-site/config.yaml (strict)
 
-    passkeys:
-      rpId: 'company.example'
-      rpName: 'Company Portal'
-      origin: 'https://company.example'
-      enforcementLevel: 'enforced'
-      gracePeriodDays: 0
+    settings:
+      nr_passkeys_fe:
+        rpId: 'company.example'
+        origin: 'https://company.example'
+        enforcementLevel: 'enforced'
+        enrollmentPageUrl: '/passkey-setup'
 
 ..  code-block:: yaml
     :caption: config/sites/public-site/config.yaml (soft rollout)
 
-    passkeys:
-      rpId: 'www.example.com'
-      rpName: 'Public Site'
-      origin: 'https://www.example.com'
-      enforcementLevel: 'encourage'
-      gracePeriodDays: 30
+    settings:
+      nr_passkeys_fe:
+        rpId: 'www.example.com'
+        origin: 'https://www.example.com'
+        enforcementLevel: 'encourage'
+        enrollmentPageUrl: '/passkey-setup'
 
 See :ref:`multi-site` for details on cross-domain passkey handling.

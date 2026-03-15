@@ -53,11 +53,12 @@ vendor/bin/typo3 database:updateschema
 
 3. **Configure the site** in `config/sites/my-site/config.yaml`:
    ```yaml
-   passkeys:
-     rpId: 'your-domain.example'
-     rpName: 'My Site'
-     origin: 'https://your-domain.example'
-     enforcementLevel: 'encourage'
+   settings:
+     nr_passkeys_fe:
+       rpId: 'your-domain.example'
+       origin: 'https://your-domain.example'
+       enforcementLevel: 'encourage'
+       enrollmentPageUrl: '/passkey-setup'
    ```
 
 Visit the login page and click **Sign in with a passkey**.
