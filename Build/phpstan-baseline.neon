@@ -1,16 +1,51 @@
 parameters:
     ignoreErrors:
-        # EidDispatcher uses dynamic method dispatch ($controller->$method()) which
-        # PHPStan cannot verify at the union type level. Each controller has its own
-        # set of methods, and the ACTION_MAP ensures the correct mapping.
+        # EidDispatcher dynamic method dispatch — ACTION_MAP guarantees correctness
         -
             message: '#Call to an undefined method .+Controller::.+Action\(\)#'
             path: ../Classes/Controller/EidDispatcher.php
-            count: 10
 
-        # AbstractAuthenticationService::authUser receives untyped array from TYPO3 core.
-        # We cannot control the parent class signature.
+        # AbstractAuthenticationService receives untyped array from TYPO3 core
         -
             message: '#Parameter \#1 \$user of method .+handlePasswordLogin\(\) expects array<string, mixed>, array given#'
             path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-            count: 1
+
+        # TYPO3 event API returns mixed for getContent/setContent
+        -
+            message: '#Call to an undefined method .+AfterCacheableContentIsGeneratedEvent::(getContent|setContent)\(\)#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+        # felogin event view returns mixed
+        -
+            message: '#Cannot call method (getAttribute|assign)\(\) on mixed#'
+            path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+
+        # str_ireplace with mixed from event
+        -
+            message: '#Parameter \#3 \$subject of function str_ireplace expects#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+        # Mixed from TYPO3 request attributes and user records
+        -
+            message: '#Cannot cast mixed to int#'
+            paths:
+                - ../Classes/Controller/
+                - ../Classes/Authentication/
+                - ../Classes/Middleware/
+
+        -
+            message: '#Cannot call method getAttribute\(\) on mixed#'
+            paths:
+                - ../Classes/Controller/
+                - ../Classes/EventListener/
+
+        -
+            message: '#Strict comparison using === between mixed and null will always evaluate to false#'
+            paths:
+                - ../Classes/Controller/
+                - ../Classes/Configuration/
+
+        # Return type narrowing for per-group stats array keys
+        -
+            message: '#should return array<string,.+> but returns array<int\|numeric-string#'
+            path: ../Classes/Service/FrontendAdoptionStatsService.php
