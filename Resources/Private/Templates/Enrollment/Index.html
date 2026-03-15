@@ -2,6 +2,8 @@
 <f:layout name="Default" />
 
 <f:section name="Content">
+<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" type="module" />
 <div class="nr-passkeys-fe-enrollment{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
      data-nr-passkeys-fe="enrollment"
      data-eid-url="{eidUrl}"
