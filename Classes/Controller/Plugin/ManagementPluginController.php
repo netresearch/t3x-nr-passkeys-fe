@@ -10,8 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Psr\Http\Message\ResponseInterface;
-use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
 /**
  * Extbase controller for the PasskeyManagement frontend plugin.

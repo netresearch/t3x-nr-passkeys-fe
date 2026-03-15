@@ -49,3 +49,26 @@ parameters:
         -
             message: '#should return array<string,.+> but returns array<int\|numeric-string#'
             path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+        # SiteInterface::getSettings() exists on Site (concrete class) but not on SiteInterface.
+        -
+            identifier: method.notFound
+            path: ../Classes/Service/SiteConfigurationService.php
+        -
+            message: '#Cannot call method get\(\) on mixed#'
+            path: ../Classes/Service/SiteConfigurationService.php
+
+        # WebAuthn algorithm map — PHPStan correctly identifies these as always-true/non-null
+        -
+            identifier: nullCoalesce.offset
+            path: ../Classes/Service/FrontendWebAuthnService.php
+        -
+            identifier: notIdentical.alwaysTrue
+            path: ../Classes/Service/FrontendWebAuthnService.php
+
+        # Mixed cast from TYPO3 request/service returns
+        -
+            identifier: cast.int
+            paths:
+                - ../Classes/Service/
+                - ../Classes/EventListener/

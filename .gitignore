@@ -18,3 +18,5 @@
 /test-results/
 /playwright-report/
 /package-lock.json
+.superpowers/
+Documentation-GENERATED-temp/
