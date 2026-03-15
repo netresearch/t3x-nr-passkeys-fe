@@ -193,8 +193,8 @@
       if (verifyResponse.ok && verifyData.status === 'ok') {
         try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
         showStatus(statusEl, 'Authenticated! Redirecting...');
-        // Redirect to the URL provided by server, or reload current page
-        window.location.href = verifyData.redirectUrl || window.location.href;
+        var redirect = verifyData.redirectUrl;
+        window.location.href = (redirect && isSameOrigin(redirect)) ? redirect : window.location.href;
         return;
       }
 
@@ -261,6 +261,11 @@
       statusEl.textContent = '';
       statusEl.style.display = 'none';
     }
+  }
+
+  function isSameOrigin(url) {
+    try { return new URL(url, window.location.origin).origin === window.location.origin; }
+    catch (e) { return false; }
   }
 
   // Base64URL encoding/decoding utilities

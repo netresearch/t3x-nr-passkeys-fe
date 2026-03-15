@@ -231,7 +231,7 @@ final class FrontendWebAuthnService
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: $allowCredentials,
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
             timeout: 60000,
         );
 
@@ -256,7 +256,7 @@ final class FrontendWebAuthnService
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: [],
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
             timeout: 60000,
         );
 
@@ -316,7 +316,7 @@ final class FrontendWebAuthnService
         $requestOptions = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
         );
 
         $factory = $this->createCeremonyFactory($site);

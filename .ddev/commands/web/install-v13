@@ -110,7 +110,7 @@ VALUES (@storage_pid, 'Demo Users', 'off');
 SET @group_uid = LAST_INSERT_ID();
 
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
-VALUES (@storage_pid, 'demo', '$2y$12$bY7k6WGx6H3vB9D3RNMVYOzRPj6ExQ5gRmJy0K9kqDr8s3NUcW0WG', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
+VALUES (@storage_pid, 'demo', '$2y$12$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
 INSERT INTO pages (pid, title, slug, doktype, sorting)
 VALUES (1, 'Passkey Login', '/passkey-login', 1, 9100);
@@ -163,14 +163,19 @@ cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
 );
 TSPHP
 
+# Look up actual page UIDs (auto-increment may differ from 10/11/12)
+LOGIN_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1")
+ACCOUNT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1")
+ENROLLMENT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1")
+
 # Set TypoScript constants for page UIDs
-cat >> "$INSTALL_DIR/config/system/additional.php" << 'CONSTPHP'
+cat >> "$INSTALL_DIR/config/system/additional.php" << CONSTPHP
 
 // Configure passkey plugin page UIDs
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants('
-plugin.tx_nrpasskeysfe.settings.loginPageUid = 10
-plugin.tx_nrpasskeysfe.settings.managementPageUid = 11
-plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = 12
+\\TYPO3\\CMS\\Core\\Utility\\ExtensionManagementUtility::addTypoScriptConstants('
+plugin.tx_nrpasskeysfe.settings.loginPageUid = ${LOGIN_UID}
+plugin.tx_nrpasskeysfe.settings.managementPageUid = ${ACCOUNT_UID}
+plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = ${ENROLLMENT_UID}
 ');
 CONSTPHP
 
@@ -185,7 +190,7 @@ echo "  Frontend: https://v13.nr-passkeys-fe.ddev.site/"
 echo "  Backend:  https://v13.nr-passkeys-fe.ddev.site/typo3/"
 echo ""
 echo "  Demo pages:"
-echo "    /login          - Login page (felogin + passkey plugin)"
+echo "    /passkey-login  - Login page (felogin + passkey plugin)"
 echo "    /my-account     - Passkey management (requires login)"
 echo "    /passkey-setup   - Passkey enrollment"
 echo ""

@@ -101,7 +101,8 @@
 
       if (response.ok && data.status === 'ok') {
         showStatus(statusEl, 'Recovery code accepted. Redirecting...');
-        window.location.href = data.redirectUrl || window.location.href;
+        var redirect = data.redirectUrl;
+        window.location.href = (redirect && isSameOrigin(redirect)) ? redirect : window.location.href;
         return;
       }
 
@@ -120,6 +121,11 @@
     }
 
     setLoading(false, submitBtn, btnText, btnLoading);
+  }
+
+  function isSameOrigin(url) {
+    try { return new URL(url, window.location.origin).origin === window.location.origin; }
+    catch (e) { return false; }
   }
 
   function setLoading(loading, btnEl, btnText, btnLoading) {

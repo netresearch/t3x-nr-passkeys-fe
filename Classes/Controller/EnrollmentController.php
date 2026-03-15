@@ -112,7 +112,7 @@ final class EnrollmentController
         }
 
         // Set the skip flag for this session
-        $this->setFeUserSessionKey('nr_passkeys_fe_skip_enrollment', true);
+        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', true);
 
         $this->logger->info('FE enrollment prompt skipped', [
             'fe_user_uid' => $feUserUid,
@@ -126,15 +126,14 @@ final class EnrollmentController
      */
     private function getSessionNonce(ServerRequestInterface $request): string
     {
-        try {
-            $tsfe = $GLOBALS['TSFE'] ?? null;
-            if (\is_object($tsfe) && \property_exists($tsfe, 'fe_user') && \is_object($tsfe->fe_user)) {
-                $value = $tsfe->fe_user->getKey('ses', 'nr_passkeys_fe_enrollment_nonce');
-                return \is_string($value) ? $value : '';
-            }
-        } catch (Throwable) {
-            // Fall through
+        $feUserAuth = $request->getAttribute('frontend.user');
+        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+            $value = $feUserAuth->getKey('ses', 'nr_passkeys_fe_enrollment_nonce');
+
+            return \is_string($value) ? $value : '';
         }
+
+        $this->logger->warning('Enrollment: frontend.user not available for nonce retrieval');
 
         return '';
     }
@@ -142,15 +141,14 @@ final class EnrollmentController
     /**
      * Set a session key on the frontend user session.
      */
-    private function setFeUserSessionKey(string $key, mixed $value): void
+    private function setFeUserSessionKey(ServerRequestInterface $request, string $key, mixed $value): void
     {
-        try {
-            $tsfe = $GLOBALS['TSFE'] ?? null;
-            if (\is_object($tsfe) && \property_exists($tsfe, 'fe_user') && \is_object($tsfe->fe_user)) {
-                $tsfe->fe_user->setKey('ses', $key, $value);
-            }
-        } catch (Throwable) {
-            // Non-critical
+        $feUserAuth = $request->getAttribute('frontend.user');
+        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+            $feUserAuth->setKey('ses', $key, $value);
+            $feUserAuth->storeSessionData();
+        } else {
+            $this->logger->warning('Enrollment: frontend.user not available in request attributes');
         }
     }
 }

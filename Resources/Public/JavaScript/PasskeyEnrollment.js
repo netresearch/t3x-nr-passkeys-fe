@@ -170,7 +170,7 @@
         hideStatus(statusEl);
 
         // Check if we should redirect (enrollment flow)
-        if (verifyData.redirectUrl) {
+        if (verifyData.redirectUrl && isSameOrigin(verifyData.redirectUrl)) {
           window.location.href = verifyData.redirectUrl;
           return;
         }
@@ -255,6 +255,11 @@
     if (el) {
       el.style.display = 'none';
     }
+  }
+
+  function isSameOrigin(url) {
+    try { return new URL(url, window.location.origin).origin === window.location.origin; }
+    catch (e) { return false; }
   }
 
   // Base64URL encoding/decoding utilities

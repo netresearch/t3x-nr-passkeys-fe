@@ -227,14 +227,13 @@ final class LoginController
      */
     private function triggerFeLogin(ServerRequestInterface $request, int $feUserUid): void
     {
-        try {
-            $tsfe = $GLOBALS['TSFE'] ?? null;
-            if (\is_object($tsfe) && \property_exists($tsfe, 'fe_user') && \is_object($tsfe->fe_user)) {
-                $tsfe->fe_user->setKey('ses', 'nr_passkeys_fe_passkey_authenticated', true);
-                $tsfe->fe_user->setKey('ses', 'nr_passkeys_fe_pending_uid', $feUserUid);
-            }
-        } catch (Throwable) {
-            // Non-critical: the JS redirect will trigger a fresh auth cycle
+        $feUserAuth = $request->getAttribute('frontend.user');
+        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+            $feUserAuth->setKey('ses', 'nr_passkeys_fe_passkey_authenticated', true);
+            $feUserAuth->setKey('ses', 'nr_passkeys_fe_pending_uid', $feUserUid);
+            $feUserAuth->storeSessionData();
+        } else {
+            $this->logger->warning('FE passkey login: frontend.user not available in request attributes');
         }
     }
 

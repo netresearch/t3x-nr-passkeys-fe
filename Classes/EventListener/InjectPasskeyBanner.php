@@ -133,8 +133,7 @@ final readonly class InjectPasskeyBanner
 
         $dismissButton = '';
         if ($isDismissible) {
-            $dismissButton = '<button type="button" class="nr-passkeys-banner__dismiss" aria-label="Dismiss"'
-                . ' onclick="this.closest(\'.nr-passkeys-banner\').remove();">'
+            $dismissButton = '<button type="button" class="nr-passkeys-banner__dismiss" data-action="dismiss-banner" aria-label="Dismiss">'
                 . '&times;</button>';
         }
 
@@ -145,7 +144,7 @@ final readonly class InjectPasskeyBanner
         }
 
         return <<<HTML
-<div class="nr-passkeys-banner" role="alert" data-level="{$level}" style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px 24px;z-index:9999;display:flex;align-items:center;gap:16px;font-family:sans-serif;font-size:14px;">
+<div class="nr-passkeys-banner" role="alert" data-nr-passkeys-fe="banner" data-enforcement="{$level}" data-level="{$level}" style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px 24px;z-index:9999;display:flex;align-items:center;gap:16px;font-family:sans-serif;font-size:14px;">
   <span class="nr-passkeys-banner__icon" aria-hidden="true">&#128274;</span>
   <div class="nr-passkeys-banner__content" style="flex:1;">
     <strong>{$titleEscaped}</strong>

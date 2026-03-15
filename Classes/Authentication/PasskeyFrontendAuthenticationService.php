@@ -323,17 +323,18 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     /**
      * Set a session key on the frontend user session.
      *
-     * Uses $GLOBALS['TSFE']->fe_user when available (standard FE auth context).
+     * Uses the frontend.user request attribute when available.
      */
     private function setFeUserSessionKey(string $key, mixed $value): void
     {
-        try {
-            $tsfe = $GLOBALS['TSFE'] ?? null;
-            if (\is_object($tsfe) && \property_exists($tsfe, 'fe_user') && \is_object($tsfe->fe_user)) {
-                $tsfe->fe_user->setKey('ses', $key, $value);
-            }
-        } catch (Throwable) {
-            // Silently ignore - session tagging is non-critical
+        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+        if ($request === null) {
+            return;
+        }
+
+        $feUserAuth = $request->getAttribute('frontend.user');
+        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+            $feUserAuth->setKey('ses', $key, $value);
         }
     }
 
