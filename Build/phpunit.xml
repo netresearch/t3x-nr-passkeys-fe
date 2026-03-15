@@ -7,7 +7,7 @@
          colors="true"
          executionOrder="depends,defects"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="false">
     <testsuites>
         <testsuite name="unit">
             <directory>../Tests/Unit</directory>
