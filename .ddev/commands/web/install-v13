@@ -165,12 +165,12 @@ SET @group_uid = LAST_INSERT_ID();
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
 VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
--- Demo page: Login with felogin (passkey button injected via PSR-14 event listener)
+-- Demo page: Combined login (felogin for password + standalone passkey plugin)
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Login (felogin + Passkey)', '/passkey-login', 1, 9100);
+VALUES ($DEMO_PID, 'Login', '/passkey-login', 1, 9100);
 SET @login_page = LAST_INSERT_ID();
 
--- Demo page: Standalone passkey-only login (no felogin, just our plugin)
+-- Demo page: Passkey-only login (no felogin, just our plugin)
 INSERT INTO pages (pid, title, slug, doktype, sorting)
 VALUES ($DEMO_PID, 'Passkey-Only Login', '/passkey-only', 1, 9150);
 SET @passkey_only_page = LAST_INSERT_ID();
@@ -183,11 +183,14 @@ INSERT INTO pages (pid, title, slug, doktype, sorting)
 VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
--- Login page: felogin only (our PSR-14 listener injects the passkey button automatically)
+-- Login page: passkey login first, then felogin as fallback
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'felogin_login', '', 'Login (felogin with passkey injection)', 100);
+VALUES (@login_page, 'list', 'nrpasskeysfe_passkeylogin', 'Sign in with Passkey', 100);
 
--- Passkey-only page: standalone passkey plugin (no felogin)
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@login_page, 'felogin_login', '', 'Or use password', 200);
+
+-- Passkey-only page: standalone passkey plugin (no felogin fallback)
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
 VALUES (@passkey_only_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100);
 
@@ -246,8 +249,8 @@ echo "  Frontend: ${SITE_URL}/"
 echo "  Backend:  ${SITE_URL}/typo3/"
 echo ""
 echo "  Demo pages:"
-echo "    /passkey-login  - felogin with passkey injection (PSR-14)"
-echo "    /passkey-only   - Standalone passkey-only login (no felogin)"
+echo "    /passkey-login  - Combined: passkey first + password fallback"
+echo "    /passkey-only   - Passkey-only login (no password fallback)"
 echo "    /my-account     - Passkey management (requires login)"
 echo "    /passkey-setup  - Passkey enrollment"
 echo ""
