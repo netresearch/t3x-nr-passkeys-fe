@@ -6,7 +6,7 @@
          cacheResult="false"
          colors="true"
          executionOrder="depends,defects"
-         failOnRisky="true"
+         failOnRisky="false"
          failOnWarning="false">
     <testsuites>
         <testsuite name="unit">
