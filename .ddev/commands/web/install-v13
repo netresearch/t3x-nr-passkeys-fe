@@ -85,8 +85,11 @@ vendor/bin/typo3 extension:setup
 # The typo3 setup creates "main" site (rootPageId=1).
 # We need ONE site with our subdomain URL pointing to the introduction root.
 
-# Find the introduction site root page
-INTRO_ROOT=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT rootPageId FROM sys_site WHERE identifier='introduction' LIMIT 1" 2>/dev/null || echo "")
+# Find the introduction site root page from YAML config (not DB — TYPO3 v13 uses file-based site config)
+INTRO_ROOT=""
+if [ -f config/sites/introduction/config.yaml ]; then
+    INTRO_ROOT=$(grep -oP 'rootPageId:\s*\K\d+' config/sites/introduction/config.yaml 2>/dev/null || echo "")
+fi
 
 if [ -n "$INTRO_ROOT" ] && [ "$INTRO_ROOT" != "0" ]; then
     echo "Introduction package installed (rootPageId=$INTRO_ROOT). Consolidating sites..."
