@@ -113,7 +113,7 @@
 
     try {
       // Step 1: Fetch assertion options from eID
-      var optionsUrl = eidUrl + '?eID=nr_passkeys_fe&action=loginOptions';
+      var optionsUrl = eidUrl + '&action=loginOptions';
       var optionsResponse = await fetch(optionsUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,7 +176,7 @@
       showStatus(statusEl, 'Verifying...');
       try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
 
-      var verifyUrl = eidUrl + '?eID=nr_passkeys_fe&action=loginVerify';
+      var verifyUrl = eidUrl + '&action=loginVerify';
       var verifyResponse = await fetch(verifyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -11,11 +11,9 @@
      data-site-identifier="{siteIdentifier}"
      data-discoverable="{f:if(condition: settings.discoverableEnabled, then: '1', else: '0')}">
 
-    <f:if condition="{errorMessage}">
-        <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite">
-            {errorMessage}
-        </div>
-    </f:if>
+    <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="{f:if(condition: errorMessage, else: 'display:none')}">
+        {errorMessage}
+    </div>
 
     <div class="nr-passkeys-fe-login__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 

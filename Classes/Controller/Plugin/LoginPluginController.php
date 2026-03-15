@@ -25,7 +25,7 @@ final class LoginPluginController extends ActionController
             'eidUrl' => $eidUrl,
             'siteIdentifier' => $siteIdentifier,
             'showUsernameField' => true,
-            'discoverableEnabled' => (bool)($this->settings['discoverableEnabled'] ?? true),
+            'discoverableEnabled' => true,
             'showPasswordFallback' => (bool)($this->settings['showPasswordFallback'] ?? true),
             'passwordFallbackUrl' => $baseUrl . '/passkey-login',
             'recoveryUrl' => $baseUrl . '/passkey-login?recovery=1',
