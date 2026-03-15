@@ -44,7 +44,10 @@ final class EnrollmentController
     public function statusAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
             $site = $this->siteConfigurationService->getCurrentSite($request);
@@ -93,7 +96,10 @@ final class EnrollmentController
     public function skipAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
         $nonce = isset($body['nonce']) && \is_string($body['nonce']) ? $body['nonce'] : '';

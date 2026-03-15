@@ -22,6 +22,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(EnrollmentController::class)]
 final class EnrollmentControllerTest extends TestCase
@@ -198,15 +199,8 @@ final class EnrollmentControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, array $body = []): ServerRequest
     {
-        $feUser = new class ($uid) {
-            /** @var array<string, mixed> */
-            public array $user;
-
-            public function __construct(int $uid)
-            {
-                $this->user = ['uid' => $uid];
-            }
-        };
+        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))
             ->withAttribute('frontend.user', $feUser)

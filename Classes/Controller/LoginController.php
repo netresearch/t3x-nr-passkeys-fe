@@ -19,7 +19,6 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -43,7 +42,6 @@ final class LoginController
         private readonly FrontendCredentialRepository $credentialRepository,
         private readonly RateLimiterService $rateLimiterService,
         private readonly ChallengeService $challengeService,
-        private readonly ConnectionPool $connectionPool,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -238,27 +236,6 @@ final class LoginController
 
     private function findFeUserUid(string $username): ?int
     {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-        $row = $queryBuilder
-            ->select('uid')
-            ->from('fe_users')
-            ->where(
-                $queryBuilder->expr()->eq(
-                    'username',
-                    $queryBuilder->createNamedParameter($username),
-                ),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->expr()->eq('deleted', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
-            return null;
-        }
-
-        $rawUid = $row['uid'] ?? null;
-
-        return \is_numeric($rawUid) ? (int) $rawUid : null;
+        return $this->credentialRepository->findFeUserUidByUsername($username);
     }
 }

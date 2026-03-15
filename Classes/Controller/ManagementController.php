@@ -50,8 +50,11 @@ final class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
-        $username = (string) ($feUser->user['username'] ?? '');
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $username = \is_string($userRow['username'] ?? null) ? (string) $userRow['username'] : '';
 
         try {
             $site = $this->siteConfigurationService->getCurrentSite($request);
@@ -105,7 +108,10 @@ final class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
 
@@ -195,7 +201,10 @@ final class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
             $site = $this->siteConfigurationService->getCurrentSite($request);
@@ -234,7 +243,10 @@ final class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
         $credentialUid = self::intFrom($body['uid'] ?? null);
@@ -276,7 +288,10 @@ final class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
         $credentialUid = self::intFrom($body['uid'] ?? null);

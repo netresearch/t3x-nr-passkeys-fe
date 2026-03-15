@@ -104,10 +104,12 @@ final class FrontendConfiguration
             $extConfApi = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
                 \TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class,
             );
-            $settings = $extConfApi->get('nr_passkeys_fe');
-            if (!\is_array($settings)) {
-                $settings = [];
+            $rawSettings = $extConfApi->get('nr_passkeys_fe');
+            if (!\is_array($rawSettings)) {
+                $rawSettings = [];
             }
+            /** @var array<string, mixed> $settings */
+            $settings = $rawSettings;
         } catch (Throwable) {
             $settings = [];
         }

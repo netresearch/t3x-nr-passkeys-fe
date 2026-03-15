@@ -24,6 +24,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use Webauthn\PublicKeyCredentialCreationOptions;
 
 #[CoversClass(ManagementController::class)]
@@ -295,15 +296,8 @@ final class ManagementControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, string $username = '', array $body = []): ServerRequest
     {
-        $feUser = new class ($uid, $username) {
-            /** @var array<string, mixed> */
-            public array $user;
-
-            public function __construct(int $uid, string $username)
-            {
-                $this->user = ['uid' => $uid, 'username' => $username];
-            }
-        };
+        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser->user = ['uid' => $uid, 'username' => $username];
 
         return (new ServerRequest('https://example.com/', 'POST'))
             ->withAttribute('frontend.user', $feUser)

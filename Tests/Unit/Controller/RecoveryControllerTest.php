@@ -11,8 +11,8 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
-use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -20,13 +20,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(RecoveryController::class)]
 final class RecoveryControllerTest extends TestCase
 {
     private RecoveryCodeService&MockObject $recoveryCodeService;
     private RateLimiterService&MockObject $rateLimiterService;
-    private SiteConfigurationService&MockObject $siteConfigService;
+    private FrontendCredentialRepository&MockObject $credentialRepository;
     private RecoveryController $subject;
 
     protected function setUp(): void
@@ -35,12 +36,12 @@ final class RecoveryControllerTest extends TestCase
 
         $this->recoveryCodeService = $this->createMock(RecoveryCodeService::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
 
         $this->subject = new RecoveryController(
             $this->recoveryCodeService,
             $this->rateLimiterService,
-            $this->siteConfigService,
+            $this->credentialRepository,
             new NullLogger(),
         );
     }
@@ -139,15 +140,8 @@ final class RecoveryControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid): ServerRequest
     {
-        $feUser = new class ($uid) {
-            /** @var array<string, mixed> */
-            public array $user;
-
-            public function __construct(int $uid)
-            {
-                $this->user = ['uid' => $uid];
-            }
-        };
+        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))
             ->withAttribute('frontend.user', $feUser)

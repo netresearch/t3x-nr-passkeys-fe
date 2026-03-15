@@ -309,7 +309,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     private function resolveSite(): ?SiteInterface
     {
         $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
-        if ($request === null) {
+        if (!$request instanceof ServerRequestInterface) {
             return null;
         }
 
@@ -328,7 +328,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     private function setFeUserSessionKey(string $key, mixed $value): void
     {
         $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
-        if ($request === null) {
+        if (!$request instanceof ServerRequestInterface) {
             return;
         }
 

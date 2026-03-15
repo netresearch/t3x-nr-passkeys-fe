@@ -16,8 +16,6 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Database\Connection;
-use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
 /**
@@ -33,7 +31,6 @@ final class AdminController
     public function __construct(
         private readonly FrontendCredentialRepository $credentialRepository,
         private readonly RateLimiterService $rateLimiterService,
-        private readonly ConnectionPool $connectionPool,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -181,20 +178,9 @@ final class AdminController
         }
 
         // Validate feUserUid matches username to ensure audit-log integrity
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('fe_users')
-            ->where(
-                $queryBuilder->expr()->eq(
-                    'uid',
-                    $queryBuilder->createNamedParameter($feUserUid, Connection::PARAM_INT),
-                ),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
+        $row = $this->credentialRepository->findFeUserByUid($feUserUid);
 
-        if ($row === false || $row['username'] !== $username) {
+        if ($row === null || $row['username'] !== $username) {
             return new JsonResponse(['error' => 'User not found or username mismatch'], 404);
         }
 

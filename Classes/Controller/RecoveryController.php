@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -32,6 +33,7 @@ final class RecoveryController
     public function __construct(
         private readonly RecoveryCodeService $recoveryCodeService,
         private readonly RateLimiterService $rateLimiterService,
+        private readonly FrontendCredentialRepository $credentialRepository,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -45,7 +47,10 @@ final class RecoveryController
     public function generateAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        $feUserUid = (int) ($feUser->user['uid'] ?? 0);
+        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        /** @var array<string, mixed> $userRow */
+        $userRow = $feUser->user;
+        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
             $codes = $this->recoveryCodeService->generate($feUserUid);
@@ -155,33 +160,6 @@ final class RecoveryController
 
     private function findFeUserUid(string $username): ?int
     {
-        try {
-            /** @var \TYPO3\CMS\Core\Database\ConnectionPool $connectionPool */
-            $connectionPool = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class);
-            $queryBuilder = $connectionPool->getQueryBuilderForTable('fe_users');
-            $row = $queryBuilder
-                ->select('uid')
-                ->from('fe_users')
-                ->where(
-                    $queryBuilder->expr()->eq(
-                        'username',
-                        $queryBuilder->createNamedParameter($username),
-                    ),
-                    $queryBuilder->expr()->eq('disable', 0),
-                    $queryBuilder->expr()->eq('deleted', 0),
-                )
-                ->executeQuery()
-                ->fetchAssociative();
-
-            if ($row === false) {
-                return null;
-            }
-
-            $rawUid = $row['uid'] ?? null;
-
-            return \is_numeric($rawUid) ? (int) $rawUid : null;
-        } catch (Throwable) {
-            return null;
-        }
+        return $this->credentialRepository->findFeUserUidByUsername($username);
     }
 }

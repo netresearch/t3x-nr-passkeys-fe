@@ -25,6 +25,7 @@ use RuntimeException;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(EidDispatcher::class)]
 final class EidDispatcherTest extends TestCase
@@ -137,10 +138,8 @@ final class EidDispatcherTest extends TestCase
     #[DataProvider('protectedActionsProvider')]
     public function protectedActionWithZeroUidFeUserReturns401(string $action): void
     {
-        $feUserMock = new class {
-            /** @var array<string, mixed> */
-            public array $user = ['uid' => 0];
-        };
+        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock->user = ['uid' => 0];
 
         $request = $this->buildRequest(['action' => $action])
             ->withAttribute('frontend.user', $feUserMock);
@@ -158,10 +157,8 @@ final class EidDispatcherTest extends TestCase
         $controllerMock = $this->createProtectedActionControllerMock($action, $expectedResponse);
         $this->registerControllerMock($action, $controllerMock);
 
-        $feUserMock = new class {
-            /** @var array<string, mixed> */
-            public array $user = ['uid' => 42];
-        };
+        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock->user = ['uid' => 42];
 
         $request = $this->buildRequest(['action' => $action])
             ->withAttribute('frontend.user', $feUserMock);

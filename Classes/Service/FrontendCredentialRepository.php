@@ -328,6 +328,69 @@ final class FrontendCredentialRepository
         );
     }
 
+    /**
+     * Find an active frontend user UID by username.
+     *
+     * Queries the fe_users table for a non-disabled, non-deleted user.
+     */
+    public function findFeUserUidByUsername(string $username): ?int
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+        $row = $queryBuilder
+            ->select('uid')
+            ->from('fe_users')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'username',
+                    $queryBuilder->createNamedParameter($username),
+                ),
+                $queryBuilder->expr()->eq('disable', 0),
+                $queryBuilder->expr()->eq('deleted', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if ($row === false) {
+            return null;
+        }
+
+        $rawUid = $row['uid'] ?? null;
+
+        return \is_numeric($rawUid) ? (int) $rawUid : null;
+    }
+
+    /**
+     * Look up a frontend user's username by UID.
+     *
+     * Returns null if no matching active user is found.
+     *
+     * @return array{uid: int, username: string}|null
+     */
+    public function findFeUserByUid(int $uid): ?array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+        $row = $queryBuilder
+            ->select('uid', 'username')
+            ->from('fe_users')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
+                ),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return [
+            'uid' => \is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : 0,
+            'username' => \is_string($row['username'] ?? null) ? (string) $row['username'] : '',
+        ];
+    }
+
     private function getQueryBuilder(): QueryBuilder
     {
         return $this->connectionPool->getQueryBuilderForTable(self::TABLE);

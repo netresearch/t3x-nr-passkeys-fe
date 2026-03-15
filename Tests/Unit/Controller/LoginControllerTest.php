@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
-use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
@@ -22,9 +21,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
@@ -36,7 +32,6 @@ final class LoginControllerTest extends TestCase
     private FrontendCredentialRepository&MockObject $credentialRepository;
     private RateLimiterService&MockObject $rateLimiterService;
     private ChallengeService&MockObject $challengeService;
-    private ConnectionPool&MockObject $connectionPool;
     private SiteInterface&MockObject $site;
     private LoginController $subject;
 
@@ -49,7 +44,6 @@ final class LoginControllerTest extends TestCase
         $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
         $this->challengeService = $this->createMock(ChallengeService::class);
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->site = $this->createMock(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
@@ -64,7 +58,6 @@ final class LoginControllerTest extends TestCase
             $this->credentialRepository,
             $this->rateLimiterService,
             $this->challengeService,
-            $this->connectionPool,
             new NullLogger(),
         );
     }
@@ -265,44 +258,14 @@ final class LoginControllerTest extends TestCase
 
     private function setupDbUserFound(int $uid): void
     {
-        $expr = $this->createMock(ExpressionBuilder::class);
-        $expr->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn(['uid' => $uid]);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('expr')->willReturn($expr);
-        $queryBuilder->method('createNamedParameter')->willReturnArgument(0);
-
-        $this->connectionPool->method('getQueryBuilderForTable')
-            ->with('fe_users')
-            ->willReturn($queryBuilder);
+        $this->credentialRepository->method('findFeUserUidByUsername')
+            ->willReturn($uid);
     }
 
     private function setupDbUserNotFound(): void
     {
-        $expr = $this->createMock(ExpressionBuilder::class);
-        $expr->method('eq')->willReturn('1=0');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn(false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('expr')->willReturn($expr);
-        $queryBuilder->method('createNamedParameter')->willReturnArgument(0);
-
-        $this->connectionPool->method('getQueryBuilderForTable')
-            ->with('fe_users')
-            ->willReturn($queryBuilder);
+        $this->credentialRepository->method('findFeUserUidByUsername')
+            ->willReturn(null);
     }
 
     private function assertJsonKey(string $key, \Psr\Http\Message\ResponseInterface $response): void

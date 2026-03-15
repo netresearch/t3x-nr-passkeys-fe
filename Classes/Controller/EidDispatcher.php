@@ -62,7 +62,14 @@ final class EidDispatcher
         // Enforce FE authentication for non-public actions
         if (!\in_array($action, self::PUBLIC_ACTIONS, true)) {
             $feUser = $request->getAttribute('frontend.user');
-            $feUserUid = \is_object($feUser) ? (int) ($feUser->user['uid'] ?? 0) : 0;
+            if (!$feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+                return new JsonResponse(['error' => 'Authentication required'], 401);
+            }
+
+            $userRow = $feUser->user;
+            $feUserUid = \is_array($userRow) && \is_numeric($userRow['uid'] ?? null)
+                ? (int) $userRow['uid']
+                : 0;
 
             if ($feUserUid === 0) {
                 return new JsonResponse(['error' => 'Authentication required'], 401);
@@ -71,10 +78,11 @@ final class EidDispatcher
 
         [$controllerClass, $method] = self::ACTION_MAP[$action];
 
-        /** @var object $controller */
+        /** @var LoginController|ManagementController|RecoveryController|EnrollmentController $controller */
         $controller = GeneralUtility::makeInstance($controllerClass);
 
         try {
+            /** @phpstan-ignore method.notFound (dynamic dispatch based on ACTION_MAP) */
             return $controller->$method($request);
         } catch (Throwable) {
             return new JsonResponse(['error' => 'Internal error'], 500);

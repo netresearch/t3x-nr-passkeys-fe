@@ -19,9 +19,6 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Http\ServerRequest;
 
 #[CoversClass(AdminController::class)]
@@ -29,7 +26,6 @@ final class AdminControllerTest extends TestCase
 {
     private FrontendCredentialRepository&MockObject $credentialRepository;
     private RateLimiterService&MockObject $rateLimiterService;
-    private ConnectionPool&MockObject $connectionPool;
     private AdminController $subject;
 
     protected function setUp(): void
@@ -38,12 +34,10 @@ final class AdminControllerTest extends TestCase
 
         $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
             $this->rateLimiterService,
-            $this->connectionPool,
             new NullLogger(),
         );
     }
@@ -322,23 +316,10 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $expr = $this->createMock(ExpressionBuilder::class);
-        $expr->method('eq')->willReturn('1=1');
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expr);
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn(false);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('createNamedParameter')->willReturnArgument(0);
-
-        $this->connectionPool
-            ->method('getQueryBuilderForTable')
-            ->with('fe_users')
-            ->willReturn($queryBuilder);
+        $this->credentialRepository
+            ->method('findFeUserByUid')
+            ->with(42)
+            ->willReturn(null);
 
         $request = (new ServerRequest('POST', '/nr-passkeys-fe/admin/unlock'))
             ->withParsedBody(['feUserUid' => 42, 'username' => 'ghost']);
@@ -351,23 +332,10 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $expr = $this->createMock(ExpressionBuilder::class);
-        $expr->method('eq')->willReturn('1=1');
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expr);
-        $queryBuilder->method('createNamedParameter')->willReturnArgument(0);
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn(['uid' => 42, 'username' => 'johndoe']);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-
-        $this->connectionPool
-            ->method('getQueryBuilderForTable')
-            ->with('fe_users')
-            ->willReturn($queryBuilder);
+        $this->credentialRepository
+            ->method('findFeUserByUid')
+            ->with(42)
+            ->willReturn(['uid' => 42, 'username' => 'johndoe']);
 
         $this->rateLimiterService
             ->expects($this->once())
@@ -388,23 +356,10 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $expr = $this->createMock(ExpressionBuilder::class);
-        $expr->method('eq')->willReturn('1=1');
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expr);
-        $queryBuilder->method('createNamedParameter')->willReturnArgument(0);
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn(['uid' => 42, 'username' => 'differentuser']);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-
-        $this->connectionPool
-            ->method('getQueryBuilderForTable')
-            ->with('fe_users')
-            ->willReturn($queryBuilder);
+        $this->credentialRepository
+            ->method('findFeUserByUid')
+            ->with(42)
+            ->willReturn(['uid' => 42, 'username' => 'differentuser']);
 
         $request = (new ServerRequest('POST', '/nr-passkeys-fe/admin/unlock'))
             ->withParsedBody(['feUserUid' => 42, 'username' => 'johndoe']);
