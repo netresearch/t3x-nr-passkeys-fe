@@ -25,7 +25,7 @@ use TYPO3\CMS\Core\Utility\StringUtility;
  *
  * @internal
  */
-class PasskeyFeInfoElement extends AbstractFormElement
+final class PasskeyFeInfoElement extends AbstractFormElement
 {
     public function __construct(
         private readonly FrontendCredentialRepository $credentialRepository,
