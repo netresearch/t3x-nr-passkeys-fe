@@ -26,7 +26,7 @@ use TYPO3\CMS\Core\Page\AssetCollector;
  */
 #[AsEventListener(
     identifier: 'nr-passkeys-fe/inject-passkey-login-fields',
-    event: \TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent::class,
+    event: 'TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent',
 )]
 final readonly class InjectPasskeyLoginFields
 {
