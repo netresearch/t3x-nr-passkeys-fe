@@ -21,7 +21,7 @@ parameters:
             identifier: ergebnis.noNullableReturnTypeDeclaration
             reportUnmatched: false
         -
-            identifier: ergebnis.noNullableParameterTypeDeclaration
+            identifier: ergebnis.noParameterWithNullableTypeDeclaration
             reportUnmatched: false
         -
             identifier: ergebnis.noIsset
