@@ -2,10 +2,14 @@
 /composer.lock
 /node_modules/
 /var/
-/.ddev/
 /.env
 /.vscode/
 /.idea/
 /.php-cs-fixer.cache
 /infection.log
 /infection-summary.log
+/coverage/
+*.coverage.xml
+*.coverage.html
+/typo3temp/
+/.cache/

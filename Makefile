@@ -5,6 +5,71 @@ help: ## Show available targets
 	@awk 'BEGIN{FS=":.*##";print "\nUsage: make <target>\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-22s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 # ===================================
+# DDEV Environment
+# ===================================
+
+.PHONY: up
+up: ## Start DDEV, install all TYPO3 versions, render docs
+	ddev start
+	ddev install-all
+	ddev docs
+	@echo ""
+	@echo "All ready! Visit: https://nr-passkeys-fe.ddev.site/"
+
+.PHONY: start
+start: ## Start DDEV environment
+	ddev start
+
+.PHONY: stop
+stop: ## Stop DDEV environment
+	ddev stop
+
+.PHONY: install-v13
+install-v13: ## Install TYPO3 13.4 LTS with extension
+	ddev install-v13
+
+.PHONY: install-v14
+install-v14: ## Install TYPO3 14.x with extension
+	ddev install-v14
+
+.PHONY: install-all
+install-all: ## Install all supported TYPO3 versions
+	ddev install-all
+
+.PHONY: ssh
+ssh: ## SSH into DDEV web container
+	ddev ssh
+
+.PHONY: docs
+docs: ## Render TYPO3 extension documentation
+	ddev docs
+
+.PHONY: urls
+urls: ## Show all access URLs
+	@echo ""
+	@echo "nr_passkeys_fe - Access URLs"
+	@echo "==============================="
+	@echo ""
+	@echo "Landing page:"
+	@echo "  https://nr-passkeys-fe.ddev.site/"
+	@echo ""
+	@echo "TYPO3 13.4 LTS:"
+	@echo "  Frontend: https://v13.nr-passkeys-fe.ddev.site/"
+	@echo "  Backend:  https://v13.nr-passkeys-fe.ddev.site/typo3/"
+	@echo ""
+	@echo "TYPO3 14.x:"
+	@echo "  Frontend: https://v14.nr-passkeys-fe.ddev.site/"
+	@echo "  Backend:  https://v14.nr-passkeys-fe.ddev.site/typo3/"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  https://docs.nr-passkeys-fe.ddev.site/"
+	@echo ""
+	@echo "Backend Credentials:"
+	@echo "  Username: admin"
+	@echo "  Password: Joh316!!"
+	@echo ""
+
+# ===================================
 # Code Quality
 # ===================================
 
@@ -43,9 +108,25 @@ test-fuzz: ## Run fuzz tests
 mutation: ## Run mutation tests (Infection)
 	composer ci:mutation
 
+.PHONY: test-js
+test-js: ## Run JavaScript unit tests (Vitest)
+	npm run test:js
+
+.PHONY: test-js-coverage
+test-js-coverage: ## Run JavaScript unit tests with coverage
+	npm run test:js:coverage
+
+.PHONY: test-e2e
+test-e2e: ## Run E2E tests (requires DDEV running)
+	npm run test:e2e
+
+.PHONY: test-e2e-headed
+test-e2e-headed: ## Run E2E tests in headed browser
+	npm run test:e2e:headed
+
 .PHONY: ci
-ci: cgl phpstan test-unit test-fuzz ## Run all local CI checks (no DB required)
+ci: cgl phpstan test-unit test-fuzz test-js ## Run all local CI checks (no DB required)
 
 .PHONY: clean
 clean: ## Clean temporary files and caches
-	rm -rf .php-cs-fixer.cache var/ infection.log infection-summary.log .phpunit.result.cache coverage/
+	rm -rf .php-cs-fixer.cache var/ infection.log infection-summary.log .phpunit.result.cache coverage/ test-results/ playwright-report/

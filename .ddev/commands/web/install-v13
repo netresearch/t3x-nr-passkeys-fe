@@ -1,0 +1,107 @@
+#!/bin/bash
+
+## Description: Install TYPO3 13.4 LTS with nr_passkeys_fe extension
+## Usage: install-v13
+## Example: ddev install-v13
+
+set -e
+
+VERSION=v13
+INSTALL_DIR="/var/www/html/$VERSION"
+FE_EXTENSION_PATH="/var/www/nr_passkeys_fe"
+BE_EXTENSION_PATH="/var/www/nr_passkeys_be"
+
+echo "Installing TYPO3 v13.4 LTS with nr_passkeys_fe extension..."
+echo ""
+
+# Ensure proper ownership of installation directory (volume may be root-owned initially)
+echo "Creating installation directory..."
+sudo chown -R "$(id -u):$(id -g)" "$INSTALL_DIR" 2>/dev/null || true
+rm -rf "$INSTALL_DIR"/* "$INSTALL_DIR"/.[!.]* 2>/dev/null || true
+mkdir -p "$INSTALL_DIR"
+
+# Create database
+echo "Setting up database..."
+mysql -h db -u root -p"root" -e "DROP DATABASE IF EXISTS ${VERSION};"
+mysql -h db -u root -p"root" -e "CREATE DATABASE ${VERSION};"
+
+# Bootstrap composer project
+echo "Bootstrapping composer project..."
+cd "$INSTALL_DIR"
+echo "{}" > composer.json
+composer config extra.typo3/cms.web-dir public -d "$INSTALL_DIR"
+composer config --no-plugins allow-plugins.typo3/cms-composer-installers true -d "$INSTALL_DIR"
+composer config --no-plugins allow-plugins.typo3/class-alias-loader true -d "$INSTALL_DIR"
+
+# Add path repositories for local extensions
+composer config repositories.nr_passkeys_be path "$BE_EXTENSION_PATH" -d "$INSTALL_DIR"
+composer config repositories.nr_passkeys_fe path "$FE_EXTENSION_PATH" -d "$INSTALL_DIR"
+
+# Install TYPO3 v13 with both extensions
+composer req t3/cms:'^13' netresearch/nr-passkeys-be:'*@dev' netresearch/nr-passkeys-fe:'*@dev' --no-progress -n -d "$INSTALL_DIR"
+composer req typo3/cms-extensionmanager --no-progress -n -d "$INSTALL_DIR"
+composer req --dev typo3/cms-styleguide --no-progress -n -d "$INSTALL_DIR"
+composer req typo3/cms-introduction --no-progress -n -d "$INSTALL_DIR"
+
+# Setup TYPO3
+echo "Running TYPO3 setup..."
+vendor/bin/typo3 setup -n \
+    --dbname="$VERSION" \
+    --password=root \
+    --create-site="https://${VERSION}.nr-passkeys-fe.ddev.site" \
+    --admin-user-password="$TYPO3_SETUP_ADMIN_PASSWORD"
+
+# Configure development settings
+echo "Configuring development settings..."
+mkdir -p "$INSTALL_DIR/config/system"
+cat > "$INSTALL_DIR/config/system/additional.php" << 'ADDITIONALPHP'
+<?php
+// Development settings
+$GLOBALS['TYPO3_CONF_VARS']['BE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['FE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['devIPmask'] = '*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
+
+// Mail configuration (Mailpit)
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'smtp';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_smtp_server'] = 'localhost:1025';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'admin@example.com';
+
+// Graphics
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = '/usr/bin/';
+
+// Security settings for DDEV multi-subdomain environment
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceReferrer'] = false;
+ADDITIONALPHP
+
+# Enable deprecation log
+if [ -f "$INSTALL_DIR/config/system/settings.php" ]; then
+    sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,/'disabled' => false,/" "$INSTALL_DIR/config/system/settings.php"
+fi
+
+# Setup extensions
+vendor/bin/typo3 extension:setup
+
+# Configure site sets for v13 (Bootstrap Package for frontend rendering)
+if [ -f config/sites/main/config.yaml ]; then
+    if ! grep -q "^dependencies:" config/sites/main/config.yaml; then
+        echo "" >> config/sites/main/config.yaml
+        echo "dependencies:" >> config/sites/main/config.yaml
+        echo "  - bootstrap-package/full" >> config/sites/main/config.yaml
+        echo "Site sets configured with Bootstrap Package"
+    fi
+fi
+
+# Generate styleguide demo content
+vendor/bin/typo3 styleguide:generate || echo "Styleguide generation skipped"
+
+vendor/bin/typo3 cache:flush
+
+echo ""
+echo "TYPO3 $VERSION installation complete!"
+echo "  Frontend: https://v13.nr-passkeys-fe.ddev.site/"
+echo "  Backend:  https://v13.nr-passkeys-fe.ddev.site/typo3/"
+echo ""
+echo "Credentials: admin / Joh316!!"

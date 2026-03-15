@@ -1,0 +1,37 @@
+services:
+    web:
+        environment:
+            - EXTENSION_KEY=nr_passkeys_fe
+            - PACKAGE_NAME=netresearch/nr-passkeys-fe
+
+            # TYPO3 setup config
+            - TYPO3_DB_DRIVER=mysqli
+            - TYPO3_DB_USERNAME=root
+            - TYPO3_DB_PASSWORD=root
+            - TYPO3_DB_HOST=db
+            - TYPO3_SETUP_ADMIN_EMAIL=admin@example.com
+            - TYPO3_SETUP_ADMIN_USERNAME=admin
+            - TYPO3_SETUP_ADMIN_PASSWORD=Joh316!!
+            - TYPO3_PROJECT_NAME=EXT:nr_passkeys_fe Dev Environment
+            - TYPO3_SERVER_TYPE=apache
+            - TYPO3_CONTEXT=Development
+        volumes:
+            # FE extension source (at project root)
+            - type: bind
+              source: ../
+              target: /var/www/nr_passkeys_fe
+              consistency: cached
+            # BE extension (path repository dependency)
+            - type: bind
+              source: ../../t3x-nr-passkeys-be/main
+              target: /var/www/nr_passkeys_be
+              consistency: cached
+            # TYPO3 v13 installation volume
+            - v13-data:/var/www/html/v13
+            # TYPO3 v14 installation volume
+            - v14-data:/var/www/html/v14
+volumes:
+    v13-data:
+        name: "${DDEV_SITENAME}-v13-data"
+    v14-data:
+        name: "${DDEV_SITENAME}-v14-data"
