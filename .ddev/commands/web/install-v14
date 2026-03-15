@@ -133,17 +133,18 @@ INSERT INTO pages (pid, title, slug, doktype, sorting)
 VALUES (1, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'login', '', 'Frontend Login', 100);
+-- v14: list_type removed, plugins registered directly as CType
+INSERT INTO tt_content (pid, CType, header, sorting)
+VALUES (@login_page, 'felogin_login', 'Frontend Login', 100);
 
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
+INSERT INTO tt_content (pid, CType, header, sorting)
+VALUES (@login_page, 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
 
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
+INSERT INTO tt_content (pid, CType, header, sorting)
+VALUES (@account_page, 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
 
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
+INSERT INTO tt_content (pid, CType, header, sorting)
+VALUES (@enrollment_page, 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
 SQL
 
 if [ -f config/sites/main/config.yaml ]; then
