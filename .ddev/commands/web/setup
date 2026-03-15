@@ -1,0 +1,13 @@
+#!/bin/bash
+## Description: Complete project setup (install all TYPO3 versions)
+## Usage: setup
+## Example: ddev setup
+
+set -e
+echo "Setting up nr_passkeys_fe development environment..."
+
+/mnt/ddev_config/commands/web/install-v13
+/mnt/ddev_config/commands/web/install-v14
+
+echo ""
+echo "Setup complete!"
