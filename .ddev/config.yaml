@@ -10,6 +10,8 @@ router_http_port: "80"
 router_https_port: "443"
 xdebug_enabled: false
 timezone: Europe/Berlin
+web_environment:
+  - TYPO3_CONTEXT=Development
 database:
   type: mariadb
   version: "10.11"

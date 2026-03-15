@@ -1,6 +1,6 @@
 <?php
 
-// Do NOT add declare(strict_types=1) — TER cannot parse ext_emconf.php with it.
+// No declare() here — TER requires plain PHP in ext_emconf.php.
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Passkeys Frontend Authentication',
