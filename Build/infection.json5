@@ -8,6 +8,7 @@
             "../Classes/Domain/Dto",
             "../Classes/Domain/Enum",
             "../Classes/Configuration",
+            "../Classes/Event",
             "../Classes/EventListener",
             "../Classes/Middleware",
             "../Classes/Form"

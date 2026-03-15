@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -57,7 +58,7 @@ final class AdminController
 
         $credentials = $this->credentialRepository->findAllByFeUser($feUserUid);
         $list = \array_map(
-            static fn($cred) => [
+            static fn(FrontendCredential $cred): array => [
                 'uid' => $cred->getUid(),
                 'label' => $cred->getLabel(),
                 'siteIdentifier' => $cred->getSiteIdentifier(),

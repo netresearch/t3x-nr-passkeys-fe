@@ -7,3 +7,5 @@
 /.gitignore export-ignore
 /Makefile export-ignore
 /package.json export-ignore
+/vitest.config.js export-ignore
+/CONTRIBUTING.md export-ignore

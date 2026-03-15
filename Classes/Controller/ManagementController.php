@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
@@ -207,7 +208,7 @@ final class ManagementController
         $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
 
         $list = \array_map(
-            static fn($cred) => [
+            static fn(FrontendCredential $cred): array => [
                 'uid' => $cred->getUid(),
                 'label' => $cred->getLabel(),
                 'aaguid' => $cred->getAaguid(),

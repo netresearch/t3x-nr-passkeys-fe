@@ -13,3 +13,7 @@
 *.coverage.html
 /typo3temp/
 /.cache/
+/.phpunit.result.cache
+/test-results/
+/playwright-report/
+/package-lock.json

@@ -11,7 +11,6 @@ namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
-use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -33,7 +32,6 @@ final class RecoveryController
     public function __construct(
         private readonly RecoveryCodeService $recoveryCodeService,
         private readonly RateLimiterService $rateLimiterService,
-        private readonly SiteConfigurationService $siteConfigurationService,
         private readonly LoggerInterface $logger,
     ) {}
 

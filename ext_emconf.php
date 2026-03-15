@@ -17,6 +17,8 @@ $EM_CONF[$_EXTKEY] = [
             'php' => '8.2.0-8.99.99',
             'nr_passkeys_be' => '0.6.0-0.99.99',
             'frontend' => '13.4.0-14.99.99',
+            'extbase' => '13.4.0-14.99.99',
+            'fluid' => '13.4.0-14.99.99',
         ],
         'conflicts' => [],
         'suggests' => [
