@@ -4,6 +4,12 @@
  * Auto-initializes on DOM elements with [data-nr-passkeys-fe="login"].
  * Configuration is read from data-* attributes on the container element.
  *
+ * Features:
+ * - Discoverable login (no username required)
+ * - Username-first login (fetch options with username)
+ * - Tab switching (Layout B - Tabbed)
+ * - Recovery form show/hide toggle (both layouts)
+ *
  * Flow:
  * 1. Check WebAuthn support + secure context
  * 2. Click "Sign in with a passkey"
@@ -21,7 +27,7 @@
     '<path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Z' +
     'M760-40l-60-60v-186q-44-13-72-49.5T600-420q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T790-290l50 50-60 60 60 60-80 80Z' +
     'M440-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z' +
-    'm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/>' +
+    'mm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/>' +
     '</svg>';
 
   function init() {
@@ -29,6 +35,9 @@
     for (var i = 0; i < containers.length; i++) {
       initContainer(containers[i]);
     }
+
+    // Initialize tab switching (Layout B)
+    initTabs();
   }
 
   function initContainer(container) {
@@ -38,6 +47,11 @@
 
     if (!eidUrl) {
       return;
+    }
+
+    // Resolve absolute eID URL when relative
+    if (eidUrl.indexOf('://') === -1 && eidUrl.charAt(0) === '/') {
+      eidUrl = window.location.origin + eidUrl;
     }
 
     var btnEl = container.querySelector('[data-action="passkey-login"]');
@@ -86,22 +100,78 @@
     }
 
     // Recovery form show/hide toggle
+    initRecoveryToggle(container);
+  }
+
+  /**
+   * Initialize recovery form show/hide for a login container.
+   * Works for both Layout B (tabbed) and Layout C (stacked).
+   */
+  function initRecoveryToggle(container) {
     var recoveryLink = container.querySelector('[data-action="show-recovery"]');
-    var recoverySection = document.getElementById('nr-passkeys-fe-recovery');
+    // The recovery section can be inside the container or a sibling
+    var recoverySection = container.querySelector('#nr-passkeys-fe-recovery')
+      || document.getElementById('nr-passkeys-fe-recovery');
+    var passkeyContent = container.querySelector('.nr-passkeys-fe-passkey-content');
+
     if (recoveryLink && recoverySection) {
       recoveryLink.addEventListener('click', function (e) {
         e.preventDefault();
-        container.style.display = 'none';
+        if (passkeyContent) {
+          passkeyContent.style.display = 'none';
+        }
         recoverySection.style.display = '';
       });
+
       var backLink = recoverySection.querySelector('[data-action="hide-recovery"]');
       if (backLink) {
         backLink.addEventListener('click', function (e) {
           e.preventDefault();
           recoverySection.style.display = 'none';
-          container.style.display = '';
+          if (passkeyContent) {
+            passkeyContent.style.display = '';
+          }
         });
       }
+    }
+  }
+
+  /**
+   * Initialize tab switching for Layout B (Tabbed).
+   * Looks for [data-action="switch-tab"] buttons in .nr-passkeys-fe-tabs.
+   */
+  function initTabs() {
+    var tabButtons = document.querySelectorAll('[data-action="switch-tab"]');
+    for (var i = 0; i < tabButtons.length; i++) {
+      tabButtons[i].addEventListener('click', function () {
+        var tabName = this.dataset.tab;
+        var tabContainer = this.closest('.nr-passkeys-fe-card');
+        if (!tabContainer) return;
+
+        // Deactivate all tabs
+        var allTabs = tabContainer.querySelectorAll('.nr-passkeys-fe-tab');
+        for (var j = 0; j < allTabs.length; j++) {
+          allTabs[j].classList.remove('nr-passkeys-fe-tab--active');
+          allTabs[j].setAttribute('aria-selected', 'false');
+        }
+
+        // Hide all panels
+        var allPanels = tabContainer.querySelectorAll('.nr-passkeys-fe-tabpanel');
+        for (var j = 0; j < allPanels.length; j++) {
+          allPanels[j].style.display = 'none';
+        }
+
+        // Activate clicked tab
+        this.classList.add('nr-passkeys-fe-tab--active');
+        this.setAttribute('aria-selected', 'true');
+
+        // Show corresponding panel
+        var panelId = 'nr-passkeys-fe-panel-' + tabName;
+        var panel = document.getElementById(panelId);
+        if (panel) {
+          panel.style.display = '';
+        }
+      });
     }
   }
 
@@ -120,7 +190,8 @@
     hideError(errorEl);
     var username = usernameInput ? usernameInput.value.trim() : '';
 
-    if (!username && !discoverable) {
+    // Only require username for non-discoverable (username-first) flow
+    if (!discoverable && !username) {
       showError(errorEl, 'Please enter your username.');
       if (usernameInput) {
         usernameInput.focus();

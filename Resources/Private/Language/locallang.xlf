@@ -20,6 +20,21 @@
             <trans-unit id="login.link.useRecoveryCode" resname="login.link.useRecoveryCode">
                 <source>Use a recovery code</source>
             </trans-unit>
+            <trans-unit id="login.heading" resname="login.heading">
+                <source>Sign in</source>
+            </trans-unit>
+            <trans-unit id="login.tab.passkey" resname="login.tab.passkey">
+                <source>Passkey</source>
+            </trans-unit>
+            <trans-unit id="login.tab.password" resname="login.tab.password">
+                <source>Password</source>
+            </trans-unit>
+            <trans-unit id="login.link.whatIsPasskey" resname="login.link.whatIsPasskey">
+                <source>What is a passkey?</source>
+            </trans-unit>
+            <trans-unit id="login.link.forgotPassword" resname="login.link.forgotPassword">
+                <source>Forgot password?</source>
+            </trans-unit>
             <trans-unit id="login.error.unsupported" resname="login.error.unsupported">
                 <source>Your browser does not support Passkeys (WebAuthn). Please use a modern browser.</source>
             </trans-unit>
