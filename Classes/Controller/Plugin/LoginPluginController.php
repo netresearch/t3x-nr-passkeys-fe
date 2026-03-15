@@ -33,7 +33,7 @@ final class LoginPluginController extends ActionController
             'discoverableEnabled' => true,
             'showPasswordFallback' => (bool)($this->settings['showPasswordFallback'] ?? true),
             'passwordFallbackUrl' => $baseUrl . '/passkey-login',
-            'recoveryUrl' => $baseUrl . '/passkey-login?recovery=1',
+            'recoveryUrl' => '#nr-passkeys-fe-recovery',
         ]);
 
         return $this->htmlResponse();

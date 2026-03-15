@@ -46,10 +46,62 @@
             </a>
         </f:if>
         <a class="nr-passkeys-fe-login__link nr-passkeys-fe-login__link--recovery"
-           href="{recoveryUrl}">
+           href="{recoveryUrl}"
+           data-action="show-recovery">
             <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
         </a>
     </nav>
+</div>
+
+<div id="nr-passkeys-fe-recovery"
+     class="nr-passkeys-fe-recovery"
+     data-nr-passkeys-fe="recovery"
+     data-eid-url="{eidUrl}"
+     data-site-identifier="{siteIdentifier}"
+     style="display:none">
+
+    <h3 class="nr-passkeys-fe-recovery__title">
+        <f:translate key="recovery.title" extensionName="nr_passkeys_fe" />
+    </h3>
+
+    <div class="nr-passkeys-fe-recovery__error" role="alert" style="display:none"></div>
+    <div class="nr-passkeys-fe-recovery__status" role="status" style="display:none"></div>
+
+    <div class="nr-passkeys-fe-recovery__field">
+        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-code">
+            <f:translate key="recovery.code.label" extensionName="nr_passkeys_fe" />
+        </label>
+        <input type="text"
+               id="nr-passkeys-fe-recovery-code"
+               name="recovery_code"
+               class="nr-passkeys-fe-recovery__input"
+               placeholder="XXXX-XXXX"
+               maxlength="9"
+               autocomplete="off"
+               autocorrect="off"
+               spellcheck="false" />
+    </div>
+
+    <div class="nr-passkeys-fe-recovery__field">
+        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-username">
+            <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
+        </label>
+        <input type="text"
+               id="nr-passkeys-fe-recovery-username"
+               name="recovery_username"
+               class="nr-passkeys-fe-recovery__input"
+               autocomplete="username" />
+    </div>
+
+    <button type="button"
+            class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary"
+            data-action="verify-recovery">
+        <f:translate key="recovery.verify.button" extensionName="nr_passkeys_fe" />
+    </button>
+
+    <a class="nr-passkeys-fe-recovery__back" href="#" data-action="hide-recovery">
+        <f:translate key="recovery.back.link" extensionName="nr_passkeys_fe" />
+    </a>
 </div>
 </f:section>
 </html>

@@ -10,6 +10,7 @@ VERSION=v14
 INSTALL_DIR="/var/www/html/$VERSION"
 FE_EXTENSION_PATH="/var/www/nr_passkeys_fe"
 BE_EXTENSION_PATH="/var/www/nr_passkeys_be"
+SITE_URL="https://${VERSION}.nr-passkeys-fe.ddev.site"
 
 echo "Installing TYPO3 v14 with nr_passkeys_fe extension..."
 echo ""
@@ -46,11 +47,11 @@ composer req typo3/cms-extensionmanager --no-progress -n -d "$INSTALL_DIR"
 composer req --dev typo3/cms-styleguide --no-progress -n -d "$INSTALL_DIR"
 
 # Introduction Package may not support latest TYPO3 v14 - install if available
+INTRO_INSTALLED=false
 if composer req typo3/cms-introduction --no-progress -n -d "$INSTALL_DIR" 2>/dev/null; then
     INTRO_INSTALLED=true
 else
     echo "Note: typo3/cms-introduction not available for TYPO3 v14 - skipping demo content"
-    INTRO_INSTALLED=false
 fi
 
 # Setup TYPO3
@@ -58,60 +59,122 @@ echo "Running TYPO3 setup..."
 vendor/bin/typo3 setup -n \
     --dbname="$VERSION" \
     --password=root \
-    --create-site="https://${VERSION}.nr-passkeys-fe.ddev.site" \
+    --create-site="$SITE_URL" \
     --admin-user-password="$TYPO3_SETUP_ADMIN_PASSWORD"
 
-# Write all configuration directly to additional.php (configuration:set removed in v14)
+# Write all configuration directly to additional.php
 echo "Configuring development settings..."
 mkdir -p "$INSTALL_DIR/config/system"
 cat > "$INSTALL_DIR/config/system/additional.php" << 'ADDITIONALPHP'
 <?php
-// Development settings
 $GLOBALS['TYPO3_CONF_VARS']['BE']['debug'] = true;
 $GLOBALS['TYPO3_CONF_VARS']['FE']['debug'] = true;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['devIPmask'] = '*';
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
-
-// Mail configuration (Mailpit)
 $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'smtp';
 $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_smtp_server'] = 'localhost:1025';
 $GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'admin@example.com';
-
-// Graphics
 $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
 $GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = '/usr/bin/';
-
-// Security settings for DDEV multi-subdomain environment
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceReferrer'] = false;
 ADDITIONALPHP
 
-# Enable deprecation log if settings.php exists
-if [ -f "$INSTALL_DIR/config/system/settings.php" ]; then
-    sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,/'disabled' => false,/" "$INSTALL_DIR/config/system/settings.php"
-fi
-
 # Setup extensions
 vendor/bin/typo3 extension:setup
 
-# Configure site sets for v14 (only if Bootstrap Package is available via introduction)
-if [ "$INTRO_INSTALLED" = "true" ] && [ -f config/sites/main/config.yaml ]; then
-    if ! grep -q "^dependencies:" config/sites/main/config.yaml; then
-        echo "" >> config/sites/main/config.yaml
-        echo "dependencies:" >> config/sites/main/config.yaml
-        echo "  - bootstrap-package/full" >> config/sites/main/config.yaml
-        echo "Site sets configured with Bootstrap Package"
-    fi
+# --- SITE CONFIGURATION ---
+# Detect introduction package (file-based site config in TYPO3 v13+)
+INTRO_ROOT=""
+if [ -f config/sites/introduction/config.yaml ]; then
+    INTRO_ROOT=$(grep -oP 'rootPageId:\s*\K\d+' config/sites/introduction/config.yaml 2>/dev/null || echo "")
+fi
+
+if [ -n "$INTRO_ROOT" ] && [ "$INTRO_ROOT" != "0" ]; then
+    echo "Introduction package installed (rootPageId=$INTRO_ROOT). Consolidating sites..."
+    rm -rf config/sites/main
+    cat > config/sites/introduction/config.yaml << SITEYAML
+base: '${SITE_URL}/'
+errorHandling: {}
+languages:
+  - title: English
+    enabled: true
+    languageId: 0
+    base: /
+    typo3Language: default
+    locale: en_US.UTF-8
+    iso-639-1: en
+    navigationTitle: English
+    hreflang: en-US
+    flag: us
+rootPageId: ${INTRO_ROOT}
+websiteTitle: 'EXT:nr_passkeys_fe Demo (v14)'
+dependencies:
+  - bootstrap-package/full
+settings:
+  nr_passkeys_fe:
+    enforcement: 'off'
+SITEYAML
+    DEMO_PID=$INTRO_ROOT
+else
+    echo "No introduction package. Setting up main site with our page template..."
+    # Update main site config with passkey settings
+    cat > config/sites/main/config.yaml << SITEYAML
+base: '${SITE_URL}/'
+errorHandling: {}
+languages:
+  - title: English
+    enabled: true
+    languageId: 0
+    base: /
+    locale: en_US.UTF-8
+    navigationTitle: English
+    flag: us
+rootPageId: 1
+websiteTitle: 'EXT:nr_passkeys_fe Demo (v14)'
+dependencies:
+  - typo3/fluid-styled-content
+  - typo3/fluid-styled-content-css
+settings:
+  nr_passkeys_fe:
+    enforcement: 'off'
+SITEYAML
+
+    # Create sys_template on root page for rendering (no Bootstrap Package = use our Page template)
+    mysql -h db -u root -proot "$VERSION" -e "
+    INSERT INTO sys_template (pid, title, root, clear, include_static_file, config)
+    VALUES (1, 'Main Template', 1, 3,
+      'EXT:fluid_styled_content/Configuration/TypoScript/,EXT:nr_passkeys_fe/Configuration/TypoScript',
+      'page = PAGE
+page.10 = FLUIDTEMPLATE
+page.10 {
+  templateRootPaths.10 = EXT:nr_passkeys_fe/Resources/Private/Templates/Page/
+  partialRootPaths.10 = EXT:nr_passkeys_fe/Resources/Private/Partials/
+  layoutRootPaths.10 = EXT:nr_passkeys_fe/Resources/Private/Layouts/
+  templateName = Default
+  variables {
+    content < styles.content.get
+  }
+}
+');
+    "
+    # Welcome content on root page
+    mysql -h db -u root -proot "$VERSION" -e "
+    UPDATE pages SET title = 'EXT:nr_passkeys_fe Demo' WHERE uid = 1;
+    INSERT INTO tt_content (pid, CType, header, bodytext, sorting)
+    VALUES (1, 'text', 'Welcome', '<p>This is the <strong>nr_passkeys_fe</strong> development environment for TYPO3 v14.</p><p>Use the navigation above to test passkey login, enrollment, and management.</p><p><strong>FE User:</strong> demo / password<br><strong>BE Admin:</strong> admin / Joh316!!</p>', 100);
+    "
+    DEMO_PID=1
 fi
 
 # Generate styleguide demo content
 vendor/bin/typo3 styleguide:generate --create || echo "Styleguide generation skipped"
 
-# Create demo pages with passkey plugins and test FE user
-echo "Creating demo pages and test FE user..."
-mysql -h db -u root -p"root" "$VERSION" <<'SQL'
+# Create demo pages and test FE user
+echo "Creating demo pages and test FE user (under pid=$DEMO_PID)..."
+mysql -h db -u root -p"root" "$VERSION" << SQL
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES (1, 'FE Users', '/fe-users-storage', 254, 9000);
+VALUES ($DEMO_PID, 'FE Users', '/fe-users-storage', 254, 9000);
 SET @storage_pid = LAST_INSERT_ID();
 
 INSERT INTO fe_groups (pid, title, passkey_enforcement)
@@ -119,18 +182,18 @@ VALUES (@storage_pid, 'Demo Users', 'off');
 SET @group_uid = LAST_INSERT_ID();
 
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
-VALUES (@storage_pid, 'demo', '$2y$12$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
+VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES (1, 'Passkey Login', '/passkey-login', 1, 9100);
+VALUES ($DEMO_PID, 'Passkey Login', '/passkey-login', 1, 9100);
 SET @login_page = LAST_INSERT_ID();
 
 INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
-VALUES (1, 'My Account', '/my-account', 1, 9200, '-2');
+VALUES ($DEMO_PID, 'My Account', '/my-account', 1, 9200, '-2');
 SET @account_page = LAST_INSERT_ID();
 
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES (1, 'Passkey Setup', '/passkey-setup', 1, 9300);
+VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
 -- v14: list_type removed, plugins registered directly as CType
@@ -147,17 +210,7 @@ INSERT INTO tt_content (pid, CType, header, sorting)
 VALUES (@enrollment_page, 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
 SQL
 
-if [ -f config/sites/main/config.yaml ]; then
-    if ! grep -q "nr_passkeys_fe:" config/sites/main/config.yaml; then
-        cat >> config/sites/main/config.yaml << 'SITECFG'
-
-settings:
-  nr_passkeys_fe:
-    enforcement: 'off'
-SITECFG
-    fi
-fi
-
+# TypoScript includes
 cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
 
 \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup(
@@ -168,7 +221,7 @@ cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
 );
 TSPHP
 
-# Look up actual page UIDs (auto-increment may differ from 10/11/12)
+# Dynamic page UID constants
 LOGIN_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1")
 ACCOUNT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1")
 ENROLLMENT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1")
@@ -182,6 +235,14 @@ plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = ${ENROLLMENT_UID}
 ');
 CONSTPHP
 
+# Add TypoScript to sys_template (if not already done for no-intro case)
+mysql -h db -u root -proot "$VERSION" -N -e "
+UPDATE sys_template
+SET include_static_file = CONCAT(include_static_file, ',EXT:nr_passkeys_fe/Configuration/TypoScript')
+WHERE include_static_file NOT LIKE '%nr_passkeys_fe%'
+LIMIT 1;
+"
+
 vendor/bin/typo3 cache:flush
 
 echo ""
@@ -189,8 +250,8 @@ echo "========================================"
 echo " TYPO3 $VERSION installation complete!"
 echo "========================================"
 echo ""
-echo "  Frontend: https://v14.nr-passkeys-fe.ddev.site/"
-echo "  Backend:  https://v14.nr-passkeys-fe.ddev.site/typo3/"
+echo "  Frontend: ${SITE_URL}/"
+echo "  Backend:  ${SITE_URL}/typo3/"
 echo ""
 echo "  Demo pages:"
 echo "    /passkey-login  - Login page (felogin + passkey plugin)"
