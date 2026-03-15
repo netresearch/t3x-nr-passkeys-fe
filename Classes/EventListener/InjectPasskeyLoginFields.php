@@ -24,7 +24,10 @@ use TYPO3\CMS\Core\Page\AssetCollector;
  * The JavaScript module is loaded via AssetCollector to ensure it is only
  * included once per page render.
  */
-#[AsEventListener(identifier: 'nr-passkeys-fe/inject-passkey-login-fields')]
+#[AsEventListener(
+    identifier: 'nr-passkeys-fe/inject-passkey-login-fields',
+    event: \TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent::class,
+)]
 final readonly class InjectPasskeyLoginFields
 {
     /**
