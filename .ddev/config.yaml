@@ -1,5 +1,5 @@
 name: nr-passkeys-fe
-type: php
+type: typo3
 docroot: ""
 no_project_mount: true
 php_version: "8.3"

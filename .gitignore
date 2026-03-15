@@ -1,4 +1,5 @@
 /.Build/
+/vendor/
 /composer.lock
 /node_modules/
 /var/

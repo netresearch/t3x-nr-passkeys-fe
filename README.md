@@ -1,3 +1,7 @@
+[![CI](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
+[![codecov](https://codecov.io/gh/netresearch/t3x-nr-passkeys-fe/graph/badge.svg)](https://codecov.io/gh/netresearch/t3x-nr-passkeys-fe)
+
 # Passkeys Frontend Authentication
 
 TYPO3 extension for passwordless frontend authentication via WebAuthn/FIDO2 Passkeys.
