@@ -17,4 +17,5 @@ jobs:
       run-rector: false
       run-functional-tests: true
       functional-test-db: mysql
+      upload-coverage: true
       remove-dev-deps: '[{"dep":"saschaegerer/phpstan-typo3","only-for":"^14"}]'
