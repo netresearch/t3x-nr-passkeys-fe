@@ -1,0 +1,16 @@
+parameters:
+    ignoreErrors:
+        # EidDispatcher uses dynamic method dispatch ($controller->$method()) which
+        # PHPStan cannot verify at the union type level. Each controller has its own
+        # set of methods, and the ACTION_MAP ensures the correct mapping.
+        -
+            message: '#Call to an undefined method .+Controller::.+Action\(\)#'
+            path: ../Classes/Controller/EidDispatcher.php
+            count: 10
+
+        # AbstractAuthenticationService::authUser receives untyped array from TYPO3 core.
+        # We cannot control the parent class signature.
+        -
+            message: '#Parameter \#1 \$user of method .+handlePasswordLogin\(\) expects array<string, mixed>, array given#'
+            path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+            count: 1

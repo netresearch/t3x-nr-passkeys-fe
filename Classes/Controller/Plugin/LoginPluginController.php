@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 /**
  * Extbase controller for the PasskeyLogin frontend plugin.
@@ -21,6 +22,7 @@ final class LoginPluginController extends ActionController
 {
     public function indexAction(): ResponseInterface
     {
+        /** @var SiteInterface|null $site */
         $site = $this->request->getAttribute('site');
         $siteIdentifier = $site?->getIdentifier() ?? '';
         $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');

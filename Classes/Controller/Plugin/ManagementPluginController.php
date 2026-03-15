@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 /**
  * Extbase controller for the PasskeyManagement frontend plugin.
@@ -20,6 +21,7 @@ final class ManagementPluginController extends ActionController
 {
     public function indexAction(): ResponseInterface
     {
+        /** @var SiteInterface|null $site */
         $site = $this->request->getAttribute('site');
         $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';

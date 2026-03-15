@@ -13,6 +13,7 @@ use Doctrine\DBAL\ParameterType;
 use JsonException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Psr\Http\Message\ServerRequestInterface;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;

@@ -82,7 +82,7 @@ final class EidDispatcher
         $controller = GeneralUtility::makeInstance($controllerClass);
 
         try {
-            /** @phpstan-ignore method.notFound (dynamic dispatch based on ACTION_MAP) */
+            // Dynamic dispatch: ACTION_MAP guarantees method exists (see phpstan-baseline.neon)
             return $controller->$method($request);
         } catch (Throwable) {
             return new JsonResponse(['error' => 'Internal error'], 500);
