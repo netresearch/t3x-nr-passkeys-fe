@@ -9,12 +9,25 @@ use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
 /**
  * Extbase controller for the PasskeyEnrollment frontend plugin.
- * Renders the Fluid template; actual enrollment logic runs via eID/JavaScript.
+ * Assigns template variables then renders Fluid; enrollment logic runs via eID/JS.
  */
 final class EnrollmentPluginController extends ActionController
 {
     public function indexAction(): ResponseInterface
     {
+        $site = $this->request->getAttribute('site');
+        $baseUrl = rtrim((string)($site?->getBase() ?? ''), '/');
+        $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
+
+        $this->view->assignMultiple([
+            'eidUrl' => $eidUrl,
+            'siteIdentifier' => $site?->getIdentifier() ?? '',
+            'registerOptionsUrl' => $eidUrl . '&action=registrationOptions',
+            'registerVerifyUrl' => $eidUrl . '&action=registrationVerify',
+            'enforcementLevel' => 'off',
+            'skipUrl' => $eidUrl . '&action=enrollmentSkip',
+        ]);
+
         return $this->htmlResponse();
     }
 }
