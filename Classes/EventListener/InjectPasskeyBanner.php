@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\EventListener;
 
+use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
@@ -111,7 +112,7 @@ final readonly class InjectPasskeyBanner
         string $level,
         bool $isDismissible,
         string $enrollmentUrl,
-        ?\DateTimeImmutable $graceDeadline,
+        ?DateTimeImmutable $graceDeadline,
     ): string {
         $enrollmentUrlEscaped = \htmlspecialchars($enrollmentUrl, ENT_QUOTES, 'UTF-8');
 
@@ -119,7 +120,7 @@ final readonly class InjectPasskeyBanner
         $description = 'Passkeys let you sign in faster and more securely using your device\'s biometrics or security key.';
 
         if ($level === 'required' && $graceDeadline !== null) {
-            $remainingDays = (int) $graceDeadline->diff(new \DateTimeImmutable())->days;
+            $remainingDays = (int) $graceDeadline->diff(new DateTimeImmutable())->days;
             $description = \sprintf(
                 'You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.',
                 \max(0, $remainingDays),

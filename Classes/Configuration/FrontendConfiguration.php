@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Configuration;
 
+use Throwable;
+
 /**
  * Frontend extension configuration value object.
  *
@@ -106,7 +108,7 @@ final class FrontendConfiguration
             if (!\is_array($settings)) {
                 $settings = [];
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             $settings = [];
         }
 

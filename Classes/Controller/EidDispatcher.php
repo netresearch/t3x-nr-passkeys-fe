@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Controller;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -75,7 +76,7 @@ final class EidDispatcher
 
         try {
             return $controller->$method($request);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
     }

@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
@@ -389,7 +390,7 @@ final class FrontendEnforcementServiceTest extends TestCase
                         return match ($table) {
                             'fe_users' => $feUserQb,
                             'fe_groups' => $groupQb,
-                            default => throw new \RuntimeException('Unexpected table: ' . $table),
+                            default => throw new RuntimeException('Unexpected table: ' . $table),
                         };
                     },
                 );

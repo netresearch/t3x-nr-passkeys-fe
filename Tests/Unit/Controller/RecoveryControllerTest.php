@@ -18,8 +18,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 #[CoversClass(RecoveryController::class)]
 final class RecoveryControllerTest extends TestCase
@@ -68,7 +68,7 @@ final class RecoveryControllerTest extends TestCase
     public function generateActionReturns500OnException(): void
     {
         $this->recoveryCodeService->method('generate')
-            ->willThrowException(new \RuntimeException('DB error'));
+            ->willThrowException(new RuntimeException('DB error'));
 
         $request = $this->buildRequestWithUser(42);
         $response = $this->subject->generateAction($request);
@@ -102,7 +102,7 @@ final class RecoveryControllerTest extends TestCase
     public function verifyActionReturns429WhenRateLimitExceeded(): void
     {
         $this->rateLimiterService->method('checkRateLimit')
-            ->willThrowException(new \RuntimeException('Rate limit exceeded'));
+            ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildRequest([
             'username' => 'user@example.com',
@@ -139,7 +139,7 @@ final class RecoveryControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid): ServerRequest
     {
-        $feUser = new class($uid) {
+        $feUser = new class ($uid) {
             /** @var array<string, mixed> */
             public array $user;
 

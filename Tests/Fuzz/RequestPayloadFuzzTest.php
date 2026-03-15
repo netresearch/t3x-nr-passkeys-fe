@@ -17,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
+use Throwable;
 
 #[CoversClass(EidDispatcher::class)]
 final class RequestPayloadFuzzTest extends TestCase
@@ -165,7 +166,7 @@ final class RequestPayloadFuzzTest extends TestCase
             try {
                 $response = $this->dispatcher->processRequest($request);
                 self::assertInstanceOf(ResponseInterface::class, $response);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 self::fail('EidDispatcher threw an unhandled exception for random action bytes: ' . $e->getMessage());
             }
         }
@@ -185,7 +186,7 @@ final class RequestPayloadFuzzTest extends TestCase
 
         $feUser = null;
         if ($authenticated) {
-            $feUser = new class () {
+            $feUser = new class {
                 /** @var array{uid: int} */
                 public array $user = ['uid' => 1];
             };

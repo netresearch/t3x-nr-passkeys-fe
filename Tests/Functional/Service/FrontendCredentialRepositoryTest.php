@@ -13,7 +13,7 @@ use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Database\Connection;
+use Throwable;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 #[CoversClass(FrontendCredentialRepository::class)]
@@ -508,7 +508,7 @@ final class FrontendCredentialRepositoryTest extends FunctionalTestCase
 
         $this->repository->save($credentialA);
 
-        $this->expectException(\Throwable::class);
+        $this->expectException(Throwable::class);
         $this->repository->save($credentialB);
     }
 

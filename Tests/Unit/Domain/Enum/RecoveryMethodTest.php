@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysFe\Domain\Enum\RecoveryMethod;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use ValueError;
 
 #[CoversClass(RecoveryMethod::class)]
 final class RecoveryMethodTest extends TestCase
@@ -52,7 +53,7 @@ final class RecoveryMethodTest extends TestCase
     #[Test]
     public function fromWithInvalidStringThrowsValueError(): void
     {
-        $this->expectException(\ValueError::class);
+        $this->expectException(ValueError::class);
         RecoveryMethod::from('invalid_method');
     }
 

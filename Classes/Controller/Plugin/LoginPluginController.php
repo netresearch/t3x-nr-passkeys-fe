@@ -23,15 +23,15 @@ final class LoginPluginController extends ActionController
     {
         $site = $this->request->getAttribute('site');
         $siteIdentifier = $site?->getIdentifier() ?? '';
-        $baseUrl = rtrim((string)($site?->getBase() ?? ''), '/');
+        $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
 
         // Default to discoverable (passkey-first). Empty string/null/missing = use default (true).
         $discoverableRaw = $this->settings['discoverableEnabled'] ?? '';
-        $discoverableEnabled = $discoverableRaw === '' || $discoverableRaw === null ? true : (bool)$discoverableRaw;
+        $discoverableEnabled = $discoverableRaw === '' || $discoverableRaw === null ? true : (bool) $discoverableRaw;
 
         $showPasswordRaw = $this->settings['showPasswordFallback'] ?? '';
-        $showPasswordFallback = $showPasswordRaw === '' || $showPasswordRaw === null ? true : (bool)$showPasswordRaw;
+        $showPasswordFallback = $showPasswordRaw === '' || $showPasswordRaw === null ? true : (bool) $showPasswordRaw;
 
         $this->view->assignMultiple([
             'eidUrl' => $eidUrl,

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Event;
 
+use Error;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyEnrollmentEvent;
@@ -21,6 +22,8 @@ use Netresearch\NrPasskeysFe\Event\RecoveryCodesGeneratedEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use ReflectionProperty;
 
 #[CoversClass(BeforePasskeyEnrollmentEvent::class)]
 #[CoversClass(AfterPasskeyEnrollmentEvent::class)]
@@ -55,7 +58,7 @@ final class EventsTest extends TestCase
     {
         $event = new BeforePasskeyEnrollmentEvent(1, 'site', 'json');
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->feUserUid = 99;
     }
@@ -86,7 +89,7 @@ final class EventsTest extends TestCase
         $credential = new FrontendCredential();
         $event = new AfterPasskeyEnrollmentEvent(1, $credential, 'site');
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->feUserUid = 99;
     }
@@ -123,7 +126,7 @@ final class EventsTest extends TestCase
     {
         $event = new BeforePasskeyAuthenticationEvent(null, '{}');
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->assertionJson = 'other';
     }
@@ -152,7 +155,7 @@ final class EventsTest extends TestCase
         $credential = new FrontendCredential();
         $event = new AfterPasskeyAuthenticationEvent(1, $credential);
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->feUserUid = 99;
     }
@@ -181,7 +184,7 @@ final class EventsTest extends TestCase
         $credential = new FrontendCredential();
         $event = new PasskeyRemovedEvent($credential, 1);
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->revokedBy = 99;
     }
@@ -207,7 +210,7 @@ final class EventsTest extends TestCase
     {
         $event = new RecoveryCodesGeneratedEvent(1, 10);
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->codeCount = 99;
     }
@@ -233,9 +236,9 @@ final class EventsTest extends TestCase
     {
         $event = new MagicLinkRequestedEvent(1, 'user@example.com');
 
-        $reflection = new \ReflectionClass($event);
+        $reflection = new ReflectionClass($event);
         $properties = $reflection->getProperties();
-        $propertyNames = \array_map(static fn (\ReflectionProperty $p): string => $p->getName(), $properties);
+        $propertyNames = \array_map(static fn(ReflectionProperty $p): string => $p->getName(), $properties);
 
         self::assertNotContains('token', $propertyNames, 'MagicLinkRequestedEvent must not expose the token for security reasons');
         self::assertNotContains('magicLinkToken', $propertyNames, 'MagicLinkRequestedEvent must not expose the token for security reasons');
@@ -246,7 +249,7 @@ final class EventsTest extends TestCase
     {
         $event = new MagicLinkRequestedEvent(1, 'user@example.com');
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->email = 'attacker@example.com';
     }
@@ -287,7 +290,7 @@ final class EventsTest extends TestCase
     {
         $event = new EnforcementLevelResolvedEvent(30, 'off');
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
         // @phpstan-ignore-next-line
         $event->feUserUid = 99;
     }

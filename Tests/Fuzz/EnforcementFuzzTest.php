@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Fuzz;
 
+use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -173,7 +174,7 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function graceDeadlineCanBeSetForRequiredLevel(): void
     {
-        $deadline = new \DateTimeImmutable('+7 days');
+        $deadline = new DateTimeImmutable('+7 days');
 
         $status = new FrontendEnforcementStatus(
             effectiveLevel: 'required',

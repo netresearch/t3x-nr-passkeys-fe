@@ -178,7 +178,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
             function (ServerRequestInterface $req) use (&$capturedRequest, $response): ResponseInterface {
                 $capturedRequest = $req;
                 return $response;
-            }
+            },
         );
         return $handler;
     }

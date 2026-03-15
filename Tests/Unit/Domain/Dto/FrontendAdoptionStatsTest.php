@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Domain\Dto;
 
+use Error;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendAdoptionStats;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -103,7 +104,7 @@ final class FrontendAdoptionStatsTest extends TestCase
             perGroupStats: [],
         );
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
 
         // @phpstan-ignore-next-line
         $stats->totalUsers = 99;

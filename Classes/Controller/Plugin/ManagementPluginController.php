@@ -21,7 +21,7 @@ final class ManagementPluginController extends ActionController
     public function indexAction(): ResponseInterface
     {
         $site = $this->request->getAttribute('site');
-        $baseUrl = rtrim((string)($site?->getBase() ?? ''), '/');
+        $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
 
         $this->view->assignMultiple([

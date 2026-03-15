@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Service;
 
 use Psr\Http\Message\ServerRequestInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 /**
@@ -108,14 +109,14 @@ final class SiteConfigurationService
      * TYPO3 adds the resolved site to the request attributes via
      * the SiteResolver middleware.
      *
-     * @throws \RuntimeException when the request has no site attribute
+     * @throws RuntimeException when the request has no site attribute
      */
     public function getCurrentSite(ServerRequestInterface $request): SiteInterface
     {
         $site = $request->getAttribute('site');
 
         if (!$site instanceof SiteInterface) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'No site found in request attributes. Ensure the SiteResolver middleware has run.',
                 1700100001,
             );

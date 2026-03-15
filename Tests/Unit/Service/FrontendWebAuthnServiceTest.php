@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 #[CoversClass(FrontendWebAuthnService::class)]
@@ -248,7 +249,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700200040);
 
         $service->createRegistrationOptions(1, 'user', \random_bytes(32), $this->site);
@@ -270,7 +271,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700200040);
 
         $service->createRegistrationOptions(1, 'user', \random_bytes(32), $this->site);

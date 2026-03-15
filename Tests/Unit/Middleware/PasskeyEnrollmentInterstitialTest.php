@@ -139,7 +139,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('off')
+            $this->makeStatus('off'),
         );
 
         $this->subject->process($request, $handler);
@@ -156,7 +156,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('encourage')
+            $this->makeStatus('encourage'),
         );
 
         $this->subject->process($request, $handler);
@@ -173,7 +173,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required')
+            $this->makeStatus('required'),
         );
 
         $this->subject->process($request, $handler);
@@ -190,7 +190,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days'))
+            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days')),
         );
 
         $this->subject->process($request, $handler);
@@ -212,7 +212,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days'))
+            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days')),
         );
 
         $response = $this->subject->process($request, $handler);
@@ -235,7 +235,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required', inGracePeriod: false, graceDeadline: null)
+            $this->makeStatus('required', inGracePeriod: false, graceDeadline: null),
         );
 
         $response = $this->subject->process($request, $handler);
@@ -258,7 +258,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('enforced')
+            $this->makeStatus('enforced'),
         );
 
         $response = $this->subject->process($request, $handler);
@@ -280,7 +280,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('enforced')
+            $this->makeStatus('enforced'),
         );
 
         $this->subject->process($request, $handler);

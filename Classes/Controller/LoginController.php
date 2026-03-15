@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
-use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;

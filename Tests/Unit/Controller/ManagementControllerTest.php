@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use Webauthn\PublicKeyCredentialCreationOptions;
@@ -91,7 +92,7 @@ final class ManagementControllerTest extends TestCase
     public function registrationOptionsActionReturns409WhenMaxPasskeysReached(): void
     {
         $this->enrollmentService->method('startEnrollment')
-            ->willThrowException(new \RuntimeException('Max reached', 1700300001));
+            ->willThrowException(new RuntimeException('Max reached', 1700300001));
 
         $request = $this->buildRequestWithUser(42, 'user@example.com');
         $response = $this->subject->registrationOptionsAction($request);
@@ -116,7 +117,7 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionReturns400WhenChallengeTokenInvalid(): void
     {
         $this->challengeService->method('verifyChallengeToken')
-            ->willThrowException(new \RuntimeException('Invalid'));
+            ->willThrowException(new RuntimeException('Invalid'));
 
         $request = $this->buildRequestWithUser(42, 'user@example.com', [
             'credential' => ['id' => 'abc'],
@@ -294,7 +295,7 @@ final class ManagementControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, string $username = '', array $body = []): ServerRequest
     {
-        $feUser = new class($uid, $username) {
+        $feUser = new class ($uid, $username) {
             /** @var array<string, mixed> */
             public array $user;
 

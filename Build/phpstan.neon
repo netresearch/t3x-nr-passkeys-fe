@@ -37,7 +37,7 @@ parameters:
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'
-            path: ../Classes/Authentication/PasskeyAuthenticationService.php
+            path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
 
 services:
     -

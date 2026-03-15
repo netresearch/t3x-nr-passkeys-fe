@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 use TYPO3\CMS\Core\Page\AssetCollector;
 
 #[CoversClass(InjectPasskeyLoginFields::class)]
@@ -47,7 +48,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         $this->assetCollector->expects(self::never())->method('addJavaScript');
 
         // Pass a plain stdClass as the event (not felogin event)
-        $this->subject->__invoke(new \stdClass());
+        $this->subject->__invoke(new stdClass());
     }
 
     #[Test]
@@ -62,7 +63,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         $this->assetCollector->expects(self::never())->method('addInlineJavaScript');
 
         // Pass a plain stdClass as the event (felogin guard runs first anyway)
-        $this->subject->__invoke(new \stdClass());
+        $this->subject->__invoke(new stdClass());
     }
 
     #[Test]

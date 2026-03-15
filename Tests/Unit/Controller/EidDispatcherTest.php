@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use InvalidArgumentException;
 use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
 use Netresearch\NrPasskeysFe\Controller\EnrollmentController;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
@@ -20,7 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -178,7 +179,7 @@ final class EidDispatcherTest extends TestCase
     public function controllerExceptionReturns500(): void
     {
         $loginMock = $this->createMock(LoginController::class);
-        $loginMock->method('optionsAction')->willThrowException(new \RuntimeException('Boom'));
+        $loginMock->method('optionsAction')->willThrowException(new RuntimeException('Boom'));
         GeneralUtility::addInstance(LoginController::class, $loginMock);
 
         $request = $this->buildRequest(['action' => 'loginOptions']);
@@ -220,7 +221,7 @@ final class EidDispatcherTest extends TestCase
             'loginOptions' => $this->createLoginMock('optionsAction', $response),
             'loginVerify' => $this->createLoginMock('verifyAction', $response),
             'recoveryVerify' => $this->createRecoveryMock('verifyAction', $response),
-            default => throw new \InvalidArgumentException("Unknown public action: $action"),
+            default => throw new InvalidArgumentException("Unknown public action: $action"),
         };
     }
 
@@ -238,7 +239,7 @@ final class EidDispatcherTest extends TestCase
             'recoveryGenerate' => $this->createRecoveryMock('generateAction', $response),
             'enrollmentStatus' => $this->createEnrollmentMock('statusAction', $response),
             'enrollmentSkip' => $this->createEnrollmentMock('skipAction', $response),
-            default => throw new \InvalidArgumentException("Unknown protected action: $action"),
+            default => throw new InvalidArgumentException("Unknown protected action: $action"),
         };
     }
 
@@ -280,7 +281,7 @@ final class EidDispatcherTest extends TestCase
             \in_array($action, ['registrationOptions', 'registrationVerify', 'manageList', 'manageRename', 'manageRemove'], true) => ManagementController::class,
             \in_array($action, ['recoveryGenerate', 'recoveryVerify'], true) => RecoveryController::class,
             \in_array($action, ['enrollmentStatus', 'enrollmentSkip'], true) => EnrollmentController::class,
-            default => throw new \InvalidArgumentException("Cannot determine controller for action: $action"),
+            default => throw new InvalidArgumentException("Cannot determine controller for action: $action"),
         };
 
         GeneralUtility::addInstance($controllerClass, $mock);

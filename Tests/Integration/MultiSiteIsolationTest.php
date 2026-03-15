@@ -90,11 +90,11 @@ final class MultiSiteIsolationTest extends FunctionalTestCase
         $siteBCredentials = $this->repository->findByFeUser(1, 'site-b');
 
         $siteAIds = \array_map(
-            static fn (FrontendCredential $c): string => $c->getCredentialId(),
+            static fn(FrontendCredential $c): string => $c->getCredentialId(),
             $siteACredentials,
         );
         $siteBIds = \array_map(
-            static fn (FrontendCredential $c): string => $c->getCredentialId(),
+            static fn(FrontendCredential $c): string => $c->getCredentialId(),
             $siteBCredentials,
         );
 

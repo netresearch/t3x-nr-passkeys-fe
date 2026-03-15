@@ -117,7 +117,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('off')
+            $this->makeStatus('off'),
         );
 
         ($this->subject)($event);
@@ -139,7 +139,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('encourage')
+            $this->makeStatus('encourage'),
         );
 
         ($this->subject)($event);
@@ -164,7 +164,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('encourage')
+            $this->makeStatus('encourage'),
         );
 
         ($this->subject)($event);
@@ -182,7 +182,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('enforced')
+            $this->makeStatus('enforced'),
         );
 
         ($this->subject)($event);
@@ -200,7 +200,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days'))
+            $this->makeStatus('required', inGracePeriod: true, graceDeadline: new DateTimeImmutable('+7 days')),
         );
 
         ($this->subject)($event);
@@ -218,7 +218,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('encourage')
+            $this->makeStatus('encourage'),
         );
 
         self::assertTrue($event->isCachingEnabled());
@@ -238,7 +238,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('encourage')
+            $this->makeStatus('encourage'),
         );
 
         ($this->subject)($event);

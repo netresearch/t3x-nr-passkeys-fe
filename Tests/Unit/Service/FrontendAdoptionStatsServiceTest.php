@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
@@ -228,7 +229,7 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         $credentialConnection->method('executeQuery')
             ->willReturnCallback(
                 static function () use (&$allSqlResults, &$sqlCallCount): Result {
-                    return $allSqlResults[$sqlCallCount++] ?? throw new \RuntimeException('No more SQL results');
+                    return $allSqlResults[$sqlCallCount++] ?? throw new RuntimeException('No more SQL results');
                 },
             );
 

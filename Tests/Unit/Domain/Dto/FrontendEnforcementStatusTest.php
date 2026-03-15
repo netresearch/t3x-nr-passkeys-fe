@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Domain\Dto;
 
 use DateTimeImmutable;
+use Error;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -89,7 +90,7 @@ final class FrontendEnforcementStatusTest extends TestCase
             recoveryCodesRemaining: 5,
         );
 
-        $this->expectException(\Error::class);
+        $this->expectException(Error::class);
 
         // @phpstan-ignore-next-line
         $status->effectiveLevel = 'off';

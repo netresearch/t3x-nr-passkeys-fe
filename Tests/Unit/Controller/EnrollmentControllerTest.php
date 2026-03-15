@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
@@ -109,7 +110,7 @@ final class EnrollmentControllerTest extends TestCase
     public function statusActionReturns500WhenSiteContextMissing(): void
     {
         $this->siteConfigService->method('getCurrentSite')
-            ->willThrowException(new \RuntimeException('No site'));
+            ->willThrowException(new RuntimeException('No site'));
 
         $request = $this->buildRequestWithUser(42);
         $response = $this->subject->statusAction($request);
@@ -147,7 +148,7 @@ final class EnrollmentControllerTest extends TestCase
 
         // Mock TSFE globals with a valid session nonce
         $sessionData = ['nr_passkeys_fe_enrollment_nonce' => $nonce];
-        $feUserMock = new class($sessionData) {
+        $feUserMock = new class ($sessionData) {
             /** @var array<string, mixed> */
             private array $sessionData;
             /** @var array<string, mixed> */
@@ -169,7 +170,7 @@ final class EnrollmentControllerTest extends TestCase
             }
         };
 
-        $tsfeMock = new class($feUserMock) {
+        $tsfeMock = new class ($feUserMock) {
             public object $fe_user;
 
             public function __construct(object $feUser)
@@ -197,7 +198,7 @@ final class EnrollmentControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, array $body = []): ServerRequest
     {
-        $feUser = new class($uid) {
+        $feUser = new class ($uid) {
             /** @var array<string, mixed> */
             public array $user;
 

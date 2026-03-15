@@ -21,7 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
-use TYPO3\CMS\Core\Database\Connection;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -77,7 +77,7 @@ final class LoginControllerTest extends TestCase
     public function optionsActionReturns429WhenRateLimitExceeded(): void
     {
         $this->rateLimiterService->method('checkRateLimit')
-            ->willThrowException(new \RuntimeException('Rate limit exceeded'));
+            ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildJsonRequest('POST', []);
         $response = $this->subject->optionsAction($request);
@@ -185,7 +185,7 @@ final class LoginControllerTest extends TestCase
     public function verifyActionReturns429WhenRateLimitExceeded(): void
     {
         $this->rateLimiterService->method('checkRateLimit')
-            ->willThrowException(new \RuntimeException('Rate limit exceeded'));
+            ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildJsonRequest('POST', [
             'assertion' => ['id' => 'abc', 'response' => []],
@@ -200,7 +200,7 @@ final class LoginControllerTest extends TestCase
     public function verifyActionReturns401WhenChallengeTokenInvalid(): void
     {
         $this->challengeService->method('verifyChallengeToken')
-            ->willThrowException(new \RuntimeException('Invalid token'));
+            ->willThrowException(new RuntimeException('Invalid token'));
 
         $request = $this->buildJsonRequest('POST', [
             'assertion' => ['id' => 'abc', 'response' => []],
@@ -216,7 +216,7 @@ final class LoginControllerTest extends TestCase
     {
         $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
         $this->webAuthnService->method('verifyAssertionResponse')
-            ->willThrowException(new \RuntimeException('Verification failed'));
+            ->willThrowException(new RuntimeException('Verification failed'));
 
         $request = $this->buildJsonRequest('POST', [
             'assertion' => ['id' => 'abc', 'response' => []],

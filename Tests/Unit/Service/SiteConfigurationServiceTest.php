@@ -11,12 +11,11 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
-use TYPO3\CMS\Core\Site\Entity\Site;
+use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 
@@ -205,7 +204,7 @@ final class SiteConfigurationServiceTest extends TestCase
             ->with('site')
             ->willReturn(null);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700100001);
 
         $this->subject->getCurrentSite($request);
