@@ -11,6 +11,7 @@
     <testsuites>
         <testsuite name="functional">
             <directory>../Tests/Functional</directory>
+            <directory>../Tests/Integration</directory>
         </testsuite>
     </testsuites>
     <source>
