@@ -41,7 +41,7 @@
         "infection/infection": "^0.32",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11.5 || ^12.1",
+        "phpunit/phpunit": "^11.5",
         "saschaegerer/phpstan-typo3": "^3.0",
         "typo3/testing-framework": "^9.0",
         "phpat/phpat": "^0.12.2",
@@ -89,6 +89,6 @@
         "ci:test:php:functional": "phpunit -c Build/phpunit.functional.xml",
         "ci:test:php:fuzz": "phpunit -c Build/phpunit.xml --testsuite fuzz",
         "ci:test:php:phpstan": "phpstan analyse -c Build/phpstan.neon",
-        "ci:test:php:unit": "phpunit -c Build/phpunit.xml --testsuite unit"
+        "ci:test:php:unit": "phpunit -c Build/phpunit.xml --testsuite unit "
     }
 }

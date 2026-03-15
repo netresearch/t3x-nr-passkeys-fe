@@ -6,8 +6,8 @@
          cacheResult="false"
          colors="true"
          executionOrder="depends,defects"
-         failOnRisky="false"
-         failOnWarning="false">
+         failOnRisky="true"
+         failOnWarning="true">
     <testsuites>
         <testsuite name="unit">
             <directory>../Tests/Unit</directory>
