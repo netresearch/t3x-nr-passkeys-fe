@@ -165,10 +165,15 @@ SET @group_uid = LAST_INSERT_ID();
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
 VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
--- Demo pages
+-- Demo page: Login with felogin (passkey button injected via PSR-14 event listener)
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Passkey Login', '/passkey-login', 1, 9100);
+VALUES ($DEMO_PID, 'Login (felogin + Passkey)', '/passkey-login', 1, 9100);
 SET @login_page = LAST_INSERT_ID();
+
+-- Demo page: Standalone passkey-only login (no felogin, just our plugin)
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'Passkey-Only Login', '/passkey-only', 1, 9150);
+SET @passkey_only_page = LAST_INSERT_ID();
 
 INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
 VALUES ($DEMO_PID, 'My Account', '/my-account', 1, 9200, '-2');
@@ -178,17 +183,19 @@ INSERT INTO pages (pid, title, slug, doktype, sorting)
 VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
--- felogin on login page
+-- Login page: felogin only (our PSR-14 listener injects the passkey button automatically)
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'felogin_login', '', 'Frontend Login', 100);
+VALUES (@login_page, 'felogin_login', '', 'Login (felogin with passkey injection)', 100);
 
--- Passkey plugins
+-- Passkey-only page: standalone passkey plugin (no felogin)
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
+VALUES (@passkey_only_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100);
 
+-- My Account: passkey management
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
 VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
 
+-- Enrollment page
 INSERT INTO tt_content (pid, CType, list_type, header, sorting)
 VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
 SQL
@@ -239,7 +246,8 @@ echo "  Frontend: ${SITE_URL}/"
 echo "  Backend:  ${SITE_URL}/typo3/"
 echo ""
 echo "  Demo pages:"
-echo "    /passkey-login  - Login page (felogin + passkey plugin)"
+echo "    /passkey-login  - felogin with passkey injection (PSR-14)"
+echo "    /passkey-only   - Standalone passkey-only login (no felogin)"
 echo "    /my-account     - Passkey management (requires login)"
 echo "    /passkey-setup  - Passkey enrollment"
 echo ""

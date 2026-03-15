@@ -184,9 +184,15 @@ SET @group_uid = LAST_INSERT_ID();
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
 VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
 
+-- Login with felogin (passkey button injected via PSR-14)
 INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Passkey Login', '/passkey-login', 1, 9100);
+VALUES ($DEMO_PID, 'Login (felogin + Passkey)', '/passkey-login', 1, 9100);
 SET @login_page = LAST_INSERT_ID();
+
+-- Standalone passkey-only login
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'Passkey-Only Login', '/passkey-only', 1, 9150);
+SET @passkey_only_page = LAST_INSERT_ID();
 
 INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
 VALUES ($DEMO_PID, 'My Account', '/my-account', 1, 9200, '-2');
@@ -197,11 +203,13 @@ VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
 SET @enrollment_page = LAST_INSERT_ID();
 
 -- v14: list_type removed, plugins registered directly as CType
+-- felogin only (PSR-14 listener injects passkey button)
 INSERT INTO tt_content (pid, CType, header, sorting)
-VALUES (@login_page, 'felogin_login', 'Frontend Login', 100);
+VALUES (@login_page, 'felogin_login', 'Login (felogin with passkey injection)', 100);
 
+-- Standalone passkey plugin (no felogin)
 INSERT INTO tt_content (pid, CType, header, sorting)
-VALUES (@login_page, 'nrpasskeysfe_passkeylogin', 'Passkey Login', 200);
+VALUES (@passkey_only_page, 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100);
 
 INSERT INTO tt_content (pid, CType, header, sorting)
 VALUES (@account_page, 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
@@ -254,7 +262,8 @@ echo "  Frontend: ${SITE_URL}/"
 echo "  Backend:  ${SITE_URL}/typo3/"
 echo ""
 echo "  Demo pages:"
-echo "    /passkey-login  - Login page (felogin + passkey plugin)"
+echo "    /passkey-login  - felogin with passkey injection (PSR-14)"
+echo "    /passkey-only   - Standalone passkey-only login (no felogin)"
 echo "    /my-account     - Passkey management (requires login)"
 echo "    /passkey-setup  - Passkey enrollment"
 echo ""

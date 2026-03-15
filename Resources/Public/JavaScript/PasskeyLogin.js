@@ -84,6 +84,25 @@
         );
       });
     }
+
+    // Recovery form show/hide toggle
+    var recoveryLink = container.querySelector('[data-action="show-recovery"]');
+    var recoverySection = document.getElementById('nr-passkeys-fe-recovery');
+    if (recoveryLink && recoverySection) {
+      recoveryLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        container.style.display = 'none';
+        recoverySection.style.display = '';
+      });
+      var backLink = recoverySection.querySelector('[data-action="hide-recovery"]');
+      if (backLink) {
+        backLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          recoverySection.style.display = 'none';
+          container.style.display = '';
+        });
+      }
+    }
   }
 
   function checkForFailedLogin(errorEl) {
