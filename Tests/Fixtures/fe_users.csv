@@ -1,7 +1,0 @@
-fe_users
-,uid,pid,username,password,usergroup,disable,deleted,passkey_grace_period_start,passkey_nudge_until
-,1,1,testuser1,password1,"1",0,0,0,0
-,2,1,testuser2,password2,"1,2",0,0,0,0
-,3,2,testuser3_pid2,password3,"1",0,0,0,0
-,10,1,userwithnudge,passwordX,"1",0,0,0,1700100000
-,99,1,testuser99,password99,"3",0,0,0,0
