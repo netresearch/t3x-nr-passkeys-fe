@@ -1,10 +1,166 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService" is not allowed to extend "TYPO3\\CMS\\Core\\Authentication\\AbstractAuthenticationService"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:getPasskeyPayload\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:resolveSite\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$assertionJson\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$site\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
 			message: '#^Parameter \#1 \$user of method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:handlePasswordLogin\(\) expects array\<string, mixed\>, array given\.$#'
 			identifier: argument.type
 			count: 1
 			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$defaultEnforcementLevel with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enableFePasskeys with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enrollmentBannerEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$magicLinkEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$maxPasskeysPerUser with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$postLoginEnrollmentEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodeCount with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodesEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$defaultEnforcementLevel\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$enableFePasskeys\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$enrollmentBannerEnabled\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$magicLinkEnabled\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$maxPasskeysPerUser\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$postLoginEnrollmentEnabled\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$recoveryCodeCount\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$recoveryCodesEnabled\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Controller\\AdminController\:\:requireAdminUid\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Controller/AdminController.php
+
+		-
+			message: '''
+				#^Call to deprecated method makeMenu\(\) of class TYPO3\\CMS\\Backend\\Template\\Components\\MenuRegistry\:
+				since v14, will be removed in v15\. Use GeneralUtility\:\:makeInstance\(Menu\:\:class\) directly or inject ComponentFactory and use createMenu\(\)\.$#
+			'''
+			identifier: method.deprecated
+			count: 1
+			path: ../Classes/Controller/AdminModuleController.php
+
+		-
+			message: '''
+				#^Call to deprecated method makeMenuItem\(\) of class TYPO3\\CMS\\Backend\\Template\\Components\\Menu\\Menu\:
+				since v14, will be removed in v15\. Use GeneralUtility\:\:makeInstance\(MenuItem\:\:class\) directly or inject ComponentFactory and use createMenuItem\(\)\.$#
+			'''
+			identifier: method.deprecated
+			count: 2
+			path: ../Classes/Controller/AdminModuleController.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:generateAction\(\)\.$#'
@@ -67,14 +223,434 @@ parameters:
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
+
+		-
+			message: '#^Variable method call on Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\.$#'
+			identifier: method.dynamicName
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 1
+			path: ../Classes/Controller/EnrollmentController.php
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 3
+			path: ../Classes/Controller/LoginController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Controller\\LoginController\:\:findFeUserUid\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Controller/LoginController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$assertionJson\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/LoginController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/LoginController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$site\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/LoginController.php
+
+		-
+			message: '#^Casting to string something that''s already string\.$#'
+			identifier: cast.useless
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:completeEnrollment\(\) is invoked with named argument for parameter \$attestationJson\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:completeEnrollment\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:completeEnrollment\(\) is invoked with named argument for parameter \$feUserUid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:completeEnrollment\(\) is invoked with named argument for parameter \$label\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:completeEnrollment\(\) is invoked with named argument for parameter \$site\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:startEnrollment\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:startEnrollment\(\) is invoked with named argument for parameter \$feUserUid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:startEnrollment\(\) is invoked with named argument for parameter \$site\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\PasskeyEnrollmentService\:\:startEnrollment\(\) is invoked with named argument for parameter \$username\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Controller\\Plugin\\EnrollmentPluginController" is not allowed to extend "TYPO3\\CMS\\Extbase\\Mvc\\Controller\\ActionController"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Controller/Plugin/EnrollmentPluginController.php
+
+		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/EnrollmentPluginController.php
+
+		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Controller\\Plugin\\LoginPluginController" is not allowed to extend "TYPO3\\CMS\\Extbase\\Mvc\\Controller\\ActionController"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Controller/Plugin/LoginPluginController.php
+
+		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/LoginPluginController.php
+
+		-
 			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 2
 			path: ../Classes/Controller/Plugin/LoginPluginController.php
 
 		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Controller\\Plugin\\ManagementPluginController" is not allowed to extend "TYPO3\\CMS\\Extbase\\Mvc\\Controller\\ActionController"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Controller/Plugin/ManagementPluginController.php
+
+		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/ManagementPluginController.php
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 2
+			path: ../Classes/Controller/RecoveryController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:findFeUserUid\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Controller/RecoveryController.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus\:\:__construct\(\) has parameter \$graceDeadline with a nullable type declaration\.$#'
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			count: 1
+			path: ../Classes/Domain/Dto/FrontendEnforcementStatus.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$aaguid with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$createdAt with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$credentialId with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$feUser with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$label with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$lastUsedAt with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$publicKeyCose with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$revokedAt with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$revokedBy with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$signCount with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$siteIdentifier with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$storagePid with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$transports with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$uid with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential has parameter \$userHandle with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$aaguid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$createdAt\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$credentialId\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$feUser\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$lastUsedAt\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$publicKeyCose\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$revokedAt\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$revokedBy\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$signCount\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$siteIdentifier\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$storagePid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$transports\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$uid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$userHandle\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/FrontendCredential.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\RecoveryCode has parameter \$codeHash with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\RecoveryCode has parameter \$createdAt with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\RecoveryCode has parameter \$feUser with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\RecoveryCode has parameter \$uid with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Model\\RecoveryCode has parameter \$usedAt with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$codeHash\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$createdAt\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$feUser\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$uid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$usedAt\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Domain/Model/RecoveryCode.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Event\\BeforePasskeyAuthenticationEvent\:\:__construct\(\) has parameter \$feUserUid with a nullable type declaration\.$#'
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			count: 1
+			path: ../Classes/Event/BeforePasskeyAuthenticationEvent.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 1
+			path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+		-
+			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
+			identifier: empty.notAllowed
+			count: 1
+			path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\EventListener\\InjectPasskeyBanner\:\:renderBanner\(\) has parameter \$graceDeadline with a nullable type declaration\.$#'
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
 			count: 1
 			path: ../Classes/EventListener/InjectPasskeyBanner.php
 
@@ -91,8 +667,74 @@ parameters:
 			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
 
 		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Form\\Element\\PasskeyFeInfoElement" is not allowed to extend "TYPO3\\CMS\\Backend\\Form\\Element\\AbstractFormElement"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Parameter \#1 \$data \(array\<string, mixed\>\) of method Netresearch\\NrPasskeysFe\\Form\\Element\\PasskeyFeInfoElement\:\:setData\(\) should be contravariant with parameter \$data \(array\) of method TYPO3\\CMS\\Backend\\Form\\AbstractNode\:\:setData\(\)$#'
+			identifier: method.childParameterType
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Parameter \#1 \$data \(array\<string, mixed\>\) of method Netresearch\\NrPasskeysFe\\Form\\Element\\PasskeyFeInfoElement\:\:setData\(\) should be contravariant with parameter \$data \(array\) of method TYPO3\\CMS\\Backend\\Form\\NodeInterface\:\:setData\(\)$#'
+			identifier: method.childParameterType
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Short ternary operator is not allowed\. Use null coalesce operator if applicable or consider using long ternary\.$#'
+			identifier: ternary.shortNotAllowed
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
+			identifier: empty.notAllowed
+			count: 1
+			path: ../Classes/Middleware/PasskeyEnrollmentInterstitial.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Middleware\\PasskeyEnrollmentInterstitial\:\:resolveFrontendUser\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Middleware/PasskeyEnrollmentInterstitial.php
+
+		-
+			message: '#^There is no request attribute "nr_passkeys_fe\.public_route" configured so we can''t figure out the exact type to return when calling Psr\\Http\\Message\\ServerRequestInterface\:\:getAttribute$#'
+			identifier: phpstanTypo3.requestAttributeValidation
+			count: 1
+			path: ../Classes/Middleware/PasskeyEnrollmentInterstitial.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendAdoptionStats is invoked with named argument for parameter \$adoptionPercentage\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendAdoptionStats is invoked with named argument for parameter \$perGroupStats\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendAdoptionStats is invoked with named argument for parameter \$totalUsers\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendAdoptionStats is invoked with named argument for parameter \$usersWithPasskeys\.$#'
+			identifier: ergebnis.noNamedArgument
 			count: 1
 			path: ../Classes/Service/FrontendAdoptionStatsService.php
 
@@ -101,6 +743,378 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Casting to string something that''s already string\.$#'
+			identifier: cast.useless
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendCredentialRepository\:\:findByCredentialId\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendCredentialRepository\:\:findByCredentialIdScoped\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendCredentialRepository\:\:findByUidAndFeUser\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendCredentialRepository\:\:findFeUserByUid\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendCredentialRepository\:\:findFeUserUidByUsername\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$effectiveLevel\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$graceDeadline\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$groupLevel\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$inGracePeriod\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$passkeyCount\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$recoveryCodesRemaining\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$siteLevel\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$aaguid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$credentialId\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$feUser\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$publicKeyCose\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$signCount\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$siteIdentifier\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$transports\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$userHandle\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:findFeUserUidFromAssertion\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAssertionResponseValidator\:\:check\(\) is invoked with named argument for parameter \$authenticatorAssertionResponse\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAssertionResponseValidator\:\:check\(\) is invoked with named argument for parameter \$host\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAssertionResponseValidator\:\:check\(\) is invoked with named argument for parameter \$publicKeyCredentialRequestOptions\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAssertionResponseValidator\:\:check\(\) is invoked with named argument for parameter \$publicKeyCredentialSource\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAssertionResponseValidator\:\:check\(\) is invoked with named argument for parameter \$userHandle\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAttestationResponseValidator\:\:check\(\) is invoked with named argument for parameter \$authenticatorAttestationResponse\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAttestationResponseValidator\:\:check\(\) is invoked with named argument for parameter \$host\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorAttestationResponseValidator\:\:check\(\) is invoked with named argument for parameter \$publicKeyCredentialCreationOptions\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorSelectionCriteria\:\:create\(\) is invoked with named argument for parameter \$residentKey\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\AuthenticatorSelectionCriteria\:\:create\(\) is invoked with named argument for parameter \$userVerification\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$attestation\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$authenticatorSelection\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$excludeCredentials\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$pubKeyCredParams\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$rp\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$timeout\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialCreationOptions\:\:create\(\) is invoked with named argument for parameter \$user\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialDescriptor\:\:create\(\) is invoked with named argument for parameter \$id\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialDescriptor\:\:create\(\) is invoked with named argument for parameter \$transports\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialDescriptor\:\:create\(\) is invoked with named argument for parameter \$type\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRequestOptions\:\:create\(\) is invoked with named argument for parameter \$allowCredentials\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRequestOptions\:\:create\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 3
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRequestOptions\:\:create\(\) is invoked with named argument for parameter \$rpId\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 3
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRequestOptions\:\:create\(\) is invoked with named argument for parameter \$timeout\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRequestOptions\:\:create\(\) is invoked with named argument for parameter \$userVerification\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 3
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRpEntity\:\:create\(\) is invoked with named argument for parameter \$id\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialRpEntity\:\:create\(\) is invoked with named argument for parameter \$name\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$aaguid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$attestationType\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$counter\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$credentialPublicKey\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$publicKeyCredentialId\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$transports\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$trustPath\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$type\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialSource\:\:create\(\) is invoked with named argument for parameter \$userHandle\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialUserEntity\:\:create\(\) is invoked with named argument for parameter \$displayName\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialUserEntity\:\:create\(\) is invoked with named argument for parameter \$id\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Method Webauthn\\PublicKeyCredentialUserEntity\:\:create\(\) is invoked with named argument for parameter \$name\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 2
+			path: ../Classes/Service/FrontendWebAuthnService.php
 
 		-
 			message: '#^Offset ''ES256''\|''ES384''\|''ES512''\|''RS256'' on array\{ES256\: \-7, ES384\: \-35, ES512\: \-36, RS256\: \-257\} on left side of \?\? always exists and is not nullable\.$#'
@@ -119,6 +1133,42 @@ parameters:
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\AfterPasskeyEnrollmentEvent is invoked with named argument for parameter \$credential\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\AfterPasskeyEnrollmentEvent is invoked with named argument for parameter \$feUserUid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\AfterPasskeyEnrollmentEvent is invoked with named argument for parameter \$siteIdentifier\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\BeforePasskeyEnrollmentEvent is invoked with named argument for parameter \$attestationJson\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\BeforePasskeyEnrollmentEvent is invoked with named argument for parameter \$feUserUid\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
+
+		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Event\\BeforePasskeyEnrollmentEvent is invoked with named argument for parameter \$siteIdentifier\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/PasskeyEnrollmentService.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
