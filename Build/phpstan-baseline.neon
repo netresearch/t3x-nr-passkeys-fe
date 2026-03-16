@@ -1,74 +1,133 @@
 parameters:
-    ignoreErrors:
-        # EidDispatcher dynamic method dispatch — ACTION_MAP guarantees correctness
-        -
-            message: '#Call to an undefined method .+Controller::.+Action\(\)#'
-            path: ../Classes/Controller/EidDispatcher.php
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$user of method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:handlePasswordLogin\(\) expects array\<string, mixed\>, array given\.$#'
+			identifier: argument.type
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
 
-        # AbstractAuthenticationService receives untyped array from TYPO3 core
-        -
-            message: '#Parameter \#1 \$user of method .+handlePasswordLogin\(\) expects array<string, mixed>, array given#'
-            path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:generateAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # TYPO3 event API returns mixed for getContent/setContent
-        -
-            message: '#Call to an undefined method .+AfterCacheableContentIsGeneratedEvent::(getContent|setContent)\(\)#'
-            path: ../Classes/EventListener/InjectPasskeyBanner.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:listAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # felogin event view returns mixed
-        -
-            message: '#Cannot call method (getAttribute|assign)\(\) on mixed#'
-            path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:optionsAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # str_ireplace with mixed from event
-        -
-            message: '#Parameter \#3 \$subject of function str_ireplace expects#'
-            path: ../Classes/EventListener/InjectPasskeyBanner.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:registrationOptionsAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # Mixed from TYPO3 request attributes and user records
-        -
-            message: '#Cannot cast mixed to int#'
-            paths:
-                - ../Classes/Controller/
-                - ../Classes/Authentication/
-                - ../Classes/Middleware/
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:registrationVerifyAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        -
-            message: '#Cannot call method getAttribute\(\) on mixed#'
-            paths:
-                - ../Classes/Controller/
-                - ../Classes/EventListener/
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:removeAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        -
-            message: '#Strict comparison using === between mixed and null will always evaluate to false#'
-            paths:
-                - ../Classes/Controller/
-                - ../Classes/Configuration/
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:renameAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # Return type narrowing for per-group stats array keys
-        -
-            message: '#should return array<string,.+> but returns array<int\|numeric-string#'
-            path: ../Classes/Service/FrontendAdoptionStatsService.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:skipAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # SiteInterface::getSettings() exists on Site (concrete class) but not on SiteInterface.
-        -
-            identifier: method.notFound
-            path: ../Classes/Service/SiteConfigurationService.php
-        -
-            message: '#Cannot call method get\(\) on mixed#'
-            path: ../Classes/Service/SiteConfigurationService.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:statusAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # WebAuthn algorithm map — PHPStan correctly identifies these as always-true/non-null
-        -
-            identifier: nullCoalesce.offset
-            path: ../Classes/Service/FrontendWebAuthnService.php
-        -
-            identifier: notIdentical.alwaysTrue
-            path: ../Classes/Service/FrontendWebAuthnService.php
+		-
+			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:verifyAction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
 
-        # Mixed cast from TYPO3 request/service returns
-        -
-            identifier: cast.int
-            paths:
-                - ../Classes/Service/
-                - ../Classes/EventListener/
+		-
+			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: ../Classes/Controller/Plugin/LoginPluginController.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+		-
+			message: '#^Cannot call method assign\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+
+		-
+			message: '#^Cannot call method getAttribute\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendAdoptionStatsService\:\:getPerGroupStats\(\) should return array\<string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\> but returns array\<int\|numeric\-string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Offset ''ES256''\|''ES384''\|''ES512''\|''RS256'' on array\{ES256\: \-7, ES384\: \-35, ES512\: \-36, RS256\: \-257\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between \-257\|\-36\|\-35\|\-7 and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: ../Classes/Service/FrontendWebAuthnService.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: ../Classes/Service/RecoveryCodeService.php
+
+		-
+			message: '#^Call to an undefined method TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\:\:getSettings\(\)\.$#'
+			identifier: method.notFound
+			count: 4
+			path: ../Classes/Service/SiteConfigurationService.php
+
+		-
+			message: '#^Cannot call method get\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 4
+			path: ../Classes/Service/SiteConfigurationService.php
