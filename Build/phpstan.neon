@@ -1,6 +1,5 @@
 includes:
     - %currentWorkingDirectory%/.Build/vendor/netresearch/typo3-ci-workflows/config/phpstan/phpstan.neon
-    - %currentWorkingDirectory%/.Build/vendor/netresearch/typo3-ci-workflows/config/phpstan/includes-no-extension-installer.neon
     - phpstan-baseline.neon
 
 parameters:
@@ -8,6 +7,7 @@ parameters:
         - ../Classes
         - ../Tests/Architecture
     tmpDir: ../.Build/var/phpstan
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
