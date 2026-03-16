@@ -18,6 +18,15 @@ parameters:
             identifier: method.notFound
             message: '#SiteInterface::getSettings#'
             reportUnmatched: false
+        # TYPO3 v13.4.0 AfterCacheableContentIsGeneratedEvent has different API than v13.4.27+
+        -
+            message: '#Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent::(getContent|setContent)\(\)#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        -
+            message: '#Parameter \#3 \$subject of function str_ireplace expects#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
 
 services:
     -
