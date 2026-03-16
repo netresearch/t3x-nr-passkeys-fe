@@ -311,105 +311,35 @@ Each extension migration is independent. Can be parallelized.
 
 ---
 
-## 4. Implementation Tasks (Dispatch-Ready)
+## 4. Implementation Status
 
-Each task below is self-contained and can be dispatched to a subagent independently.
+### Completed Tasks
 
-### Task ID: CIC-01
-**Title**: Create explicit phpstan plugin includes file in typo3-ci-workflows
-**Repo**: `netresearch/typo3-ci-workflows`
-**Branch**: `feat/explicit-phpstan-includes`
-**Blocks**: CIC-05, CIC-06, CIC-07
-**Effort**: Small
-**Details**: Create `config/phpstan/includes-no-extension-installer.neon` that explicitly includes all phpstan plugin neon files. Update README.
+| ID | Title | Status | PR/Commit |
+|----|-------|--------|-----------|
+| CIC-01 | Explicit phpstan plugin includes | **DONE** | [typo3-ci-workflows PR #20](https://github.com/netresearch/typo3-ci-workflows/pull/20) merged |
+| CIC-02 | Architecture docs + worktree workaround | **DONE** | Same PR #20 |
+| CIC-03 | runTests.sh template | **DONE** | Same PR #20 (`assets/Build/Scripts/runTests.sh.dist`) |
+| CIC-04 | Release typo3-ci-workflows | **DONE** | Tagged v1.2.0 |
+| CIC-08 | Fix t3x-nr-passkeys-fe | **DONE** | Commit `87851b0` — includes explicit neon, 227-error baseline |
+| CIC-09 | Update typo3-testing skill | **DONE** | [PR #29](https://github.com/netresearch/typo3-testing-skill/pull/29) merged |
+| CIC-10 | Add conformance checkpoints | **DONE** | [PR #25](https://github.com/netresearch/typo3-conformance-skill/pull/25) merged |
 
-### Task ID: CIC-02
-**Title**: Document two-entrypoint architecture and worktree workaround
-**Repo**: `netresearch/typo3-ci-workflows`
-**Branch**: `docs/architecture-and-worktree`
-**Blocks**: None
-**Effort**: Small
-**Details**: Update README.md with architecture section and worktree workaround documentation.
+### Remaining Tasks
 
-### Task ID: CIC-03
-**Title**: Add runTests.sh scaffold script to typo3-ci-workflows
-**Repo**: `netresearch/typo3-ci-workflows`
-**Branch**: `feat/runtests-scaffold`
-**Blocks**: None (extensions can use skill template meanwhile)
-**Effort**: Medium
-**Details**: Create `scripts/scaffold-runTests.sh` that generates a customized runTests.sh for an extension. Parameters: extension key, NETWORK name, E2E URL.
+| ID | Title | Repo | Effort | Details |
+|----|-------|------|--------|---------|
+| CIC-05 | Migrate t3x-nr-passkeys-be | `netresearch/t3x-nr-passkeys-be` | Medium | Replace 12 require-dev with ci-workflows, add runTests.sh, include explicit phpstan neon, regenerate baseline |
+| CIC-06 | Migrate t3x-nr-llm | `netresearch/t3x-nr-llm` | Large | Replace 12 require-dev, migrate grumphp→captainhook, include explicit phpstan neon |
+| CIC-07 | Clean up t3x-cowriter | `netresearch/t3x-cowriter` | Small | Remove redundant phpunit, align composer scripts with runTests.sh |
 
-### Task ID: CIC-04
-**Title**: Release typo3-ci-workflows with new features
-**Repo**: `netresearch/typo3-ci-workflows`
-**Depends on**: CIC-01, CIC-02, CIC-03
-**Effort**: Small
-**Details**: Tag and release new version including all Phase 1 changes.
+### Key Lesson Learned
 
-### Task ID: CIC-05
-**Title**: Migrate t3x-nr-passkeys-be to centralized CI tooling
-**Repo**: `netresearch/t3x-nr-passkeys-be`
-**Branch**: `feat/centralize-ci-tooling`
-**Depends on**: CIC-04
-**Effort**: Medium
-**Details**: See Task 2.1 above for complete file list and changes.
+The `phpstan/extension-installer` doesn't run when `composer install --no-plugins` is used (workaround for captainhook in git worktrees). This leaves `GeneratedConfig.php` as a stub with `EXTENSIONS = []`, meaning phpstan-strict-rules, deprecation-rules, and ergebnis rules are NOT loaded locally. CI runs `composer install` normally, so all rules ARE loaded → baseline mismatch.
 
-### Task ID: CIC-06
-**Title**: Migrate t3x-nr-llm to centralized CI tooling
-**Repo**: `netresearch/t3x-nr-llm`
-**Branch**: `feat/centralize-ci-tooling`
-**Depends on**: CIC-04
-**Effort**: Large (grumphp to captainhook migration)
-**Details**: See Task 2.2 above. Includes hook system migration.
+**Solution**: Include `config/phpstan/includes-no-extension-installer.neon` from typo3-ci-workflows, which explicitly loads all plugin neon files without relying on the extension-installer. This makes local and CI analysis identical regardless of `--no-plugins`.
 
-### Task ID: CIC-07
-**Title**: Clean up t3x-cowriter require-dev and composer scripts
-**Repo**: `netresearch/t3x-cowriter`
-**Branch**: `chore/clean-require-dev`
-**Depends on**: CIC-04
-**Effort**: Small
-**Details**: See Task 2.3 above. Remove redundant phpunit dep, align composer scripts.
-
-### Task ID: CIC-08
-**Title**: Verify t3x-nr-passkeys-fe alignment
-**Repo**: `netresearch/t3x-nr-passkeys-fe`
-**Branch**: Current (main)
-**Depends on**: CIC-01
-**Effort**: Small
-**Details**: See Task 2.4 above. Verify shared phpstan config inclusion, alignment with template.
-
-### Task ID: CIC-09
-**Title**: Update typo3-testing skill quality-tools.md for centralization
-**Repo**: `netresearch/typo3-testing-skill`
-**Branch**: `feat/centralized-ci-docs`
-**Depends on**: CIC-04
-**Effort**: Small
-**Details**: See Task 3.1 and 3.2 above.
-
-### Task ID: CIC-10
-**Title**: Add CI centralization checkpoints to typo3-conformance
-**Repo**: `netresearch/typo3-conformance-skill`
-**Branch**: `feat/ci-centralization-checkpoints`
-**Depends on**: CIC-04
-**Effort**: Small
-**Details**: See Task 3.3 above. Add TC-90 through TC-93.
-
----
-
-## 5. Dependency Graph
-
-```
-CIC-01 (phpstan includes) ──┐
-CIC-02 (docs)             ──┼──> CIC-04 (release) ──┬──> CIC-05 (passkeys-be)
-CIC-03 (scaffold)         ──┘                        ├──> CIC-06 (nr-llm)
-                                                     ├──> CIC-07 (cowriter)
-                                                     ├──> CIC-08 (passkeys-fe)
-                                                     ├──> CIC-09 (testing skill)
-                                                     └──> CIC-10 (conformance skill)
-```
-
-Phase 1 (CIC-01 through CIC-04) must complete first.
-Phase 2 (CIC-05 through CIC-08) and Phase 3 (CIC-09, CIC-10) can run in parallel after Phase 1.
+All future extension migrations (CIC-05, CIC-06, CIC-07) MUST include this explicit neon file in their `Build/phpstan.neon`.
 
 ---
 
