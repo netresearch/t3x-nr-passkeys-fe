@@ -7,6 +7,24 @@ parameters:
 			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
 
 		-
+			message: '''
+				#^Call to deprecated method makeMenu\(\) of class TYPO3\\CMS\\Backend\\Template\\Components\\MenuRegistry\:
+				since v14, will be removed in v15\. Use GeneralUtility\:\:makeInstance\(Menu\:\:class\) directly or inject ComponentFactory and use createMenu\(\)\.$#
+			'''
+			identifier: method.deprecated
+			count: 1
+			path: ../Classes/Controller/AdminModuleController.php
+
+		-
+			message: '''
+				#^Call to deprecated method makeMenuItem\(\) of class TYPO3\\CMS\\Backend\\Template\\Components\\Menu\\Menu\:
+				since v14, will be removed in v15\. Use GeneralUtility\:\:makeInstance\(MenuItem\:\:class\) directly or inject ComponentFactory and use createMenuItem\(\)\.$#
+			'''
+			identifier: method.deprecated
+			count: 2
+			path: ../Classes/Controller/AdminModuleController.php
+
+		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:generateAction\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -67,14 +85,50 @@ parameters:
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
+			message: '#^Variable method call on Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\.$#'
+			identifier: method.dynamicName
+			count: 1
+			path: ../Classes/Controller/EidDispatcher.php
+
+		-
+			message: '#^Casting to string something that''s already string\.$#'
+			identifier: cast.useless
+			count: 1
+			path: ../Classes/Controller/ManagementController.php
+
+		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/EnrollmentPluginController.php
+
+		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/LoginPluginController.php
+
+		-
 			message: '#^Strict comparison using \=\=\= between mixed and null will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 2
 			path: ../Classes/Controller/Plugin/LoginPluginController.php
 
 		-
+			message: '#^PHPDoc tag @var with type TYPO3\\CMS\\Core\\Site\\Entity\\SiteInterface\|null is not subtype of type TYPO3\\CMS\\Core\\Site\\Entity\\Site\|null\.$#'
+			identifier: varTag.type
+			count: 1
+			path: ../Classes/Controller/Plugin/ManagementPluginController.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
+			count: 1
+			path: ../Classes/EventListener/InjectPasskeyBanner.php
+
+		-
+			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
+			identifier: empty.notAllowed
 			count: 1
 			path: ../Classes/EventListener/InjectPasskeyBanner.php
 
@@ -91,6 +145,30 @@ parameters:
 			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
 
 		-
+			message: '#^Parameter \#1 \$data \(array\<string, mixed\>\) of method Netresearch\\NrPasskeysFe\\Form\\Element\\PasskeyFeInfoElement\:\:setData\(\) should be contravariant with parameter \$data \(array\) of method TYPO3\\CMS\\Backend\\Form\\AbstractNode\:\:setData\(\)$#'
+			identifier: method.childParameterType
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Parameter \#1 \$data \(array\<string, mixed\>\) of method Netresearch\\NrPasskeysFe\\Form\\Element\\PasskeyFeInfoElement\:\:setData\(\) should be contravariant with parameter \$data \(array\) of method TYPO3\\CMS\\Backend\\Form\\NodeInterface\:\:setData\(\)$#'
+			identifier: method.childParameterType
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Short ternary operator is not allowed\. Use null coalesce operator if applicable or consider using long ternary\.$#'
+			identifier: ternary.shortNotAllowed
+			count: 1
+			path: ../Classes/Form/Element/PasskeyFeInfoElement.php
+
+		-
+			message: '#^Construct empty\(\) is not allowed\. Use more strict comparison\.$#'
+			identifier: empty.notAllowed
+			count: 1
+			path: ../Classes/Middleware/PasskeyEnrollmentInterstitial.php
+
+		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
@@ -101,6 +179,12 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Casting to string something that''s already string\.$#'
+			identifier: cast.useless
+			count: 1
+			path: ../Classes/Service/FrontendCredentialRepository.php
 
 		-
 			message: '#^Offset ''ES256''\|''ES384''\|''ES512''\|''RS256'' on array\{ES256\: \-7, ES384\: \-35, ES512\: \-36, RS256\: \-257\} on left side of \?\? always exists and is not nullable\.$#'
