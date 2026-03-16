@@ -44,6 +44,7 @@ Usage: $(basename "$0") [OPTIONS] <COMMAND>
 Commands:
     unit              Run unit tests
     functional        Run functional tests
+    fuzz              Run fuzz tests (property-based testing)
     mutation          Run mutation tests with Infection
     phpstan           Run PHPStan static analysis
     cgl               Run PHP-CS-Fixer in dry-run mode
@@ -264,6 +265,13 @@ parse_args() {
                 ;;
             functional)
                 run_functional_tests
+                exit 0
+                ;;
+            fuzz)
+                info "Running fuzz tests..."
+                check_dependencies
+                "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.xml" --testsuite fuzz ${EXTRA_TEST_OPTIONS}
+                success "Fuzz tests completed"
                 exit 0
                 ;;
             mutation)
