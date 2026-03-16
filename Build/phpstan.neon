@@ -1,0 +1,52 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 10
+    paths:
+        - ../Classes
+        - ../Tests/Architecture
+    tmpDir: ../.Build/var/phpstan
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # ergebnis rules that are too strict for TYPO3 extensions
+        -
+            identifier: ergebnis.noNamedArgument
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noConstructorParameterWithDefaultValue
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noNullableReturnTypeDeclaration
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noParameterWithNullableTypeDeclaration
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noIsset
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noExtends
+            reportUnmatched: false
+        -
+            identifier: ergebnis.final
+            reportUnmatched: false
+        # Write-only properties used for lazy DI pattern
+        -
+            identifier: property.onlyWritten
+            reportUnmatched: false
+        # phpstan-typo3 requestAttributeValidation (v13 only; v14 removes phpstan-typo3)
+        -
+            identifier: phpstanTypo3.requestAttributeValidation
+            reportUnmatched: false
+        # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
+        -
+            message: '#no value type specified in iterable type array#'
+            path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+
+services:
+    -
+        class: Netresearch\NrPasskeysFe\Tests\Architecture\ArchitectureTest
+        tags:
+            - phpat.test

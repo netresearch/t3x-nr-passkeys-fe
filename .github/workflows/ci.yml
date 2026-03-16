@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+  pull_request:
+  merge_group:
+permissions: {}
+jobs:
+  ci:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/ci.yml@main
+    permissions:
+      contents: read
+    with:
+      php-versions: '["8.2", "8.3", "8.4", "8.5"]'
+      typo3-versions: '["^13.4", "^14.1"]'
+      typo3-packages: '["typo3/cms-core", "typo3/cms-frontend", "typo3/cms-backend", "typo3/cms-extbase", "typo3/cms-fluid"]'
+      php-extensions: intl, mbstring, xml, openssl, pdo_mysql
+      run-rector: false
+      run-functional-tests: false
+      functional-test-db: mysql
+      upload-coverage: true

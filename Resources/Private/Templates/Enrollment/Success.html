@@ -1,0 +1,30 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="Content">
+<div class="nr-passkeys-fe-enrollment-success{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}">
+
+    <div class="nr-passkeys-fe-enrollment-success__icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+    </div>
+
+    <h1 class="nr-passkeys-fe-enrollment-success__title">
+        <f:translate key="enrollment.success.title" extensionName="nr_passkeys_fe" />
+    </h1>
+
+    <p class="nr-passkeys-fe-enrollment-success__message">
+        <f:translate key="enrollment.success.message" extensionName="nr_passkeys_fe" />
+    </p>
+
+    <div class="nr-passkeys-fe-enrollment-success__actions">
+        <a class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary"
+           href="{continueUrl}">
+            <f:translate key="enrollment.success.continue" extensionName="nr_passkeys_fe" />
+        </a>
+    </div>
+</div>
+</f:section>
+</html>

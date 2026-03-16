@@ -1,0 +1,87 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:layout name="Default" />
+
+<f:section name="Content">
+<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" type="module" />
+<div class="nr-passkeys-fe-enrollment{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
+     data-nr-passkeys-fe="enrollment"
+     data-eid-url="{eidUrl}"
+     data-register-options-url="{registerOptionsUrl}"
+     data-register-verify-url="{registerVerifyUrl}"
+     data-enforcement="{enforcementLevel}">
+
+    <h1 class="nr-passkeys-fe-enrollment__title">
+        <f:translate key="enrollment.title" extensionName="nr_passkeys_fe" />
+    </h1>
+
+    <div class="nr-passkeys-fe-enrollment__description">
+        <p>
+            <f:translate key="enrollment.description" extensionName="nr_passkeys_fe" />
+        </p>
+        <ul class="nr-passkeys-fe-enrollment__benefits">
+            <li><f:translate key="enrollment.benefit.noPassword" extensionName="nr_passkeys_fe" /></li>
+            <li><f:translate key="enrollment.benefit.phishingResistant" extensionName="nr_passkeys_fe" /></li>
+            <li><f:translate key="enrollment.benefit.biometric" extensionName="nr_passkeys_fe" /></li>
+        </ul>
+    </div>
+
+    <f:if condition="{gracePeriodDaysRemaining}">
+        <div class="nr-passkeys-fe-enrollment__grace-period">
+            <f:translate key="enrollment.gracePeriod.remaining"
+                         extensionName="nr_passkeys_fe"
+                         arguments="{0: gracePeriodDaysRemaining}" />
+        </div>
+    </f:if>
+
+    <div class="nr-passkeys-fe-enrollment__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+    <div class="nr-passkeys-fe-enrollment__error" role="alert" style="display:none"></div>
+
+    <div class="nr-passkeys-fe-enrollment__field">
+        <label class="nr-passkeys-fe-enrollment__label"
+               for="nr-passkeys-fe-enrollment-device-label">
+            <f:translate key="enrollment.label.device" extensionName="nr_passkeys_fe" />
+        </label>
+        <input type="text"
+               id="nr-passkeys-fe-enrollment-device-label"
+               class="nr-passkeys-fe-enrollment__input"
+               placeholder="{f:translate(key: 'enrollment.label.placeholder', extensionName: 'nr_passkeys_fe')}"
+               maxlength="128"
+               value="Passkey" />
+    </div>
+
+    <div class="nr-passkeys-fe-enrollment__actions">
+        <button type="button"
+                id="nr-passkeys-fe-enroll-btn"
+                class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary nr-passkeys-fe-btn--lg"
+                data-action="register-passkey">
+            <span class="nr-passkeys-fe-btn__text">
+                <f:translate key="enrollment.button.register" extensionName="nr_passkeys_fe" />
+            </span>
+            <span class="nr-passkeys-fe-btn__loading" style="display:none" aria-hidden="true">
+                <f:translate key="enrollment.button.registering" extensionName="nr_passkeys_fe" />
+            </span>
+        </button>
+
+        <f:if condition="{canSkip}">
+            <form action="{skipUrl}" method="post">
+                <input type="hidden" name="__hmac" value="{hmac}" />
+                <input type="hidden" name="nr_passkeys_skip_nonce" value="{skipNonce}" />
+                <button type="submit"
+                        class="nr-passkeys-fe-btn nr-passkeys-fe-btn--ghost"
+                        data-action="skip-enrollment">
+                    <f:translate key="enrollment.button.skip" extensionName="nr_passkeys_fe" />
+                </button>
+            </form>
+        </f:if>
+    </div>
+
+    <div class="nr-passkeys-fe-enrollment__unsupported">
+        <a class="nr-passkeys-fe-enrollment__link"
+           href="{noSupportUrl}">
+            <f:translate key="enrollment.link.noSupport" extensionName="nr_passkeys_fe" />
+        </a>
+    </div>
+</div>
+</f:section>
+</html>

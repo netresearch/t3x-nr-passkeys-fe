@@ -1,0 +1,66 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Netresearch\NrPasskeysFe\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+
+  # Event listener for felogin passkey injection.
+  # Registered via tag (not attribute) because felogin is optional —
+  # the ::class constant can't be used in #[AsEventListener] when the
+  # event class may not exist in the autoloader during DI compilation.
+  Netresearch\NrPasskeysFe\EventListener\InjectPasskeyLoginFields:
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-fe/inject-passkey-login-fields'
+        event: TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent
+
+  # Public services (needed for controllers, GeneralUtility::makeInstance, etc.)
+  Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\SiteConfigurationService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\FrontendEnforcementService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\RecoveryCodeService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\LoginController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\ManagementController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\RecoveryController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\EnrollmentController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\AdminController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\AdminModuleController:
+    public: true
+
+  Netresearch\NrPasskeysFe\Controller\EidDispatcher:
+    public: true
+
+  Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement:
+    public: true

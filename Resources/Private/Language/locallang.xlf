@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_fe/Resources/Private/Language/locallang.xlf">
+        <body>
+            <!-- ============================================================
+                 Plugin: Login
+                 ============================================================ -->
+            <trans-unit id="login.button.passkey" resname="login.button.passkey">
+                <source>Sign in with a passkey</source>
+            </trans-unit>
+            <trans-unit id="login.button.passkey.loading" resname="login.button.passkey.loading">
+                <source>Authenticating...</source>
+            </trans-unit>
+            <trans-unit id="login.username.label" resname="login.username.label">
+                <source>Username</source>
+            </trans-unit>
+            <trans-unit id="login.link.usePassword" resname="login.link.usePassword">
+                <source>Use password instead</source>
+            </trans-unit>
+            <trans-unit id="login.link.useRecoveryCode" resname="login.link.useRecoveryCode">
+                <source>Use a recovery code</source>
+            </trans-unit>
+            <trans-unit id="login.heading" resname="login.heading">
+                <source>Sign in</source>
+            </trans-unit>
+            <trans-unit id="login.tab.passkey" resname="login.tab.passkey">
+                <source>Passkey</source>
+            </trans-unit>
+            <trans-unit id="login.tab.password" resname="login.tab.password">
+                <source>Password</source>
+            </trans-unit>
+            <trans-unit id="login.link.whatIsPasskey" resname="login.link.whatIsPasskey">
+                <source>What is a passkey?</source>
+            </trans-unit>
+            <trans-unit id="login.link.forgotPassword" resname="login.link.forgotPassword">
+                <source>Forgot password?</source>
+            </trans-unit>
+            <trans-unit id="login.error.unsupported" resname="login.error.unsupported">
+                <source>Your browser does not support Passkeys (WebAuthn). Please use a modern browser.</source>
+            </trans-unit>
+            <trans-unit id="login.error.insecure" resname="login.error.insecure">
+                <source>Passkeys require a secure connection (HTTPS).</source>
+            </trans-unit>
+            <trans-unit id="login.error.cancelled" resname="login.error.cancelled">
+                <source>Authentication was cancelled.</source>
+            </trans-unit>
+            <trans-unit id="login.error.notAllowed" resname="login.error.notAllowed">
+                <source>Authentication was cancelled or no passkey found for this site. Have you registered a passkey?</source>
+            </trans-unit>
+            <trans-unit id="login.error.generic" resname="login.error.generic">
+                <source>Authentication failed. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="login.error.rateLimit" resname="login.error.rateLimit">
+                <source>Too many attempts. Please try again later.</source>
+            </trans-unit>
+            <trans-unit id="login.error.failed" resname="login.error.failed">
+                <source>Passkey authentication failed. Please try again or use a recovery code.</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Plugin: Recovery login
+                 ============================================================ -->
+            <trans-unit id="recovery.title" resname="recovery.title">
+                <source>Sign in with recovery code</source>
+            </trans-unit>
+            <trans-unit id="recovery.description" resname="recovery.description">
+                <source>Enter one of your saved recovery codes to sign in. Each code can only be used once.</source>
+            </trans-unit>
+            <trans-unit id="recovery.code.label" resname="recovery.code.label">
+                <source>Recovery code</source>
+            </trans-unit>
+            <trans-unit id="recovery.code.hint" resname="recovery.code.hint">
+                <source>Format: XXXX-XXXX</source>
+            </trans-unit>
+            <trans-unit id="recovery.button.verify" resname="recovery.button.verify">
+                <source>Verify code</source>
+            </trans-unit>
+            <trans-unit id="recovery.button.verifying" resname="recovery.button.verifying">
+                <source>Verifying...</source>
+            </trans-unit>
+            <trans-unit id="recovery.link.backToLogin" resname="recovery.link.backToLogin">
+                <source>Back to login</source>
+            </trans-unit>
+            <trans-unit id="recovery.error.invalid" resname="recovery.error.invalid">
+                <source>Invalid recovery code. Please check and try again.</source>
+            </trans-unit>
+            <trans-unit id="recovery.error.used" resname="recovery.error.used">
+                <source>This recovery code has already been used.</source>
+            </trans-unit>
+            <trans-unit id="recovery.error.rateLimit" resname="recovery.error.rateLimit">
+                <source>Too many attempts. Please try again later.</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Plugin: Management — passkeys
+                 ============================================================ -->
+            <trans-unit id="management.passkeys.title" resname="management.passkeys.title">
+                <source>Your passkeys</source>
+            </trans-unit>
+            <trans-unit id="management.passkeys.description" resname="management.passkeys.description">
+                <source>Manage your registered passkeys. We recommend registering at least two passkeys (e.g. laptop and phone) as backup.</source>
+            </trans-unit>
+            <trans-unit id="management.passkeys.empty" resname="management.passkeys.empty">
+                <source>No passkeys registered yet.</source>
+            </trans-unit>
+            <trans-unit id="management.warning.singleKey" resname="management.warning.singleKey">
+                <source>You only have one passkey registered. Consider adding a backup passkey on another device.</source>
+            </trans-unit>
+            <trans-unit id="management.column.label" resname="management.column.label">
+                <source>Name</source>
+            </trans-unit>
+            <trans-unit id="management.column.created" resname="management.column.created">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="management.column.lastUsed" resname="management.column.lastUsed">
+                <source>Last used</source>
+            </trans-unit>
+            <trans-unit id="management.column.type" resname="management.column.type">
+                <source>Type</source>
+            </trans-unit>
+            <trans-unit id="management.column.actions" resname="management.column.actions">
+                <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="management.lastUsed.never" resname="management.lastUsed.never">
+                <source>Never</source>
+            </trans-unit>
+            <trans-unit id="management.action.rename" resname="management.action.rename">
+                <source>Rename</source>
+            </trans-unit>
+            <trans-unit id="management.action.remove" resname="management.action.remove">
+                <source>Remove</source>
+            </trans-unit>
+            <trans-unit id="management.action.remove.confirm" resname="management.action.remove.confirm">
+                <source>Remove passkey "%s"? This cannot be undone.</source>
+            </trans-unit>
+            <trans-unit id="management.action.remove.lastKey" resname="management.action.remove.lastKey">
+                <source>Cannot remove your last passkey. Register another passkey first.</source>
+            </trans-unit>
+            <trans-unit id="management.rename.success" resname="management.rename.success">
+                <source>Passkey renamed successfully.</source>
+            </trans-unit>
+            <trans-unit id="management.rename.error" resname="management.rename.error">
+                <source>Failed to rename passkey. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="management.remove.success" resname="management.remove.success">
+                <source>Passkey removed successfully.</source>
+            </trans-unit>
+            <trans-unit id="management.remove.error" resname="management.remove.error">
+                <source>Failed to remove passkey. Please try again.</source>
+            </trans-unit>
+
+            <!-- Management — register new passkey -->
+            <trans-unit id="management.register.title" resname="management.register.title">
+                <source>Register a new passkey</source>
+            </trans-unit>
+            <trans-unit id="management.register.label" resname="management.register.label">
+                <source>Name for new passkey</source>
+            </trans-unit>
+            <trans-unit id="management.register.placeholder" resname="management.register.placeholder">
+                <source>e.g. "Work Laptop", "iPhone"</source>
+            </trans-unit>
+            <trans-unit id="management.register.button" resname="management.register.button">
+                <source>Register passkey</source>
+            </trans-unit>
+            <trans-unit id="management.register.registering" resname="management.register.registering">
+                <source>Registering...</source>
+            </trans-unit>
+            <trans-unit id="management.register.success" resname="management.register.success">
+                <source>Passkey registered successfully.</source>
+            </trans-unit>
+            <trans-unit id="management.register.error" resname="management.register.error">
+                <source>Failed to register passkey. Please try again.</source>
+            </trans-unit>
+
+            <!-- Management — enrollment form (inline) -->
+            <trans-unit id="management.enrollment.title" resname="management.enrollment.title">
+                <source>Register passkey</source>
+            </trans-unit>
+            <trans-unit id="management.enrollment.label" resname="management.enrollment.label">
+                <source>Device name</source>
+            </trans-unit>
+            <trans-unit id="management.enrollment.placeholder" resname="management.enrollment.placeholder">
+                <source>e.g. "MacBook", "Android Phone"</source>
+            </trans-unit>
+            <trans-unit id="management.enrollment.register" resname="management.enrollment.register">
+                <source>Register passkey</source>
+            </trans-unit>
+            <trans-unit id="management.enrollment.registering" resname="management.enrollment.registering">
+                <source>Registering...</source>
+            </trans-unit>
+            <trans-unit id="management.enrollment.success" resname="management.enrollment.success">
+                <source>Passkey registered successfully.</source>
+            </trans-unit>
+
+            <!-- Management — recovery codes -->
+            <trans-unit id="management.recovery.title" resname="management.recovery.title">
+                <source>Recovery codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.description" resname="management.recovery.description">
+                <source>Recovery codes let you regain access if you lose all your passkeys. Each code can only be used once.</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.remaining" resname="management.recovery.remaining">
+                <source>Remaining codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.manage" resname="management.recovery.manage">
+                <source>Manage recovery codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.title" resname="management.recovery.codes.title">
+                <source>Recovery codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.warning.title" resname="management.recovery.codes.warning.title">
+                <source>Save these codes now!</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.warning.text" resname="management.recovery.codes.warning.text">
+                <source>These codes will not be shown again. Store them in a safe place (password manager, printed copy). Each code can be used once to regain access.</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.remaining" resname="management.recovery.codes.remaining">
+                <source>Remaining codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.download" resname="management.recovery.codes.download">
+                <source>Download codes as text file</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.generate.title" resname="management.recovery.codes.generate.title">
+                <source>Generate new recovery codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.generate.hint" resname="management.recovery.codes.generate.hint">
+                <source>Generating new codes will invalidate all existing recovery codes.</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.generate.button" resname="management.recovery.codes.generate.button">
+                <source>Generate new codes</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.generate.generating" resname="management.recovery.codes.generate.generating">
+                <source>Generating...</source>
+            </trans-unit>
+            <trans-unit id="management.recovery.codes.back" resname="management.recovery.codes.back">
+                <source>Back to passkey management</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Plugin: Enrollment
+                 ============================================================ -->
+            <trans-unit id="enrollment.title" resname="enrollment.title">
+                <source>Set up your passkey</source>
+            </trans-unit>
+            <trans-unit id="enrollment.description" resname="enrollment.description">
+                <source>Passkeys let you sign in without a password using your device's fingerprint, face recognition, or PIN.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.benefit.noPassword" resname="enrollment.benefit.noPassword">
+                <source>No password to remember or type</source>
+            </trans-unit>
+            <trans-unit id="enrollment.benefit.phishingResistant" resname="enrollment.benefit.phishingResistant">
+                <source>Resistant to phishing and credential theft</source>
+            </trans-unit>
+            <trans-unit id="enrollment.benefit.biometric" resname="enrollment.benefit.biometric">
+                <source>Uses biometrics or device PIN you already know</source>
+            </trans-unit>
+            <trans-unit id="enrollment.gracePeriod.remaining" resname="enrollment.gracePeriod.remaining">
+                <source>You have %d days remaining to set up your passkey.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.label.device" resname="enrollment.label.device">
+                <source>Name this passkey</source>
+            </trans-unit>
+            <trans-unit id="enrollment.label.placeholder" resname="enrollment.label.placeholder">
+                <source>e.g. "Work Laptop", "iPhone"</source>
+            </trans-unit>
+            <trans-unit id="enrollment.button.register" resname="enrollment.button.register">
+                <source>Register passkey</source>
+            </trans-unit>
+            <trans-unit id="enrollment.button.registering" resname="enrollment.button.registering">
+                <source>Registering...</source>
+            </trans-unit>
+            <trans-unit id="enrollment.button.skip" resname="enrollment.button.skip">
+                <source>Skip for now</source>
+            </trans-unit>
+            <trans-unit id="enrollment.link.noSupport" resname="enrollment.link.noSupport">
+                <source>My device doesn't support passkeys</source>
+            </trans-unit>
+            <trans-unit id="enrollment.error.unsupported" resname="enrollment.error.unsupported">
+                <source>Your browser does not support Passkeys (WebAuthn). Please update your browser or use a different device.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.error.cancelled" resname="enrollment.error.cancelled">
+                <source>Registration was cancelled.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.error.alreadyRegistered" resname="enrollment.error.alreadyRegistered">
+                <source>This passkey is already registered.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.error.generic" resname="enrollment.error.generic">
+                <source>Registration failed. Please try again.</source>
+            </trans-unit>
+
+            <!-- Enrollment success -->
+            <trans-unit id="enrollment.success.title" resname="enrollment.success.title">
+                <source>Passkey set up successfully!</source>
+            </trans-unit>
+            <trans-unit id="enrollment.success.message" resname="enrollment.success.message">
+                <source>You can now sign in with your passkey. You can manage your passkeys in your account settings.</source>
+            </trans-unit>
+            <trans-unit id="enrollment.success.continue" resname="enrollment.success.continue">
+                <source>Continue</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Banner
+                 ============================================================ -->
+            <trans-unit id="banner.encourage.title" resname="banner.encourage.title">
+                <source>Passkeys available for your account</source>
+            </trans-unit>
+            <trans-unit id="banner.encourage.description" resname="banner.encourage.description">
+                <source>Set up passwordless login with a passkey. Sign in faster using your fingerprint, face, or device PIN.</source>
+            </trans-unit>
+            <trans-unit id="banner.required.title" resname="banner.required.title">
+                <source>Passkey setup required</source>
+            </trans-unit>
+            <trans-unit id="banner.required.description" resname="banner.required.description">
+                <source>Your account requires a passkey. Please set one up to continue using this site.</source>
+            </trans-unit>
+            <trans-unit id="banner.button.setup" resname="banner.button.setup">
+                <source>Set up now</source>
+            </trans-unit>
+            <trans-unit id="banner.button.dismiss" resname="banner.button.dismiss">
+                <source>Dismiss</source>
+            </trans-unit>
+            <trans-unit id="banner.link.learnMore" resname="banner.link.learnMore">
+                <source>Learn more about passkeys</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Backend admin module
+                 ============================================================ -->
+            <trans-unit id="module.title" resname="module.title">
+                <source>FE Passkey Management</source>
+            </trans-unit>
+            <trans-unit id="module.dashboard" resname="module.dashboard">
+                <source>Dashboard</source>
+            </trans-unit>
+            <trans-unit id="module.help" resname="module.help">
+                <source>Help</source>
+            </trans-unit>
+            <trans-unit id="dashboard.title" resname="dashboard.title">
+                <source>FE Passkey Adoption Dashboard</source>
+            </trans-unit>
+            <trans-unit id="dashboard.description" resname="dashboard.description">
+                <source>Overview of passkey adoption across frontend user groups.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.totalUsers" resname="dashboard.totalUsers">
+                <source>Total FE Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithPasskeys" resname="dashboard.usersWithPasskeys">
+                <source>With Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoptionRate" resname="dashboard.adoptionRate">
+                <source>Adoption Rate</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoption.title" resname="dashboard.adoption.title">
+                <source>Adoption Statistics</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.title" resname="dashboard.groups.title">
+                <source>Frontend User Groups</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.group" resname="dashboard.groups.group">
+                <source>Group</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.enforcement" resname="dashboard.groups.enforcement">
+                <source>Enforcement</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.users" resname="dashboard.groups.users">
+                <source>Total Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.withPasskeys" resname="dashboard.groups.withPasskeys">
+                <source>With Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.adoption" resname="dashboard.groups.adoption">
+                <source>Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted.title" resname="dashboard.allAdopted.title">
+                <source>All users have passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted.body" resname="dashboard.allAdopted.body">
+                <source>All active frontend users have registered passkeys.</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.off" resname="enforcement.level.off">
+                <source>Off</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.encourage" resname="enforcement.level.encourage">
+                <source>Encourage</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.required" resname="enforcement.level.required">
+                <source>Required</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.enforced" resname="enforcement.level.enforced">
+                <source>Enforced</source>
+            </trans-unit>
+
+            <!-- Admin module JS labels (prefixed js.) -->
+            <trans-unit id="js.error.unknown" resname="js.error.unknown">
+                <source>Unknown error.</source>
+            </trans-unit>
+            <trans-unit id="js.error.server" resname="js.error.server">
+                <source>Server returned an error. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="js.error.network" resname="js.error.network">
+                <source>Network error. Please check your connection.</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.updated" resname="js.enforcement.updated">
+                <source>Enforcement updated</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.setTo" resname="js.enforcement.setTo">
+                <source>Group enforcement set to "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
+                <source>Update failed</source>
+            </trans-unit>
+            <trans-unit id="js.revoke.confirm" resname="js.revoke.confirm">
+                <source>Revoke this passkey? This cannot be undone.</source>
+            </trans-unit>
+            <trans-unit id="js.revoke.success" resname="js.revoke.success">
+                <source>Passkey revoked</source>
+            </trans-unit>
+            <trans-unit id="js.revoke.message" resname="js.revoke.message">
+                <source>The passkey has been revoked successfully.</source>
+            </trans-unit>
+            <trans-unit id="js.revoke.failed" resname="js.revoke.failed">
+                <source>Revoke failed</source>
+            </trans-unit>
+            <trans-unit id="js.revokeAll.confirm" resname="js.revokeAll.confirm">
+                <source>Revoke ALL passkeys for this user? This cannot be undone.</source>
+            </trans-unit>
+            <trans-unit id="js.revokeAll.success" resname="js.revokeAll.success">
+                <source>All passkeys revoked</source>
+            </trans-unit>
+            <trans-unit id="js.revokeAll.message" resname="js.revokeAll.message">
+                <source>All passkeys have been revoked for this user.</source>
+            </trans-unit>
+            <trans-unit id="js.revokeAll.failed" resname="js.revokeAll.failed">
+                <source>Revoke all failed</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.confirm" resname="js.unlock.confirm">
+                <source>Reset the login lock for user "%s"?</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.success" resname="js.unlock.success">
+                <source>Login lock reset</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.message" resname="js.unlock.message">
+                <source>Failed login attempt counter reset for "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.failed" resname="js.unlock.failed">
+                <source>Reset failed</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
+                <source>Resetting...</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.done" resname="js.unlock.done">
+                <source>Reset</source>
+            </trans-unit>
+
+            <!-- ============================================================
+                 Generic / shared
+                 ============================================================ -->
+            <trans-unit id="error.network" resname="error.network">
+                <source>Network error. Please check your connection and try again.</source>
+            </trans-unit>
+            <trans-unit id="error.server" resname="error.server">
+                <source>Server error. Please try again later.</source>
+            </trans-unit>
+            <trans-unit id="error.unknown" resname="error.unknown">
+                <source>An unknown error occurred. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="never" resname="never">
+                <source>Never</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -1,0 +1,256 @@
+#!/bin/bash
+
+## Description: Install TYPO3 13.4 LTS with nr_passkeys_fe extension
+## Usage: install-v13
+## Example: ddev install-v13
+
+set -e
+
+VERSION=v13
+INSTALL_DIR="/var/www/html/$VERSION"
+FE_EXTENSION_PATH="/var/www/nr_passkeys_fe"
+BE_EXTENSION_PATH="/var/www/nr_passkeys_be"
+SITE_URL="https://${VERSION}.nr-passkeys-fe.ddev.site"
+
+echo "Installing TYPO3 v13.4 LTS with nr_passkeys_fe extension..."
+echo ""
+
+# Ensure proper ownership of installation directory (volume may be root-owned initially)
+echo "Creating installation directory..."
+sudo chown -R "$(id -u):$(id -g)" "$INSTALL_DIR" 2>/dev/null || true
+rm -rf "$INSTALL_DIR"/* "$INSTALL_DIR"/.[!.]* 2>/dev/null || true
+mkdir -p "$INSTALL_DIR"
+
+# Create database
+echo "Setting up database..."
+mysql -h db -u root -p"root" -e "DROP DATABASE IF EXISTS ${VERSION};"
+mysql -h db -u root -p"root" -e "CREATE DATABASE ${VERSION};"
+
+# Bootstrap composer project
+echo "Bootstrapping composer project..."
+cd "$INSTALL_DIR"
+echo "{}" > composer.json
+composer config extra.typo3/cms.web-dir public -d "$INSTALL_DIR"
+composer config --no-plugins allow-plugins.typo3/cms-composer-installers true -d "$INSTALL_DIR"
+composer config --no-plugins allow-plugins.typo3/class-alias-loader true -d "$INSTALL_DIR"
+
+# Add path repositories for local extensions
+composer config repositories.nr_passkeys_be path "$BE_EXTENSION_PATH" -d "$INSTALL_DIR"
+composer config repositories.nr_passkeys_fe path "$FE_EXTENSION_PATH" -d "$INSTALL_DIR"
+
+# Install TYPO3 v13 with both extensions + felogin for demo
+composer req t3/cms:'^13' netresearch/nr-passkeys-be:'*@dev' netresearch/nr-passkeys-fe:'*@dev' --no-progress -n -d "$INSTALL_DIR"
+composer req typo3/cms-felogin typo3/cms-extensionmanager --no-progress -n -d "$INSTALL_DIR"
+composer req --dev typo3/cms-styleguide --no-progress -n -d "$INSTALL_DIR"
+composer req typo3/cms-introduction --no-progress -n -d "$INSTALL_DIR"
+
+# Setup TYPO3
+echo "Running TYPO3 setup..."
+vendor/bin/typo3 setup -n \
+    --dbname="$VERSION" \
+    --password=root \
+    --create-site="$SITE_URL" \
+    --admin-user-password="$TYPO3_SETUP_ADMIN_PASSWORD"
+
+# Configure development settings
+echo "Configuring development settings..."
+mkdir -p "$INSTALL_DIR/config/system"
+cat > "$INSTALL_DIR/config/system/additional.php" << 'ADDITIONALPHP'
+<?php
+// Development settings
+$GLOBALS['TYPO3_CONF_VARS']['BE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['FE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['devIPmask'] = '*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
+
+// Mail configuration (Mailpit)
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'smtp';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_smtp_server'] = 'localhost:1025';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'admin@example.com';
+
+// Graphics
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = '/usr/bin/';
+
+// Security settings for DDEV multi-subdomain environment
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceReferrer'] = false;
+ADDITIONALPHP
+
+# Setup extensions
+vendor/bin/typo3 extension:setup
+
+# --- SITE CONFIGURATION ---
+# The introduction package creates its own site (rootPageId=4, base="/").
+# The typo3 setup creates "main" site (rootPageId=1).
+# We need ONE site with our subdomain URL pointing to the introduction root.
+
+# Find the introduction site root page from YAML config (not DB — TYPO3 v13 uses file-based site config)
+INTRO_ROOT=""
+if [ -f config/sites/introduction/config.yaml ]; then
+    INTRO_ROOT=$(grep -oP 'rootPageId:\s*\K\d+' config/sites/introduction/config.yaml 2>/dev/null || echo "")
+fi
+
+if [ -n "$INTRO_ROOT" ] && [ "$INTRO_ROOT" != "0" ]; then
+    echo "Introduction package installed (rootPageId=$INTRO_ROOT). Consolidating sites..."
+
+    # Remove the empty "main" site — introduction root has all the content
+    rm -rf config/sites/main
+
+    # Update introduction site: set our subdomain URL, add bootstrap + passkey settings
+    cat > config/sites/introduction/config.yaml << SITEYAML
+base: '${SITE_URL}/'
+errorHandling: {}
+languages:
+  -
+    title: English
+    enabled: true
+    languageId: 0
+    base: /
+    typo3Language: default
+    locale: en_US.UTF-8
+    iso-639-1: en
+    navigationTitle: English
+    hreflang: en-US
+    direction: ''
+    flag: us
+rootPageId: ${INTRO_ROOT}
+websiteTitle: 'EXT:nr_passkeys_fe Demo'
+dependencies:
+  - bootstrap-package/full
+settings:
+  nr_passkeys_fe:
+    enforcement: 'off'
+SITEYAML
+    echo "Site consolidated: introduction root=$INTRO_ROOT, base=$SITE_URL"
+
+    # Insert demo pages under the INTRODUCTION root (not rootPageId=1)
+    DEMO_PID=$INTRO_ROOT
+else
+    echo "No introduction package. Using main site (rootPageId=1)."
+    # Add bootstrap dependency and passkey settings to main site
+    if [ -f config/sites/main/config.yaml ]; then
+        if ! grep -q "dependencies:" config/sites/main/config.yaml; then
+            echo "" >> config/sites/main/config.yaml
+            echo "dependencies:" >> config/sites/main/config.yaml
+            echo "  - bootstrap-package/full" >> config/sites/main/config.yaml
+        fi
+        if ! grep -q "nr_passkeys_fe:" config/sites/main/config.yaml; then
+            cat >> config/sites/main/config.yaml << 'SITECFG'
+
+settings:
+  nr_passkeys_fe:
+    enforcement: 'off'
+SITECFG
+        fi
+    fi
+    DEMO_PID=1
+fi
+
+# Generate styleguide demo content
+vendor/bin/typo3 styleguide:generate --create || echo "Styleguide generation skipped"
+
+# Create demo pages with passkey plugins and test FE user
+echo "Creating demo pages and test FE user (under pid=$DEMO_PID)..."
+mysql -h db -u root -p"root" "$VERSION" << SQL
+-- FE Users storage folder
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'FE Users', '/fe-users-storage', 254, 9000);
+SET @storage_pid = LAST_INSERT_ID();
+
+INSERT INTO fe_groups (pid, title, passkey_enforcement)
+VALUES (@storage_pid, 'Demo Users', 'off');
+SET @group_uid = LAST_INSERT_ID();
+
+INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
+VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
+
+-- Demo page: Combined login (felogin for password + standalone passkey plugin)
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'Login', '/passkey-login', 1, 9100);
+SET @login_page = LAST_INSERT_ID();
+
+-- Demo page: Passkey-only login (no felogin, just our plugin)
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'Passkey-Only Login', '/passkey-only', 1, 9150);
+SET @passkey_only_page = LAST_INSERT_ID();
+
+INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
+VALUES ($DEMO_PID, 'My Account', '/my-account', 1, 9200, '-2');
+SET @account_page = LAST_INSERT_ID();
+
+INSERT INTO pages (pid, title, slug, doktype, sorting)
+VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
+SET @enrollment_page = LAST_INSERT_ID();
+
+-- Login page: felogin with passkey button injected via template override
+-- (our TypoScript adds passkey button next to the Login button automatically)
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@login_page, 'felogin_login', '', 'Login', 100);
+
+-- Passkey-only page: standalone passkey plugin (no felogin fallback)
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@passkey_only_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100);
+
+-- My Account: passkey management
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
+
+-- Enrollment page
+INSERT INTO tt_content (pid, CType, list_type, header, sorting)
+VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
+SQL
+
+# Include nr_passkeys_fe TypoScript
+cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
+
+// Include nr_passkeys_fe TypoScript
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptSetup(
+    '@import "EXT:nr_passkeys_fe/Configuration/TypoScript/setup.typoscript"'
+);
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTypoScriptConstants(
+    '@import "EXT:nr_passkeys_fe/Configuration/TypoScript/constants.typoscript"'
+);
+TSPHP
+
+# Look up actual page UIDs and set TypoScript constants
+LOGIN_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1")
+ACCOUNT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1")
+ENROLLMENT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1")
+
+cat >> "$INSTALL_DIR/config/system/additional.php" << CONSTPHP
+
+// Configure passkey plugin page UIDs
+\\TYPO3\\CMS\\Core\\Utility\\ExtensionManagementUtility::addTypoScriptConstants('
+plugin.tx_nrpasskeysfe.settings.loginPageUid = ${LOGIN_UID}
+plugin.tx_nrpasskeysfe.settings.managementPageUid = ${ACCOUNT_UID}
+plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = ${ENROLLMENT_UID}
+');
+CONSTPHP
+
+# Add nr_passkeys_fe TypoScript to sys_template
+mysql -h db -u root -proot "$VERSION" -N -e "
+UPDATE sys_template
+SET include_static_file = CONCAT(include_static_file, ',EXT:nr_passkeys_fe/Configuration/TypoScript')
+WHERE include_static_file NOT LIKE '%nr_passkeys_fe%'
+LIMIT 1;
+"
+
+vendor/bin/typo3 cache:flush
+
+echo ""
+echo "========================================"
+echo " TYPO3 $VERSION installation complete!"
+echo "========================================"
+echo ""
+echo "  Frontend: ${SITE_URL}/"
+echo "  Backend:  ${SITE_URL}/typo3/"
+echo ""
+echo "  Demo pages:"
+echo "    /passkey-login  - Combined: passkey first + password fallback"
+echo "    /passkey-only   - Passkey-only login (no password fallback)"
+echo "    /my-account     - Passkey management (requires login)"
+echo "    /passkey-setup  - Passkey enrollment"
+echo ""
+echo "  FE User: demo / password"
+echo "  BE Admin: admin / Joh316!!"

@@ -1,0 +1,231 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+
+<f:comment>
+    felogin Login template override by EXT:nr_passkeys_fe.
+    Layout B (Tabbed): Passkey tab (default) + Password tab.
+    Recovery code form toggles inline via JS.
+</f:comment>
+
+<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" type="module" />
+<f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" type="module" />
+
+<f:flashMessages/>
+
+<f:if condition="{messageKey}">
+    <div class="nr-passkeys-fe-message">
+        <h3>
+            <f:render partial="RenderLabelOrMessage" arguments="{key: '{messageKey}_header'}"/>
+        </h3>
+        <p>
+            <f:render partial="RenderLabelOrMessage" arguments="{key: '{messageKey}_message'}"/>
+        </p>
+    </div>
+</f:if>
+
+<div class="nr-passkeys-fe-card">
+    <!-- Tabs -->
+    <div class="nr-passkeys-fe-tabs" role="tablist">
+        <button type="button"
+                class="nr-passkeys-fe-tab nr-passkeys-fe-tab--active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="nr-passkeys-fe-panel-passkey"
+                id="nr-passkeys-fe-tab-passkey"
+                data-action="switch-tab"
+                data-tab="passkey">
+            <f:translate key="login.tab.passkey" extensionName="nr_passkeys_fe" />
+        </button>
+        <button type="button"
+                class="nr-passkeys-fe-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="nr-passkeys-fe-panel-password"
+                id="nr-passkeys-fe-tab-password"
+                data-action="switch-tab"
+                data-tab="password">
+            <f:translate key="login.tab.password" extensionName="nr_passkeys_fe" />
+        </button>
+    </div>
+
+    <!-- Passkey Tab Panel -->
+    <div class="nr-passkeys-fe-tabpanel"
+         role="tabpanel"
+         id="nr-passkeys-fe-panel-passkey"
+         aria-labelledby="nr-passkeys-fe-tab-passkey"
+         data-nr-passkeys-fe="login"
+         data-eid-url="/?eID=nr_passkeys_fe"
+         data-site-identifier=""
+         data-discoverable="1">
+
+        <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
+        <div class="nr-passkeys-fe-login__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+
+        <div class="nr-passkeys-fe-passkey-content">
+            <div class="nr-passkeys-fe-passkey-icon" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" height="48" viewBox="0 -960 960 960" width="48" fill="#2F99A4"><path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Zm760-40l-60-60v-186q-44-13-72-49.5T720-580q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T910-450l50 50-60 60 60 60-80 80Zm-440-280q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/></svg>
+            </div>
+
+            <button type="button"
+                    id="nr-passkeys-fe-login-btn"
+                    class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey"
+                    data-action="passkey-login"
+                    aria-describedby="nr-passkeys-fe-login-status">
+                <span class="nr-passkeys-fe-btn__icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor"><path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Zm760-40l-60-60v-186q-44-13-72-49.5T720-580q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T910-450l50 50-60 60 60 60-80 80Zm-440-280q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/></svg>
+                </span>
+                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-btn-text">
+                    <f:translate key="login.button.passkey" extensionName="nr_passkeys_fe" />
+                </span>
+                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-btn-loading" style="display:none" aria-hidden="true">
+                    <f:translate key="login.button.passkey.loading" extensionName="nr_passkeys_fe" />
+                </span>
+            </button>
+
+            <nav class="nr-passkeys-fe-links" aria-label="Authentication options">
+                <a href="#nr-passkeys-fe-recovery"
+                   class="nr-passkeys-fe-link"
+                   data-action="show-recovery">
+                    <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
+                </a>
+                <span class="nr-passkeys-fe-links__separator" aria-hidden="true">|</span>
+                <a href="https://passkeys.dev"
+                   class="nr-passkeys-fe-link"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                    <f:translate key="login.link.whatIsPasskey" extensionName="nr_passkeys_fe" />
+                </a>
+            </nav>
+        </div>
+
+        <!-- Inline Recovery Form (hidden by default) -->
+        <div id="nr-passkeys-fe-recovery"
+             class="nr-passkeys-fe-recovery"
+             data-nr-passkeys-fe="recovery"
+             data-eid-url="/?eID=nr_passkeys_fe"
+             data-site-identifier=""
+             style="display:none">
+
+            <h3 class="nr-passkeys-fe-recovery__title">
+                <f:translate key="recovery.title" extensionName="nr_passkeys_fe" />
+            </h3>
+
+            <div class="nr-passkeys-fe-recovery__error" role="alert" aria-live="polite" style="display:none"></div>
+            <div class="nr-passkeys-fe-recovery__status" role="status" aria-live="polite" style="display:none"></div>
+
+            <form data-action="recovery-verify">
+                <div class="nr-passkeys-fe-recovery__field">
+                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-username">
+                        <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
+                    </label>
+                    <input type="text"
+                           id="nr-passkeys-fe-recovery-username"
+                           name="recovery_username"
+                           class="nr-passkeys-fe-recovery__input"
+                           autocomplete="username" />
+                </div>
+
+                <div class="nr-passkeys-fe-recovery__field">
+                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-code">
+                        <f:translate key="recovery.code.label" extensionName="nr_passkeys_fe" />
+                    </label>
+                    <input type="text"
+                           id="nr-passkeys-fe-recovery-code"
+                           name="recovery_code"
+                           class="nr-passkeys-fe-recovery__input nr-passkeys-fe-recovery__input--code"
+                           placeholder="XXXX-XXXX"
+                           maxlength="9"
+                           autocomplete="off"
+                           autocorrect="off"
+                           spellcheck="false"
+                           data-action="recovery-format" />
+                </div>
+
+                <button type="submit"
+                        class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary"
+                        data-action="recovery-submit">
+                    <span class="nr-passkeys-fe-btn__text">
+                        <f:translate key="recovery.button.verify" extensionName="nr_passkeys_fe" />
+                    </span>
+                    <span class="nr-passkeys-fe-btn__loading" style="display:none" aria-hidden="true">
+                        <f:translate key="recovery.button.verifying" extensionName="nr_passkeys_fe" />
+                    </span>
+                </button>
+            </form>
+
+            <a class="nr-passkeys-fe-recovery__back nr-passkeys-fe-link" href="#" data-action="hide-recovery">
+                <f:translate key="recovery.link.backToLogin" extensionName="nr_passkeys_fe" />
+            </a>
+        </div>
+    </div>
+
+    <!-- Password Tab Panel -->
+    <div class="nr-passkeys-fe-tabpanel"
+         role="tabpanel"
+         id="nr-passkeys-fe-panel-password"
+         aria-labelledby="nr-passkeys-fe-tab-password"
+         style="display:none">
+
+        <f:form target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" spellcheck="false">
+            <fieldset class="nr-passkeys-fe-fieldset">
+                <div class="nr-passkeys-fe-field">
+                    <label class="nr-passkeys-fe-label" for="tx-felogin-input-username">
+                        <f:translate key="username"/>
+                    </label>
+                    <f:form.textfield name="user" required="true" autocomplete="username" id="tx-felogin-input-username" class="nr-passkeys-fe-input"/>
+                </div>
+                <div class="nr-passkeys-fe-field">
+                    <label class="nr-passkeys-fe-label" for="tx-felogin-input-password">
+                        <f:translate key="password"/>
+                    </label>
+                    <f:form.password name="pass" required="required" autocomplete="current-password" id="tx-felogin-input-password" class="nr-passkeys-fe-input"/>
+                </div>
+
+                <f:if condition="{permaloginStatus} > -1">
+                    <div class="nr-passkeys-fe-field nr-passkeys-fe-field--checkbox">
+                        <f:if condition="{permaloginStatus} == 1">
+                            <f:then>
+                                <f:form.hidden name="permalogin" value="0" disabled="disabled"/>
+                                <f:form.checkbox name="permalogin" id="permalogin" value="1" checked="checked"/>
+                            </f:then>
+                            <f:else>
+                                <f:form.hidden name="permalogin" value="0"/>
+                                <f:form.checkbox name="permalogin" id="permalogin" value="1"/>
+                            </f:else>
+                        </f:if>
+                        <label for="permalogin">
+                            <f:translate id="permalogin"/>
+                        </label>
+                    </div>
+                </f:if>
+
+                <f:form.submit value="{f:translate(key: 'login')}" name="submit" class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary nr-passkeys-fe-btn--fullwidth"/>
+
+                <div class="felogin-hidden">
+                    <f:form.hidden name="logintype" value="login"/>
+                    <f:if condition="{redirectURL}!=''">
+                        <f:form.hidden name="redirect_url" value="{redirectURL}" />
+                    </f:if>
+                    <f:if condition="{referer}!=''">
+                        <f:form.hidden name="referer" value="{referer}" />
+                    </f:if>
+                    <f:if condition="{redirectReferrer}!=''">
+                        <f:form.hidden name="redirectReferrer" value="off" />
+                    </f:if>
+                    <f:if condition="{noRedirect}!=''">
+                        <f:form.hidden name="noredirect" value="1" />
+                    </f:if>
+                </div>
+            </fieldset>
+        </f:form>
+
+        <f:if condition="{settings.showForgotPassword}">
+            <nav class="nr-passkeys-fe-links">
+                <f:link.action action="recovery" controller="PasswordRecovery" class="nr-passkeys-fe-link">
+                    <f:translate key="login.link.forgotPassword" extensionName="nr_passkeys_fe" />
+                </f:link.action>
+            </nav>
+        </f:if>
+    </div>
+</div>
+</html>
