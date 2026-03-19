@@ -118,7 +118,11 @@
             </f:else>
         </f:if>
 
-        <div class="nr-passkeys-fe-management__register">
+        <div class="nr-passkeys-fe-management__register"
+             data-nr-passkeys-fe="enrollment-form"
+             data-eid-url="{eidUrl}"
+             data-register-options-url="{registerOptionsUrl}"
+             data-register-verify-url="{registerVerifyUrl}">
             <h3 class="nr-passkeys-fe-management__subtitle">
                 <f:translate key="management.register.title" extensionName="nr_passkeys_fe" />
             </h3>
