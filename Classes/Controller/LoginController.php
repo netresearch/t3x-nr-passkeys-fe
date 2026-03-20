@@ -182,7 +182,7 @@ final class LoginController
         try {
             $result = $this->webAuthnService->verifyAssertionResponse(
                 assertionJson: $assertion,
-                challenge: \hex2bin($challenge) !== false ? \hex2bin($challenge) : $challenge,
+                challenge: $challenge,
                 site: $site,
             );
 
