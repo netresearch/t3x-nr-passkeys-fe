@@ -18,10 +18,11 @@ use Netresearch\NrPasskeysFe\Controller\RecoveryController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -36,6 +37,9 @@ final class EidDispatcherTest extends TestCase
     {
         parent::setUp();
         $this->subject = new EidDispatcher();
+
+        // Register a Context singleton so bootstrapFrontendUser() can set aspects
+        GeneralUtility::setSingletonInstance(Context::class, new Context());
     }
 
     protected function tearDown(): void
@@ -90,8 +94,14 @@ final class EidDispatcherTest extends TestCase
     public function publicActionWithoutFeUserPassesThrough(string $action): void
     {
         $expectedResponse = new JsonResponse(['status' => 'ok']);
-        $controllerMock = $this->createPublicActionControllerMock($action, $expectedResponse);
-        $this->registerControllerMock($action, $controllerMock);
+        $controllerStub = $this->createPublicActionControllerStub($action, $expectedResponse);
+        $this->registerControllerStub($action, $controllerStub);
+
+        // Register a stub FrontendUserAuthentication for bootstrapFrontendUser()
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = null;
+        $feUserStub->method('createUserAspect')->willReturn(new UserAspect());
+        GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserStub);
 
         $request = $this->buildRequest(['action' => $action]); // No frontend.user attribute
 
@@ -125,8 +135,17 @@ final class EidDispatcherTest extends TestCase
     #[DataProvider('protectedActionsProvider')]
     public function protectedActionWithoutFeUserReturns401(string $action): void
     {
+        // Register a mock FrontendUserAuthentication that has no logged-in user.
+        // bootstrapFrontendUser() will pick this up via GeneralUtility::makeInstance().
+        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock->user = null;
+        $feUserMock->expects(self::once())->method('start');
+        $feUserMock->expects(self::once())->method('fetchGroupData');
+        $feUserMock->method('createUserAspect')->willReturn(new UserAspect());
+        GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserMock);
+
         $request = $this->buildRequest(['action' => $action]);
-        // No frontend.user attribute → unauthenticated
+        // No frontend.user attribute → bootstrapFrontendUser() resolves session
 
         $response = $this->subject->processRequest($request);
 
@@ -138,11 +157,12 @@ final class EidDispatcherTest extends TestCase
     #[DataProvider('protectedActionsProvider')]
     public function protectedActionWithZeroUidFeUserReturns401(string $action): void
     {
-        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
-        $feUserMock->user = ['uid' => 0];
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = ['uid' => 0];
 
+        // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
-            ->withAttribute('frontend.user', $feUserMock);
+            ->withAttribute('frontend.user', $feUserStub);
 
         $response = $this->subject->processRequest($request);
 
@@ -154,14 +174,15 @@ final class EidDispatcherTest extends TestCase
     public function protectedActionWithAuthenticatedFeUserDispatches(string $action): void
     {
         $expectedResponse = new JsonResponse(['status' => 'dispatched']);
-        $controllerMock = $this->createProtectedActionControllerMock($action, $expectedResponse);
-        $this->registerControllerMock($action, $controllerMock);
+        $controllerStub = $this->createProtectedActionControllerStub($action, $expectedResponse);
+        $this->registerControllerStub($action, $controllerStub);
 
-        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
-        $feUserMock->user = ['uid' => 42];
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = ['uid' => 42];
 
+        // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
-            ->withAttribute('frontend.user', $feUserMock);
+            ->withAttribute('frontend.user', $feUserStub);
 
         $response = $this->subject->processRequest($request);
 
@@ -175,15 +196,74 @@ final class EidDispatcherTest extends TestCase
     #[Test]
     public function controllerExceptionReturns500(): void
     {
-        $loginMock = $this->createMock(LoginController::class);
-        $loginMock->method('optionsAction')->willThrowException(new RuntimeException('Boom'));
-        GeneralUtility::addInstance(LoginController::class, $loginMock);
+        $loginStub = $this->createStub(LoginController::class);
+        $loginStub->method('optionsAction')->willThrowException(new RuntimeException('Boom'));
+        GeneralUtility::addInstance(LoginController::class, $loginStub);
+
+        // Register a stub FrontendUserAuthentication for bootstrapFrontendUser()
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = null;
+        $feUserStub->method('createUserAspect')->willReturn(new UserAspect());
+        GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserStub);
 
         $request = $this->buildRequest(['action' => 'loginOptions']);
         $response = $this->subject->processRequest($request);
 
         self::assertSame(500, $response->getStatusCode());
         self::assertJsonBodyEquals(['error' => 'Internal error'], $response);
+    }
+
+    // ---------------------------------------------------------------
+    // Bootstrap FE user session for eID requests
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function protectedActionBootstrapsFrontendUserWhenNotOnRequest(): void
+    {
+        $expectedResponse = new JsonResponse(['status' => 'dispatched']);
+        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub->method('listAction')->willReturn($expectedResponse);
+        GeneralUtility::addInstance(ManagementController::class, $managementStub);
+
+        // Register a mock FE user that has a valid session (uid=42)
+        // Uses createMock (not stub) because we assert expectations on start/fetchGroupData
+        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock->user = ['uid' => 42];
+        $feUserMock->expects(self::once())->method('start');
+        $feUserMock->expects(self::once())->method('fetchGroupData');
+        $feUserMock->method('createUserAspect')->willReturn(new UserAspect());
+        GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserMock);
+
+        // Request WITHOUT frontend.user attribute — simulates eID request
+        $request = $this->buildRequest(['action' => 'manageList']);
+
+        $response = $this->subject->processRequest($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function bootstrapSkipsWhenFrontendUserAlreadyPresent(): void
+    {
+        $expectedResponse = new JsonResponse(['status' => 'dispatched']);
+        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub->method('listAction')->willReturn($expectedResponse);
+        GeneralUtility::addInstance(ManagementController::class, $managementStub);
+
+        // Pre-set frontend.user on request (e.g. if TYPO3 fixes middleware order)
+        // Uses createMock because we assert expectations on start/fetchGroupData
+        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock->user = ['uid' => 42];
+        // start() and fetchGroupData() should NOT be called
+        $feUserMock->expects(self::never())->method('start');
+        $feUserMock->expects(self::never())->method('fetchGroupData');
+
+        $request = $this->buildRequest(['action' => 'manageList'])
+            ->withAttribute('frontend.user', $feUserMock);
+
+        $response = $this->subject->processRequest($request);
+
+        self::assertSame(200, $response->getStatusCode());
     }
 
     // ---------------------------------------------------------------
@@ -212,66 +292,66 @@ final class EidDispatcherTest extends TestCase
     /**
      * Create a mock for the controller that handles the given public action.
      */
-    private function createPublicActionControllerMock(string $action, ResponseInterface $response): object
+    private function createPublicActionControllerStub(string $action, ResponseInterface $response): object
     {
         return match ($action) {
-            'loginOptions' => $this->createLoginMock('optionsAction', $response),
-            'loginVerify' => $this->createLoginMock('verifyAction', $response),
-            'recoveryVerify' => $this->createRecoveryMock('verifyAction', $response),
+            'loginOptions' => $this->createLoginStub('optionsAction', $response),
+            'loginVerify' => $this->createLoginStub('verifyAction', $response),
+            'recoveryVerify' => $this->createRecoveryStub('verifyAction', $response),
             default => throw new InvalidArgumentException("Unknown public action: $action"),
         };
     }
 
     /**
-     * Create a mock for the controller that handles the given protected action.
+     * Create a stub for the controller that handles the given protected action.
      */
-    private function createProtectedActionControllerMock(string $action, ResponseInterface $response): object
+    private function createProtectedActionControllerStub(string $action, ResponseInterface $response): object
     {
         return match ($action) {
-            'registrationOptions' => $this->createManagementMock('registrationOptionsAction', $response),
-            'registrationVerify' => $this->createManagementMock('registrationVerifyAction', $response),
-            'manageList' => $this->createManagementMock('listAction', $response),
-            'manageRename' => $this->createManagementMock('renameAction', $response),
-            'manageRemove' => $this->createManagementMock('removeAction', $response),
-            'recoveryGenerate' => $this->createRecoveryMock('generateAction', $response),
-            'enrollmentStatus' => $this->createEnrollmentMock('statusAction', $response),
-            'enrollmentSkip' => $this->createEnrollmentMock('skipAction', $response),
+            'registrationOptions' => $this->createManagementStub('registrationOptionsAction', $response),
+            'registrationVerify' => $this->createManagementStub('registrationVerifyAction', $response),
+            'manageList' => $this->createManagementStub('listAction', $response),
+            'manageRename' => $this->createManagementStub('renameAction', $response),
+            'manageRemove' => $this->createManagementStub('removeAction', $response),
+            'recoveryGenerate' => $this->createRecoveryStub('generateAction', $response),
+            'enrollmentStatus' => $this->createEnrollmentStub('statusAction', $response),
+            'enrollmentSkip' => $this->createEnrollmentStub('skipAction', $response),
             default => throw new InvalidArgumentException("Unknown protected action: $action"),
         };
     }
 
-    private function createLoginMock(string $method, ResponseInterface $response): LoginController&MockObject
+    private function createLoginStub(string $method, ResponseInterface $response): LoginController
     {
-        $mock = $this->createMock(LoginController::class);
-        $mock->method($method)->willReturn($response);
-        return $mock;
+        $stub = $this->createStub(LoginController::class);
+        $stub->method($method)->willReturn($response);
+        return $stub;
     }
 
-    private function createManagementMock(string $method, ResponseInterface $response): ManagementController&MockObject
+    private function createManagementStub(string $method, ResponseInterface $response): ManagementController
     {
-        $mock = $this->createMock(ManagementController::class);
-        $mock->method($method)->willReturn($response);
-        return $mock;
+        $stub = $this->createStub(ManagementController::class);
+        $stub->method($method)->willReturn($response);
+        return $stub;
     }
 
-    private function createRecoveryMock(string $method, ResponseInterface $response): RecoveryController&MockObject
+    private function createRecoveryStub(string $method, ResponseInterface $response): RecoveryController
     {
-        $mock = $this->createMock(RecoveryController::class);
-        $mock->method($method)->willReturn($response);
-        return $mock;
+        $stub = $this->createStub(RecoveryController::class);
+        $stub->method($method)->willReturn($response);
+        return $stub;
     }
 
-    private function createEnrollmentMock(string $method, ResponseInterface $response): EnrollmentController&MockObject
+    private function createEnrollmentStub(string $method, ResponseInterface $response): EnrollmentController
     {
-        $mock = $this->createMock(EnrollmentController::class);
-        $mock->method($method)->willReturn($response);
-        return $mock;
+        $stub = $this->createStub(EnrollmentController::class);
+        $stub->method($method)->willReturn($response);
+        return $stub;
     }
 
     /**
-     * Register a controller mock in GeneralUtility so makeInstance returns it.
+     * Register a controller stub in GeneralUtility so makeInstance returns it.
      */
-    private function registerControllerMock(string $action, object $mock): void
+    private function registerControllerStub(string $action, object $stub): void
     {
         $controllerClass = match (true) {
             \in_array($action, ['loginOptions', 'loginVerify'], true) => LoginController::class,
@@ -281,7 +361,7 @@ final class EidDispatcherTest extends TestCase
             default => throw new InvalidArgumentException("Cannot determine controller for action: $action"),
         };
 
-        GeneralUtility::addInstance($controllerClass, $mock);
+        GeneralUtility::addInstance($controllerClass, $stub);
     }
 
     /**
