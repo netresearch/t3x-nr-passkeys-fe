@@ -102,7 +102,11 @@
       if (response.ok && data.status === 'ok') {
         showStatus(statusEl, 'Recovery code accepted. Redirecting...');
         var redirect = data.redirectUrl;
-        window.location.href = (redirect && isSameOrigin(redirect)) ? redirect : window.location.href;
+        if (redirect && isSameOrigin(redirect)) {
+          window.location.href = redirect;
+        } else {
+          window.location.reload();
+        }
         return;
       }
 
