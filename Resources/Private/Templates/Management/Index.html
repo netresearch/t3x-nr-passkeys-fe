@@ -152,7 +152,10 @@
         </div>
     </section>
 
-    <section class="nr-passkeys-fe-management__recovery">
+    <section class="nr-passkeys-fe-management__recovery"
+             data-nr-passkeys-fe="recovery-codes"
+             data-eid-url="{eidUrl}"
+             data-generate-url="{recoveryGenerateUrl}">
         <h2 class="nr-passkeys-fe-management__section-title">
             <f:translate key="management.recovery.title" extensionName="nr_passkeys_fe" />
         </h2>
@@ -166,10 +169,29 @@
             <strong id="nr-passkeys-fe-recovery-count">{recoveryCodesRemaining}</strong>
         </div>
 
-        <a class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary"
-           href="{recoveryCodesUrl}">
-            <f:translate key="management.recovery.manage" extensionName="nr_passkeys_fe" />
-        </a>
+        <div id="nr-passkeys-fe-codes-grid" class="nr-passkeys-fe-recovery-codes__grid" style="display:none"></div>
+        <div class="nr-passkeys-fe-recovery-codes__status" role="status" aria-live="polite" style="display:none"></div>
+        <div class="nr-passkeys-fe-recovery-codes__error" role="alert" style="display:none"></div>
+
+        <div class="nr-passkeys-fe-management__recovery-actions">
+            <button type="button"
+                    class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary"
+                    data-action="generate-codes">
+                <span class="nr-passkeys-fe-btn__text">
+                    <f:translate key="management.recovery.manage" extensionName="nr_passkeys_fe" />
+                </span>
+                <span class="nr-passkeys-fe-btn__loading" style="display:none" aria-hidden="true">
+                    Generating...
+                </span>
+            </button>
+            <button type="button"
+                    class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary"
+                    data-action="download-codes"
+                    data-filename="passkey-recovery-codes.txt"
+                    style="display:none">
+                <f:translate key="management.recovery.codes.download" extensionName="nr_passkeys_fe" />
+            </button>
+        </div>
     </section>
 </div>
 </f:section>

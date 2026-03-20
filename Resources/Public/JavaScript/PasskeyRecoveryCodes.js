@@ -26,6 +26,7 @@
     var codesGrid = container.querySelector('#nr-passkeys-fe-codes-grid');
     var statusEl = container.querySelector('.nr-passkeys-fe-recovery-codes__status');
     var errorEl = container.querySelector('.nr-passkeys-fe-recovery-codes__error');
+    var countEl = document.getElementById('nr-passkeys-fe-recovery-count');
 
     if (downloadBtn) {
       downloadBtn.addEventListener('click', function () {
@@ -37,7 +38,7 @@
       var btnText = generateBtn.querySelector('.nr-passkeys-fe-btn__text');
       var btnLoading = generateBtn.querySelector('.nr-passkeys-fe-btn__loading');
       generateBtn.addEventListener('click', function () {
-        handleGenerateCodes(generateUrl, codesGrid, generateBtn, btnText, btnLoading, statusEl, errorEl);
+        handleGenerateCodes(generateUrl, codesGrid, generateBtn, btnText, btnLoading, statusEl, errorEl, downloadBtn, countEl);
       });
     }
   }
@@ -85,7 +86,7 @@
     }, 100);
   }
 
-  async function handleGenerateCodes(generateUrl, codesGrid, generateBtn, btnText, btnLoading, statusEl, errorEl) {
+  async function handleGenerateCodes(generateUrl, codesGrid, generateBtn, btnText, btnLoading, statusEl, errorEl, downloadBtn, countEl) {
     var confirmed = window.confirm(
       'Generate new recovery codes? This will invalidate all existing codes.'
     );
@@ -106,9 +107,17 @@
 
       var data = await response.json().catch(function () { return {}; });
 
-      if (response.ok && data.status === 'ok' && data.codes) {
+      if (response.ok && data.codes) {
         renderCodes(codesGrid, data.codes);
         showStatus(statusEl, 'New recovery codes generated. Save them now!');
+        // Show download button
+        if (downloadBtn) {
+          downloadBtn.style.display = '';
+        }
+        // Update remaining count
+        if (countEl && data.count !== undefined) {
+          countEl.textContent = String(data.count);
+        }
       } else {
         showError(errorEl, data.error || 'Failed to generate recovery codes. Please try again.');
       }

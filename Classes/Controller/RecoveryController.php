@@ -68,6 +68,7 @@ final class RecoveryController
         ]);
 
         return new JsonResponse([
+            'status' => 'ok',
             'codes' => $codes,
             'count' => \count($codes),
         ]);
