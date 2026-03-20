@@ -284,7 +284,11 @@
         try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
         showStatus(statusEl, 'Authenticated! Redirecting...');
         var redirect = verifyData.redirectUrl;
-        window.location.href = (redirect && isSameOrigin(redirect)) ? redirect : window.location.href;
+        if (redirect && isSameOrigin(redirect)) {
+          window.location.href = redirect;
+        } else {
+          window.location.reload();
+        }
         return;
       }
 
