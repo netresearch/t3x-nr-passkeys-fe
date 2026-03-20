@@ -289,10 +289,11 @@
         if (logintypeField) {
           logintypeField.value = 'login';
         }
-        // Clear the username — discoverable login resolves from assertion
+        // Set a placeholder username — TYPO3 requires non-empty uname to enter
+        // the auth chain. The auth service resolves the actual user from the assertion.
         var userField = feloginForm.querySelector('input[name="user"]');
         if (userField) {
-          userField.value = '';
+          userField.value = '__passkey__';
         }
         // Use HTMLFormElement.prototype.submit to avoid shadowing by elements named "submit"
         HTMLFormElement.prototype.submit.call(feloginForm);

@@ -29,94 +29,85 @@
         <div class="nr-passkeys-fe-management__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
         <div class="nr-passkeys-fe-management__error" role="alert" style="display:none"></div>
 
-        <f:if condition="{credentials}">
-            <f:then>
-                <f:if condition="{credentials -> f:count()} == 1">
-                    <div class="nr-passkeys-fe-management__warning" role="alert">
-                        <f:translate key="management.warning.singleKey" extensionName="nr_passkeys_fe" />
-                    </div>
-                </f:if>
-
-                <table class="nr-passkeys-fe-management__table" id="nr-passkeys-fe-credential-list">
-                    <thead>
-                        <tr>
-                            <th scope="col" class="nr-passkeys-fe-management__th">
-                                <f:translate key="management.column.label" extensionName="nr_passkeys_fe" />
-                            </th>
-                            <th scope="col" class="nr-passkeys-fe-management__th">
-                                <f:translate key="management.column.created" extensionName="nr_passkeys_fe" />
-                            </th>
-                            <th scope="col" class="nr-passkeys-fe-management__th">
-                                <f:translate key="management.column.lastUsed" extensionName="nr_passkeys_fe" />
-                            </th>
-                            <th scope="col" class="nr-passkeys-fe-management__th">
-                                <f:translate key="management.column.type" extensionName="nr_passkeys_fe" />
-                            </th>
-                            <th scope="col" class="nr-passkeys-fe-management__th nr-passkeys-fe-management__th--actions">
-                                <f:translate key="management.column.actions" extensionName="nr_passkeys_fe" />
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody id="nr-passkeys-fe-credential-body">
-                        <f:for each="{credentials}" as="credential">
-                            <tr class="nr-passkeys-fe-management__row" data-uid="{credential.uid}">
-                                <td class="nr-passkeys-fe-management__td">
-                                    <span class="nr-passkeys-fe-management__label"
-                                          data-uid="{credential.uid}">
-                                        {credential.label -> f:format.htmlspecialchars()}
-                                    </span>
-                                </td>
-                                <td class="nr-passkeys-fe-management__td">
-                                    <f:if condition="{credential.createdAt}">
-                                        <f:then>
-                                            <time datetime="{credential.createdAt -> f:format.date(format: 'c')}">
-                                                {credential.createdAt -> f:format.date(format: 'd.m.Y H:i')}
-                                            </time>
-                                        </f:then>
-                                        <f:else>—</f:else>
-                                    </f:if>
-                                </td>
-                                <td class="nr-passkeys-fe-management__td">
-                                    <f:if condition="{credential.lastUsedAt}">
-                                        <f:then>
-                                            <time datetime="{credential.lastUsedAt -> f:format.date(format: 'c')}">
-                                                {credential.lastUsedAt -> f:format.date(format: 'd.m.Y H:i')}
-                                            </time>
-                                        </f:then>
-                                        <f:else>
-                                            <f:translate key="management.lastUsed.never" extensionName="nr_passkeys_fe" />
-                                        </f:else>
-                                    </f:if>
-                                </td>
-                                <td class="nr-passkeys-fe-management__td">
-                                    {credential.aaguid -> f:if(condition: credential.aaguid, then: credential.aaguid, else: '—')}
-                                </td>
-                                <td class="nr-passkeys-fe-management__td nr-passkeys-fe-management__td--actions">
-                                    <button type="button"
-                                            class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary nr-passkeys-fe-btn--sm"
-                                            data-action="rename-credential"
-                                            data-uid="{credential.uid}">
-                                        <f:translate key="management.action.rename" extensionName="nr_passkeys_fe" />
-                                    </button>
-                                    <button type="button"
-                                            class="nr-passkeys-fe-btn nr-passkeys-fe-btn--danger nr-passkeys-fe-btn--sm"
-                                            data-action="remove-credential"
-                                            data-uid="{credential.uid}"
-                                            data-label="{credential.label -> f:format.htmlspecialchars()}">
-                                        <f:translate key="management.action.remove" extensionName="nr_passkeys_fe" />
-                                    </button>
-                                </td>
-                            </tr>
-                        </f:for>
-                    </tbody>
-                </table>
-            </f:then>
-            <f:else>
-                <p class="nr-passkeys-fe-management__empty" id="nr-passkeys-fe-empty">
-                    <f:translate key="management.passkeys.empty" extensionName="nr_passkeys_fe" />
-                </p>
-            </f:else>
+        <f:if condition="{credentials -> f:count()} == 1">
+            <div class="nr-passkeys-fe-management__warning" role="alert">
+                <f:translate key="management.warning.singleKey" extensionName="nr_passkeys_fe" />
+            </div>
         </f:if>
+
+        <table class="nr-passkeys-fe-management__table" id="nr-passkeys-fe-credential-list"
+               {f:if(condition: credentials, else: 'style="display:none"')}>
+            <thead>
+                <tr>
+                    <th scope="col" class="nr-passkeys-fe-management__th">
+                        <f:translate key="management.column.label" extensionName="nr_passkeys_fe" />
+                    </th>
+                    <th scope="col" class="nr-passkeys-fe-management__th">
+                        <f:translate key="management.column.created" extensionName="nr_passkeys_fe" />
+                    </th>
+                    <th scope="col" class="nr-passkeys-fe-management__th">
+                        <f:translate key="management.column.lastUsed" extensionName="nr_passkeys_fe" />
+                    </th>
+                    <th scope="col" class="nr-passkeys-fe-management__th nr-passkeys-fe-management__th--actions">
+                        <f:translate key="management.column.actions" extensionName="nr_passkeys_fe" />
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="nr-passkeys-fe-credential-body">
+                <f:for each="{credentials}" as="credential">
+                    <tr class="nr-passkeys-fe-management__row" data-uid="{credential.uid}">
+                        <td class="nr-passkeys-fe-management__td">
+                            <span class="nr-passkeys-fe-management__label"
+                                  data-uid="{credential.uid}">
+                                {credential.label -> f:format.htmlspecialchars()}
+                            </span>
+                        </td>
+                        <td class="nr-passkeys-fe-management__td">
+                            <f:if condition="{credential.createdAt}">
+                                <f:then>
+                                    <time datetime="{credential.createdAt -> f:format.date(format: 'c')}">
+                                        {credential.createdAt -> f:format.date(format: 'd.m.Y H:i')}
+                                    </time>
+                                </f:then>
+                                <f:else>—</f:else>
+                            </f:if>
+                        </td>
+                        <td class="nr-passkeys-fe-management__td">
+                            <f:if condition="{credential.lastUsedAt}">
+                                <f:then>
+                                    <time datetime="{credential.lastUsedAt -> f:format.date(format: 'c')}">
+                                        {credential.lastUsedAt -> f:format.date(format: 'd.m.Y H:i')}
+                                    </time>
+                                </f:then>
+                                <f:else>
+                                    <f:translate key="management.lastUsed.never" extensionName="nr_passkeys_fe" />
+                                </f:else>
+                            </f:if>
+                        </td>
+                        <td class="nr-passkeys-fe-management__td nr-passkeys-fe-management__td--actions">
+                            <button type="button"
+                                    class="nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary nr-passkeys-fe-btn--sm"
+                                    data-action="rename-credential"
+                                    data-uid="{credential.uid}">
+                                <f:translate key="management.action.rename" extensionName="nr_passkeys_fe" />
+                            </button>
+                            <button type="button"
+                                    class="nr-passkeys-fe-btn nr-passkeys-fe-btn--danger nr-passkeys-fe-btn--sm"
+                                    data-action="remove-credential"
+                                    data-uid="{credential.uid}"
+                                    data-label="{credential.label -> f:format.htmlspecialchars()}">
+                                <f:translate key="management.action.remove" extensionName="nr_passkeys_fe" />
+                            </button>
+                        </td>
+                    </tr>
+                </f:for>
+            </tbody>
+        </table>
+
+        <p class="nr-passkeys-fe-management__empty" id="nr-passkeys-fe-empty"
+           {f:if(condition: credentials, then: 'style="display:none"')}>
+            <f:translate key="management.passkeys.empty" extensionName="nr_passkeys_fe" />
+        </p>
 
         <div class="nr-passkeys-fe-management__register"
              data-nr-passkeys-fe="enrollment-form"

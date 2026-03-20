@@ -105,15 +105,23 @@
       listBody.removeChild(listBody.firstChild);
     }
 
+    // Show/hide table and empty message
+    var tableEl = listBody.closest('table');
     if (credentials.length === 0) {
       if (emptyEl) {
         emptyEl.style.display = '';
+      }
+      if (tableEl) {
+        tableEl.style.display = 'none';
       }
       return;
     }
 
     if (emptyEl) {
       emptyEl.style.display = 'none';
+    }
+    if (tableEl) {
+      tableEl.style.display = '';
     }
 
     // Show/hide single key warning
@@ -149,11 +157,7 @@
       lastUsedCell.textContent = cred.lastUsedAt ? formatTimestamp(cred.lastUsedAt) : 'Never';
       row.appendChild(lastUsedCell);
 
-      // Type/AAGUID cell
-      var typeCell = document.createElement('td');
-      typeCell.className = 'nr-passkeys-fe-management__td';
-      typeCell.textContent = cred.aaguid || '—';
-      row.appendChild(typeCell);
+
 
       // Actions cell
       var actionsCell = document.createElement('td');
