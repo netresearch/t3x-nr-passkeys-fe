@@ -154,10 +154,11 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 return 0;
             }
 
-            // Verify the assertion
+            // Verify the assertion — challenge must be hex-encoded to match the
+            // format used when creating assertion options in the eID endpoint.
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
                 assertionJson: $payload['assertion'],
-                challenge: $rawChallenge,
+                challenge: \bin2hex($rawChallenge),
                 site: $site,
             );
 

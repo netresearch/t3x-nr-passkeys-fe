@@ -328,7 +328,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->method('verifyAssertionResponse')
             ->with(
                 assertionJson: '{"valid":"assertion"}',
-                challenge: 'challenge-token-123',
+                challenge: \bin2hex('challenge-token-123'),
                 site: $this->site,
             )
             ->willReturn([
@@ -742,7 +742,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->method('verifyAssertionResponse')
             ->with(
                 assertionJson: '{"cached":"test"}',
-                challenge: 'cached-token',
+                challenge: \bin2hex('cached-token'),
                 site: $this->site,
             )
             ->willReturn([

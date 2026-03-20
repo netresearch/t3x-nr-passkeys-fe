@@ -262,10 +262,43 @@
         },
       };
 
-      // Step 5: Verify with eID
+      // Step 5: Submit via felogin form so TYPO3's auth chain establishes the session.
+      // Pack the assertion + challengeToken into the `pass` (uident) field as JSON.
+      // PasskeyFrontendAuthenticationService picks this up and verifies server-side.
       showStatus(statusEl, 'Verifying...');
       try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
 
+      var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
+      if (feloginForm) {
+        var passkeyPayload = JSON.stringify({
+          _type: 'passkey',
+          assertion: credentialResponse,
+          challengeToken: challengeToken,
+        });
+        // Set the pass (uident) field to the passkey payload
+        var passField = feloginForm.querySelector('input[name="pass"]');
+        if (!passField) {
+          passField = document.createElement('input');
+          passField.type = 'hidden';
+          passField.name = 'pass';
+          feloginForm.appendChild(passField);
+        }
+        passField.value = passkeyPayload;
+        // Set logintype
+        var logintypeField = feloginForm.querySelector('input[name="logintype"]');
+        if (logintypeField) {
+          logintypeField.value = 'login';
+        }
+        // Clear the username — discoverable login resolves from assertion
+        var userField = feloginForm.querySelector('input[name="user"]');
+        if (userField) {
+          userField.value = '';
+        }
+        feloginForm.submit();
+        return;
+      }
+
+      // Fallback: no felogin form available — use eID verify + reload
       var verifyUrl = eidUrl + '&action=loginVerify';
       var verifyResponse = await fetch(verifyUrl, {
         method: 'POST',

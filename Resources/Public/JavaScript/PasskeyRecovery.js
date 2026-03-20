@@ -86,6 +86,17 @@
       return;
     }
 
+    // Extract username from the form
+    var usernameInput = form ? form.querySelector('[name="recovery_username"]') : null;
+    var username = usernameInput ? usernameInput.value.trim() : '';
+    if (!username) {
+      showError(errorEl, 'Please enter your username.');
+      if (usernameInput) {
+        usernameInput.focus();
+      }
+      return;
+    }
+
     setLoading(true, submitBtn, btnText, btnLoading);
 
     try {
@@ -93,7 +104,7 @@
       var response = await fetch(verifyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code }),
+        body: JSON.stringify({ username: username, code: code }),
         credentials: 'same-origin',
       });
 
