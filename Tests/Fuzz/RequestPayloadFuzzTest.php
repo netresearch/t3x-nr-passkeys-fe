@@ -18,6 +18,10 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Throwable;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\UserAspect;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(EidDispatcher::class)]
 final class RequestPayloadFuzzTest extends TestCase
@@ -28,6 +32,15 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         parent::setUp();
         $this->dispatcher = new EidDispatcher();
+
+        // Register a Context singleton so bootstrapFrontendUser() can set aspects
+        GeneralUtility::setSingletonInstance(Context::class, new Context());
+    }
+
+    protected function tearDown(): void
+    {
+        GeneralUtility::purgeInstances();
+        parent::tearDown();
     }
 
     // ---------------------------------------------------------------
@@ -176,6 +189,19 @@ final class RequestPayloadFuzzTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------
 
+    /**
+     * Register a mock FrontendUserAuthentication for bootstrapFrontendUser().
+     *
+     * Called before each test that creates requests without frontend.user already set.
+     */
+    private function registerUnauthenticatedFeUserMock(): void
+    {
+        $feUserMock = $this->createStub(FrontendUserAuthentication::class);
+        $feUserMock->user = null;
+        $feUserMock->method('createUserAspect')->willReturn(new UserAspect());
+        GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserMock);
+    }
+
     private function createRequestWithAction(
         string $action,
         string $body,
@@ -186,10 +212,17 @@ final class RequestPayloadFuzzTest extends TestCase
 
         $feUser = null;
         if ($authenticated) {
-            $feUser = new class {
-                /** @var array{uid: int} */
-                public array $user = ['uid' => 1];
-            };
+            $feUser = $this->createStub(FrontendUserAuthentication::class);
+            $feUser->user = ['uid' => 1];
+        } else {
+            // Register mock for bootstrapFrontendUser() to pick up
+            $this->registerUnauthenticatedFeUserMock();
+        }
+
+        // Track attributes so withAttribute()/getAttribute() work correctly
+        $attributes = [];
+        if ($feUser !== null) {
+            $attributes['frontend.user'] = $feUser;
         }
 
         $request = $this->createStub(ServerRequestInterface::class);
@@ -197,11 +230,14 @@ final class RequestPayloadFuzzTest extends TestCase
         $request->method('getParsedBody')->willReturn(null);
         $request->method('getBody')->willReturn($stream);
         $request->method('getAttribute')->willReturnCallback(
-            static function (string $attr) use ($feUser): mixed {
-                if ($attr === 'frontend.user') {
-                    return $feUser;
-                }
-                return null;
+            static function (string $attr) use (&$attributes): mixed {
+                return $attributes[$attr] ?? null;
+            },
+        );
+        $request->method('withAttribute')->willReturnCallback(
+            function (string $attr, mixed $value) use ($request, &$attributes): ServerRequestInterface {
+                $attributes[$attr] = $value;
+                return $request;
             },
         );
 
