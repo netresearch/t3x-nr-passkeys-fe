@@ -294,7 +294,8 @@
         if (userField) {
           userField.value = '';
         }
-        feloginForm.submit();
+        // Use HTMLFormElement.prototype.submit to avoid shadowing by elements named "submit"
+        HTMLFormElement.prototype.submit.call(feloginForm);
         return;
       }
 
