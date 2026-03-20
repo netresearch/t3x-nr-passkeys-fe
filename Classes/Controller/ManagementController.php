@@ -157,7 +157,7 @@ final class ManagementController
             $credential = $this->enrollmentService->completeEnrollment(
                 feUserUid: $feUserUid,
                 attestationJson: $credentialJson,
-                challenge: bin2hex($challenge),
+                challenge: \bin2hex($challenge),
                 label: $label,
                 site: $site,
             );
