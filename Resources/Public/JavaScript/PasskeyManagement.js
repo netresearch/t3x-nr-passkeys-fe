@@ -6,9 +6,13 @@
  *
  * Listens for 'nr-passkeys-fe:registered' events from PasskeyEnrollment.js
  * to refresh the list after a new passkey is registered.
+ *
+ * Depends on: PasskeyUtils.js (NrPasskeysFe namespace)
  */
 (function () {
   'use strict';
+
+  var U = window.NrPasskeysFe;
 
   function init() {
     var containers = document.querySelectorAll('[data-nr-passkeys-fe="management"]');
@@ -148,7 +152,7 @@
       // Created cell
       var createdCell = document.createElement('td');
       createdCell.className = 'nr-passkeys-fe-management__td';
-      createdCell.textContent = cred.createdAt ? formatTimestamp(cred.createdAt) : '—';
+      createdCell.textContent = cred.createdAt ? formatTimestamp(cred.createdAt) : '\u2014';
       row.appendChild(createdCell);
 
       // Last used cell
@@ -227,15 +231,15 @@
 
         if (response.ok && data.status === 'ok') {
           labelSpan.textContent = newLabel;
-          showStatus(statusEl, 'Passkey renamed successfully.');
-          setTimeout(function () { hideStatus(statusEl); }, 3000);
+          U.showStatus(statusEl, 'Passkey renamed successfully.');
+          setTimeout(function () { U.hideStatus(statusEl); }, 3000);
         } else {
           labelSpan.textContent = currentLabel;
-          showError(errorEl, data.error || 'Failed to rename passkey.');
+          U.showError(errorEl, data.error || 'Failed to rename passkey.');
         }
       } catch (e) {
         labelSpan.textContent = currentLabel;
-        showError(errorEl, 'Failed to rename passkey.');
+        U.showError(errorEl, 'Failed to rename passkey.');
         console.error('[nr_passkeys_fe] Rename error:', e);
       }
     };
@@ -254,8 +258,7 @@
   }
 
   function handleRemove(uid, label, removeUrl, listBody, emptyEl, errorEl, statusEl, container, listUrl) {
-    var safeLabel = escapeText(label);
-    var confirmed = window.confirm('Remove passkey "' + safeLabel + '"? This cannot be undone.');
+    var confirmed = window.confirm('Remove passkey "' + label + '"? This cannot be undone.');
     if (!confirmed) {
       return;
     }
@@ -276,57 +279,30 @@
         if (row && row.parentNode) {
           row.parentNode.removeChild(row);
         }
-        showStatus(statusEl, 'Passkey removed successfully.');
-        setTimeout(function () { hideStatus(statusEl); }, 3000);
+        U.showStatus(statusEl, 'Passkey removed successfully.');
+        setTimeout(function () { U.hideStatus(statusEl); }, 3000);
 
         // Refresh list to update single-key warning
         refreshList(listUrl, listBody, emptyEl, errorEl, container);
       } else {
-        showError(errorEl, (result.data && result.data.error) || 'Failed to remove passkey.');
+        U.showError(errorEl, (result.data && result.data.error) || 'Failed to remove passkey.');
       }
     }).catch(function (e) {
-      showError(errorEl, 'Failed to remove passkey.');
+      U.showError(errorEl, 'Failed to remove passkey.');
       console.error('[nr_passkeys_fe] Remove error:', e);
     });
   }
 
   function formatTimestamp(ts) {
     if (!ts) {
-      return '—';
+      return '\u2014';
     }
     var d = new Date(ts * 1000);
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
   }
 
-  function escapeText(text) {
-    var el = document.createElement('span');
-    el.textContent = text;
-    return el.textContent;
-  }
-
   function escapeAttr(text) {
     return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-  }
-
-  function showError(errorEl, message) {
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = '';
-    }
-  }
-
-  function showStatus(statusEl, message) {
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.style.display = '';
-    }
-  }
-
-  function hideStatus(statusEl) {
-    if (statusEl) {
-      statusEl.textContent = '';
-      statusEl.style.display = 'none';
-    }
   }
 
   if (document.readyState === 'loading') {
