@@ -7,6 +7,7 @@
 </f:comment>
 
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-utils" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" type="module" />
 
@@ -32,6 +33,7 @@
                 aria-selected="true"
                 aria-controls="nr-passkeys-fe-panel-passkey"
                 id="nr-passkeys-fe-tab-passkey"
+                tabindex="0"
                 data-action="switch-tab"
                 data-tab="passkey">
             <f:translate key="login.tab.passkey" extensionName="nr_passkeys_fe" />
@@ -42,6 +44,7 @@
                 aria-selected="false"
                 aria-controls="nr-passkeys-fe-panel-password"
                 id="nr-passkeys-fe-tab-password"
+                tabindex="-1"
                 data-action="switch-tab"
                 data-tab="password">
             <f:translate key="login.tab.password" extensionName="nr_passkeys_fe" />
@@ -54,12 +57,12 @@
          id="nr-passkeys-fe-panel-passkey"
          aria-labelledby="nr-passkeys-fe-tab-passkey"
          data-nr-passkeys-fe="login"
-         data-eid-url="/?eID=nr_passkeys_fe"
-         data-site-identifier=""
+         data-eid-url="{passkeyEidUrl}"
+         data-site-identifier="{passkeyRpId}"
          data-discoverable="1">
 
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
-        <div class="nr-passkeys-fe-login__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-felogin-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 
         <div class="nr-passkeys-fe-passkey-content">
             <div class="nr-passkeys-fe-passkey-icon" aria-hidden="true">
@@ -67,23 +70,23 @@
             </div>
 
             <button type="button"
-                    id="nr-passkeys-fe-login-btn"
+                    id="nr-passkeys-fe-felogin-login-btn"
                     class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey"
                     data-action="passkey-login"
-                    aria-describedby="nr-passkeys-fe-login-status">
+                    aria-describedby="nr-passkeys-fe-felogin-login-status">
                 <span class="nr-passkeys-fe-btn__icon" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor"><path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Zm760-40l-60-60v-186q-44-13-72-49.5T720-580q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T910-450l50 50-60 60 60 60-80 80Zm-440-280q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/></svg>
                 </span>
-                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-btn-text">
+                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-felogin-btn-text">
                     <f:translate key="login.button.passkey" extensionName="nr_passkeys_fe" />
                 </span>
-                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-btn-loading" style="display:none" aria-hidden="true">
+                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-felogin-btn-loading" style="display:none" aria-hidden="true">
                     <f:translate key="login.button.passkey.loading" extensionName="nr_passkeys_fe" />
                 </span>
             </button>
 
             <nav class="nr-passkeys-fe-links" aria-label="Authentication options">
-                <a href="#nr-passkeys-fe-recovery"
+                <a href="#nr-passkeys-fe-felogin-recovery"
                    class="nr-passkeys-fe-link"
                    data-action="show-recovery">
                     <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
@@ -99,7 +102,7 @@
         </div>
 
         <!-- Inline Recovery Form (hidden by default) -->
-        <div id="nr-passkeys-fe-recovery"
+        <div id="nr-passkeys-fe-felogin-recovery"
              class="nr-passkeys-fe-recovery"
              data-nr-passkeys-fe="recovery"
              data-eid-url="/?eID=nr_passkeys_fe"
@@ -115,22 +118,22 @@
 
             <form data-action="recovery-verify">
                 <div class="nr-passkeys-fe-recovery__field">
-                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-username">
+                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-username">
                         <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
                     </label>
                     <input type="text"
-                           id="nr-passkeys-fe-recovery-username"
+                           id="nr-passkeys-fe-felogin-recovery-username"
                            name="recovery_username"
                            class="nr-passkeys-fe-recovery__input"
                            autocomplete="username" />
                 </div>
 
                 <div class="nr-passkeys-fe-recovery__field">
-                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-code">
+                    <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-code">
                         <f:translate key="recovery.code.label" extensionName="nr_passkeys_fe" />
                     </label>
                     <input type="text"
-                           id="nr-passkeys-fe-recovery-code"
+                           id="nr-passkeys-fe-felogin-recovery-code"
                            name="recovery_code"
                            class="nr-passkeys-fe-recovery__input nr-passkeys-fe-recovery__input--code"
                            placeholder="XXXX-XXXX"
