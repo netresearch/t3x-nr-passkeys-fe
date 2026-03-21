@@ -10,6 +10,7 @@ jobs:
     uses: netresearch/typo3-ci-workflows/.github/workflows/ci.yml@main
     permissions:
       contents: read
+    secrets: inherit
     with:
       php-versions: '["8.2", "8.3", "8.4", "8.5"]'
       typo3-versions: '["^13.4", "^14.1"]'
