@@ -9,3 +9,11 @@
 /package.json export-ignore
 /vitest.config.js export-ignore
 /CONTRIBUTING.md export-ignore
+/.ddev export-ignore
+/AGENTS.md export-ignore
+/CLAUDE.md export-ignore
+/GEMINI.md export-ignore
+/SECURITY.md export-ignore
+/codecov.yml export-ignore
+/.envrc export-ignore
+/.superpowers export-ignore

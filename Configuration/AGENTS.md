@@ -59,19 +59,20 @@ These must be set in the site's TypoScript constants.
 
 ## Site Configuration Schema
 
-The extension reads `passkeys.*` keys from the site's `config.yaml`:
+The extension reads `settings.nr_passkeys_fe.*` keys from the site's `config.yaml`:
 
 ```yaml
-passkeys:
-  rpId: 'example.com'           # WebAuthn RP ID (domain only)
-  rpName: 'Site Name'           # Human-readable RP name
-  origin: 'https://example.com' # Full origin URL
-  enforcementLevel: 'off'       # off|encourage|required|enforced
-  gracePeriodDays: 14           # Days before required becomes enforced
+settings:
+  nr_passkeys_fe:
+    rpId: 'example.com'           # WebAuthn RP ID (domain only)
+    rpName: 'Site Name'           # Human-readable RP name
+    origin: 'https://example.com' # Full origin URL
+    enforcementLevel: 'off'       # off|encourage|required|enforced
+    gracePeriodDays: 14           # Days before required becomes enforced
 ```
 
 These are read by `SiteConfigurationService` and returned as
-`SitePasskeyConfig` value objects.
+`FrontendConfiguration` value objects.
 
 ## Boundaries
 - Do NOT use `ext_tables.php` for registrations (use Configuration/ files)
