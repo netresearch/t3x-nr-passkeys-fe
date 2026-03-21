@@ -18,7 +18,7 @@ use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -30,24 +30,24 @@ use Webauthn\PublicKeyCredentialCreationOptions;
 #[CoversClass(ManagementController::class)]
 final class ManagementControllerTest extends TestCase
 {
-    private PasskeyEnrollmentService&MockObject $enrollmentService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private FrontendWebAuthnService&MockObject $webAuthnService;
-    private SiteConfigurationService&MockObject $siteConfigService;
-    private ChallengeService&MockObject $challengeService;
-    private SiteInterface&MockObject $site;
+    private PasskeyEnrollmentService&Stub $enrollmentService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private FrontendWebAuthnService&Stub $webAuthnService;
+    private SiteConfigurationService&Stub $siteConfigService;
+    private ChallengeService&Stub $challengeService;
+    private SiteInterface&Stub $site;
     private ManagementController $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->enrollmentService = $this->createMock(PasskeyEnrollmentService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->webAuthnService = $this->createMock(FrontendWebAuthnService::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->challengeService = $this->createMock(ChallengeService::class);
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->enrollmentService = $this->createStub(PasskeyEnrollmentService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->challengeService = $this->createStub(ChallengeService::class);
+        $this->site = $this->createStub(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -61,6 +61,21 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->siteConfigService,
             $this->challengeService,
+            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            new NullLogger(),
+        );
+    }
+
+    private function createSubjectWithCredentialRepository(
+        FrontendCredentialRepository $credentialRepository,
+    ): ManagementController {
+        return new ManagementController(
+            $this->enrollmentService,
+            $credentialRepository,
+            $this->webAuthnService,
+            $this->siteConfigService,
+            $this->challengeService,
+            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -72,7 +87,7 @@ final class ManagementControllerTest extends TestCase
     #[Test]
     public function registrationOptionsActionReturnsOptionsAndChallengeToken(): void
     {
-        $optionsMock = $this->createMock(PublicKeyCredentialCreationOptions::class);
+        $optionsMock = $this->createStub(PublicKeyCredentialCreationOptions::class);
         $this->enrollmentService->method('startEnrollment')->willReturn([
             'options' => $optionsMock,
             'optionsJson' => '{"challenge":"abc"}',
@@ -225,12 +240,15 @@ final class ManagementControllerTest extends TestCase
     #[Test]
     public function renameActionReturns200OnSuccess(): void
     {
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = $this->createSubjectWithCredentialRepository($credentialRepository);
+
         $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old Name');
-        $this->credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
-        $this->credentialRepository->expects(self::once())->method('updateLabel')->with(10, 'New Name');
+        $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
+        $credentialRepository->expects(self::once())->method('updateLabel')->with(10, 'New Name');
 
         $request = $this->buildRequestWithUser(42, '', ['uid' => 10, 'label' => 'New Name']);
-        $response = $this->subject->renameAction($request);
+        $response = $subject->renameAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $this->decodeBody($response)['status']);
@@ -242,12 +260,15 @@ final class ManagementControllerTest extends TestCase
         $longLabel = \str_repeat('A', 200);
         $expectedLabel = \str_repeat('A', 128);
 
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = $this->createSubjectWithCredentialRepository($credentialRepository);
+
         $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old');
-        $this->credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
-        $this->credentialRepository->expects(self::once())->method('updateLabel')->with(10, $expectedLabel);
+        $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
+        $credentialRepository->expects(self::once())->method('updateLabel')->with(10, $expectedLabel);
 
         $request = $this->buildRequestWithUser(42, '', ['uid' => 10, 'label' => $longLabel]);
-        $response = $this->subject->renameAction($request);
+        $response = $subject->renameAction($request);
 
         self::assertSame(200, $response->getStatusCode());
     }
@@ -279,12 +300,15 @@ final class ManagementControllerTest extends TestCase
     #[Test]
     public function removeActionRevokesCredentialAndReturns200(): void
     {
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = $this->createSubjectWithCredentialRepository($credentialRepository);
+
         $credential = new FrontendCredential(uid: 10, feUser: 42);
-        $this->credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
-        $this->credentialRepository->expects(self::once())->method('revoke')->with(10, 42);
+        $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
+        $credentialRepository->expects(self::once())->method('revoke')->with(10, 42);
 
         $request = $this->buildRequestWithUser(42, '', ['uid' => 10]);
-        $response = $this->subject->removeAction($request);
+        $response = $subject->removeAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $this->decodeBody($response)['status']);
@@ -296,7 +320,7 @@ final class ManagementControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, string $username = '', array $body = []): ServerRequest
     {
-        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid, 'username' => $username];
 
         return (new ServerRequest('https://example.com/', 'POST'))

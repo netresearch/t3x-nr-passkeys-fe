@@ -25,14 +25,14 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  * - statusAction: Returns the effective enforcement status for the current user
  * - skipAction:   Sets a session flag to skip the enrollment prompt for this session
  */
-final class EnrollmentController
+final readonly class EnrollmentController
 {
     use JsonBodyTrait;
 
     public function __construct(
-        private readonly FrontendEnforcementService $enforcementService,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly LoggerInterface $logger,
+        private FrontendEnforcementService $enforcementService,
+        private SiteConfigurationService $siteConfigurationService,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -119,6 +119,9 @@ final class EnrollmentController
 
         // Set the skip flag for this session
         $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', true);
+
+        // Invalidate the nonce so it cannot be replayed
+        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_enrollment_nonce', '');
 
         $this->logger->info('FE enrollment prompt skipped', [
             'fe_user_uid' => $feUserUid,

@@ -11,7 +11,6 @@ namespace Netresearch\NrPasskeysFe\EventListener;
 
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
-use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Page\AssetCollector;
 
 /**
@@ -24,10 +23,6 @@ use TYPO3\CMS\Core\Page\AssetCollector;
  * The JavaScript module is loaded via AssetCollector to ensure it is only
  * included once per page render.
  */
-#[AsEventListener(
-    identifier: 'nr-passkeys-fe/inject-passkey-login-fields',
-    event: 'TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent',
-)]
 final readonly class InjectPasskeyLoginFields
 {
     /**

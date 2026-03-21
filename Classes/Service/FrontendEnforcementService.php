@@ -39,6 +39,9 @@ final class FrontendEnforcementService
         'enforced' => 3,
     ];
 
+    /** @var array<string, FrontendEnforcementStatus> */
+    private array $statusCache = [];
+
     public function __construct(
         private readonly SiteConfigurationService $siteConfigurationService,
         private readonly FrontendCredentialRepository $credentialRepository,
@@ -55,6 +58,11 @@ final class FrontendEnforcementService
         string $siteIdentifier,
         SiteInterface $site,
     ): FrontendEnforcementStatus {
+        $cacheKey = $feUserUid . '|' . $siteIdentifier;
+        if (\array_key_exists($cacheKey, $this->statusCache)) {
+            return $this->statusCache[$cacheKey];
+        }
+
         $passkeyCount = $this->credentialRepository->countByFeUser($feUserUid);
         $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
 
@@ -116,7 +124,7 @@ final class FrontendEnforcementService
             }
         }
 
-        return new FrontendEnforcementStatus(
+        $status = new FrontendEnforcementStatus(
             effectiveLevel: $effectiveLevel,
             siteLevel: $siteLevel,
             groupLevel: $groupLevel,
@@ -125,6 +133,10 @@ final class FrontendEnforcementService
             graceDeadline: $graceDeadline,
             recoveryCodesRemaining: $recoveryCodesRemaining,
         );
+
+        $this->statusCache[$cacheKey] = $status;
+
+        return $status;
     }
 
     /**

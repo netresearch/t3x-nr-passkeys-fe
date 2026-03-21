@@ -165,73 +165,73 @@ parameters:
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:generateAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:listAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:optionsAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:registrationOptionsAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:registrationVerifyAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:removeAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:renameAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:skipAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:statusAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Call to an undefined method Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\:\:verifyAction\(\)\.$#'
 			identifier: method.notFound
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Language construct isset\(\) should not be used\.$#'
 			identifier: ergebnis.noIsset
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
 			message: '#^Variable method call on Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\.$#'
 			identifier: method.dynamicName
-			count: 1
+			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 
 		-
@@ -1181,3 +1181,40 @@ parameters:
 			identifier: method.nonObject
 			count: 4
 			path: ../Classes/Service/SiteConfigurationService.php
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 2
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendAdoptionStatsService\:\:getPerGroupStats\(\) should return array\<string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\> but returns non\-empty\-array\<int\|numeric\-string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: ../Classes/Service/FrontendAdoptionStatsService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendUserLookupService\:\:findFeUserUidByUsername\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendUserLookupService.php
+
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendUserLookupService\:\:findFeUserByUid\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Service/FrontendUserLookupService.php
+
+
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 1
+			path: ../Classes/Service/FrontendUserLookupService.php

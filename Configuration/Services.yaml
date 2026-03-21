@@ -29,6 +29,9 @@ services:
   Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository:
     public: true
 
+  Netresearch\NrPasskeysFe\Service\FrontendUserLookupService:
+    public: true
+
   Netresearch\NrPasskeysFe\Service\FrontendEnforcementService:
     public: true
 

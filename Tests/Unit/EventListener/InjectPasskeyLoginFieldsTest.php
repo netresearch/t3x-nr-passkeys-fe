@@ -14,7 +14,7 @@ use Netresearch\NrPasskeysFe\EventListener\InjectPasskeyLoginFields;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use TYPO3\CMS\Core\Page\AssetCollector;
@@ -22,17 +22,17 @@ use TYPO3\CMS\Core\Page\AssetCollector;
 #[CoversClass(InjectPasskeyLoginFields::class)]
 final class InjectPasskeyLoginFieldsTest extends TestCase
 {
-    private SiteConfigurationService&MockObject $siteConfigService;
+    private SiteConfigurationService&Stub $siteConfigService;
     private FrontendConfiguration $frontendConfiguration;
-    private AssetCollector&MockObject $assetCollector;
+    private AssetCollector&Stub $assetCollector;
     private InjectPasskeyLoginFields $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
         $this->frontendConfiguration = new FrontendConfiguration(enableFePasskeys: true);
-        $this->assetCollector = $this->createMock(AssetCollector::class);
+        $this->assetCollector = $this->createStub(AssetCollector::class);
         $this->subject = new InjectPasskeyLoginFields(
             $this->siteConfigService,
             $this->frontendConfiguration,
@@ -43,27 +43,34 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     #[Test]
     public function doesNothingWhenFeloginNotInstalled(): void
     {
-        // When felogin is not available, __invoke() with a random object should silently no-op
-        $this->assetCollector->expects(self::never())->method('addInlineJavaScript');
-        $this->assetCollector->expects(self::never())->method('addJavaScript');
+        $assetCollector = $this->createMock(AssetCollector::class);
+        $subject = new InjectPasskeyLoginFields(
+            $this->siteConfigService,
+            $this->frontendConfiguration,
+            $assetCollector,
+        );
+
+        $assetCollector->expects(self::never())->method('addInlineJavaScript');
+        $assetCollector->expects(self::never())->method('addJavaScript');
 
         // Pass a plain stdClass as the event (not felogin event)
-        $this->subject->__invoke(new stdClass());
+        $subject->__invoke(new stdClass());
     }
 
     #[Test]
     public function doesNothingWhenFePasskeysDisabled(): void
     {
-        $this->subject = new InjectPasskeyLoginFields(
+        $assetCollector = $this->createMock(AssetCollector::class);
+        $subject = new InjectPasskeyLoginFields(
             $this->siteConfigService,
             new FrontendConfiguration(enableFePasskeys: false),
-            $this->assetCollector,
+            $assetCollector,
         );
 
-        $this->assetCollector->expects(self::never())->method('addInlineJavaScript');
+        $assetCollector->expects(self::never())->method('addInlineJavaScript');
 
         // Pass a plain stdClass as the event (felogin guard runs first anyway)
-        $this->subject->__invoke(new stdClass());
+        $subject->__invoke(new stdClass());
     }
 
     #[Test]

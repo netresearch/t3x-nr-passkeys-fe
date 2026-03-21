@@ -3,6 +3,7 @@
 
 <f:section name="Content">
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-utils" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" type="module" />
 
@@ -20,7 +21,7 @@
          data-discoverable="1">
 
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
-        <div class="nr-passkeys-fe-login__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 
         <div class="nr-passkeys-fe-passkey-content">
             <button type="button"

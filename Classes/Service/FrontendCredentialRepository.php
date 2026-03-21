@@ -22,12 +22,12 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
  * CredentialRepository but operates on fe_users and includes
  * site/storage scoping.
  */
-final class FrontendCredentialRepository
+final readonly class FrontendCredentialRepository
 {
     private const TABLE = 'tx_nrpasskeysfe_credential';
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
+        private ConnectionPool $connectionPool,
     ) {}
 
     /**
@@ -236,13 +236,15 @@ final class FrontendCredentialRepository
 
     /**
      * Revoke all credentials for a frontend user.
+     *
+     * @return int Number of affected (revoked) rows
      */
-    public function revokeAllByFeUser(int $feUserUid, int $revokedBy): void
+    public function revokeAllByFeUser(int $feUserUid, int $revokedBy): int
     {
         $queryBuilder = $this->getQueryBuilder();
         $now = \time();
 
-        $queryBuilder
+        return $queryBuilder
             ->update(self::TABLE)
             ->set('revoked_at', $now)
             ->set('revoked_by', $revokedBy)
@@ -313,6 +315,27 @@ final class FrontendCredentialRepository
     }
 
     /**
+     * Update sign count and last-used timestamp after a successful assertion.
+     *
+     * Combines the formerly separate updateSignCount + updateLastUsed into a
+     * single DB round-trip.
+     */
+    public function updateAfterAssertion(int $uid, int $signCount): void
+    {
+        $now = \time();
+        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $connection->update(
+            self::TABLE,
+            [
+                'sign_count' => $signCount,
+                'last_used_at' => $now,
+                'tstamp' => $now,
+            ],
+            ['uid' => $uid],
+        );
+    }
+
+    /**
      * Update the sign count after a successful assertion.
      */
     public function updateSignCount(int $uid, int $newCount): void
@@ -326,69 +349,6 @@ final class FrontendCredentialRepository
             ],
             ['uid' => $uid],
         );
-    }
-
-    /**
-     * Find an active frontend user UID by username.
-     *
-     * Queries the fe_users table for a non-disabled, non-deleted user.
-     */
-    public function findFeUserUidByUsername(string $username): ?int
-    {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-        $row = $queryBuilder
-            ->select('uid')
-            ->from('fe_users')
-            ->where(
-                $queryBuilder->expr()->eq(
-                    'username',
-                    $queryBuilder->createNamedParameter($username),
-                ),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->expr()->eq('deleted', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
-            return null;
-        }
-
-        $rawUid = $row['uid'] ?? null;
-
-        return \is_numeric($rawUid) ? (int) $rawUid : null;
-    }
-
-    /**
-     * Look up a frontend user's username by UID.
-     *
-     * Returns null if no matching active user is found.
-     *
-     * @return array{uid: int, username: string}|null
-     */
-    public function findFeUserByUid(int $uid): ?array
-    {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('fe_users')
-            ->where(
-                $queryBuilder->expr()->eq(
-                    'uid',
-                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
-                ),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
-            return null;
-        }
-
-        return [
-            'uid' => \is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : 0,
-            'username' => \is_string($row['username'] ?? null) ? (string) $row['username'] : '',
-        ];
     }
 
     private function getQueryBuilder(): QueryBuilder

@@ -6,9 +6,13 @@
  * Features:
  * - Download codes as a plain text file
  * - Generate new codes (replaces existing codes)
+ *
+ * Depends on: PasskeyUtils.js (NrPasskeysFe namespace)
  */
 (function () {
   'use strict';
+
+  var U = window.NrPasskeysFe;
 
   function init() {
     var containers = document.querySelectorAll('[data-nr-passkeys-fe="recovery-codes"]');
@@ -94,8 +98,8 @@
       return;
     }
 
-    setLoading(true, generateBtn, btnText, btnLoading);
-    hideError(errorEl);
+    U.setLoading(true, generateBtn, btnText, btnLoading);
+    U.hideError(errorEl);
 
     try {
       var response = await fetch(generateUrl, {
@@ -109,7 +113,7 @@
 
       if (response.ok && data.codes) {
         renderCodes(codesGrid, data.codes);
-        showStatus(statusEl, 'New recovery codes generated. Save them now!');
+        U.showStatus(statusEl, 'New recovery codes generated. Save them now!');
         // Show download button
         if (downloadBtn) {
           downloadBtn.style.display = '';
@@ -119,14 +123,14 @@
           countEl.textContent = String(data.count);
         }
       } else {
-        showError(errorEl, data.error || 'Failed to generate recovery codes. Please try again.');
+        U.showError(errorEl, data.error || 'Failed to generate recovery codes. Please try again.');
       }
     } catch (e) {
-      showError(errorEl, 'Network error. Please check your connection and try again.');
+      U.showError(errorEl, 'Network error. Please check your connection and try again.');
       console.error('[nr_passkeys_fe] GenerateCodes error:', e);
     }
 
-    setLoading(false, generateBtn, btnText, btnLoading);
+    U.setLoading(false, generateBtn, btnText, btnLoading);
   }
 
   function renderCodes(codesGrid, codes) {
@@ -150,39 +154,6 @@
 
     // Show the grid
     codesGrid.style.display = '';
-  }
-
-  function setLoading(loading, btnEl, btnText, btnLoading) {
-    if (btnEl) {
-      btnEl.disabled = loading;
-    }
-    if (btnText) {
-      btnText.style.display = loading ? 'none' : '';
-    }
-    if (btnLoading) {
-      btnLoading.style.display = loading ? '' : 'none';
-    }
-  }
-
-  function showError(errorEl, message) {
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = '';
-    }
-  }
-
-  function hideError(errorEl) {
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.style.display = 'none';
-    }
-  }
-
-  function showStatus(statusEl, message) {
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.style.display = '';
-    }
   }
 
   if (document.readyState === 'loading') {

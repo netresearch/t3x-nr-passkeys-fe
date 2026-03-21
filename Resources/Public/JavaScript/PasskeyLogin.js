@@ -17,9 +17,13 @@
  *    Username-first: fetch options from eID with username, then credentials.get()
  * 4. Submit assertion to eID loginVerify action
  * 5. Redirect on success / show error on failure
+ *
+ * Depends on: PasskeyUtils.js (NrPasskeysFe namespace)
  */
 (function () {
   'use strict';
+
+  var U = window.NrPasskeysFe;
 
   // Material Symbols "passkey" icon (Apache 2.0, google/material-design-icons)
   // Kept as constant to avoid innerHTML with dynamic content
@@ -55,15 +59,15 @@
     }
 
     var btnEl = container.querySelector('[data-action="passkey-login"]');
-    var btnText = container.querySelector('#nr-passkeys-fe-btn-text');
-    var btnLoading = container.querySelector('#nr-passkeys-fe-btn-loading');
+    var btnText = container.querySelector('.nr-passkeys-fe-btn__text');
+    var btnLoading = container.querySelector('.nr-passkeys-fe-btn__loading');
     var statusEl = container.querySelector('.nr-passkeys-fe-login__status');
     var errorEl = container.querySelector('.nr-passkeys-fe-login__error');
     var usernameInput = container.querySelector('[name="nr_passkeys_username"]');
 
     // Feature detection
     if (!window.PublicKeyCredential) {
-      showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
+      U.showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
       if (btnEl) {
         btnEl.disabled = true;
       }
@@ -71,7 +75,7 @@
     }
 
     if (!window.isSecureContext) {
-      showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
+      U.showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
       if (btnEl) {
         btnEl.disabled = true;
       }
@@ -142,8 +146,13 @@
    */
   function initTabs() {
     var tabButtons = document.querySelectorAll('[data-action="switch-tab"]');
+    var tabBtns = [];
     for (var i = 0; i < tabButtons.length; i++) {
-      tabButtons[i].addEventListener('click', function () {
+      tabBtns.push(tabButtons[i]);
+    }
+
+    for (var i = 0; i < tabBtns.length; i++) {
+      tabBtns[i].addEventListener('click', function () {
         var tabName = this.dataset.tab;
         var tabContainer = this.closest('.nr-passkeys-fe-card');
         if (!tabContainer) return;
@@ -153,6 +162,7 @@
         for (var j = 0; j < allTabs.length; j++) {
           allTabs[j].classList.remove('nr-passkeys-fe-tab--active');
           allTabs[j].setAttribute('aria-selected', 'false');
+          allTabs[j].setAttribute('tabindex', '-1');
         }
 
         // Hide all panels
@@ -164,6 +174,7 @@
         // Activate clicked tab
         this.classList.add('nr-passkeys-fe-tab--active');
         this.setAttribute('aria-selected', 'true');
+        this.setAttribute('tabindex', '0');
 
         // Show corresponding panel
         var panelId = 'nr-passkeys-fe-panel-' + tabName;
@@ -173,13 +184,44 @@
         }
       });
     }
+
+    // Set initial tabindex values
+    for (var i = 0; i < tabBtns.length; i++) {
+      if (tabBtns[i].classList.contains('nr-passkeys-fe-tab--active')) {
+        tabBtns[i].setAttribute('tabindex', '0');
+      } else {
+        tabBtns[i].setAttribute('tabindex', '-1');
+      }
+    }
+
+    // Arrow key navigation for tabs (WAI-ARIA tabs pattern)
+    tabBtns.forEach(function(btn) {
+      btn.addEventListener('keydown', function(e) {
+        var index = tabBtns.indexOf(btn);
+        var newIndex = -1;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          newIndex = (index + 1) % tabBtns.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          newIndex = (index - 1 + tabBtns.length) % tabBtns.length;
+        } else if (e.key === 'Home') {
+          newIndex = 0;
+        } else if (e.key === 'End') {
+          newIndex = tabBtns.length - 1;
+        }
+        if (newIndex >= 0) {
+          e.preventDefault();
+          tabBtns[newIndex].click();
+          tabBtns[newIndex].focus();
+        }
+      });
+    });
   }
 
   function checkForFailedLogin(errorEl) {
     try {
       if (sessionStorage.getItem('nr_passkeys_fe_attempt')) {
         sessionStorage.removeItem('nr_passkeys_fe_attempt');
-        showError(errorEl, 'Passkey authentication failed. Please try again or use a recovery code.');
+        U.showError(errorEl, 'Passkey authentication failed. Please try again or use a recovery code.');
       }
     } catch (e) {
       // sessionStorage may be unavailable
@@ -187,19 +229,19 @@
   }
 
   async function handlePasskeyLogin(eidUrl, siteIdentifier, discoverable, usernameInput, btnEl, btnText, btnLoading, statusEl, errorEl) {
-    hideError(errorEl);
+    U.hideError(errorEl);
     var username = usernameInput ? usernameInput.value.trim() : '';
 
     // Only require username for non-discoverable (username-first) flow
     if (!discoverable && !username) {
-      showError(errorEl, 'Please enter your username.');
+      U.showError(errorEl, 'Please enter your username.');
       if (usernameInput) {
         usernameInput.focus();
       }
       return;
     }
 
-    setLoading(true, btnEl, btnText, btnLoading);
+    U.setLoading(true, btnEl, btnText, btnLoading);
 
     try {
       // Step 1: Fetch assertion options from eID
@@ -214,11 +256,11 @@
       if (!optionsResponse.ok) {
         var errData = await optionsResponse.json().catch(function () { return {}; });
         if (optionsResponse.status === 429) {
-          showError(errorEl, 'Too many attempts. Please try again later.');
+          U.showError(errorEl, 'Too many attempts. Please try again later.');
         } else {
-          showError(errorEl, errData.error || 'Authentication failed. Please try again.');
+          U.showError(errorEl, errData.error || 'Authentication failed. Please try again.');
         }
-        setLoading(false, btnEl, btnText, btnLoading);
+        U.setLoading(false, btnEl, btnText, btnLoading);
         return;
       }
 
@@ -228,7 +270,7 @@
 
       // Step 2: Build PublicKeyCredentialRequestOptions
       var publicKeyOptions = {
-        challenge: base64urlToBuffer(options.challenge),
+        challenge: U.base64urlToBuffer(options.challenge),
         rpId: options.rpId,
         timeout: options.timeout || 60000,
         userVerification: options.userVerification || 'required',
@@ -238,7 +280,7 @@
         publicKeyOptions.allowCredentials = options.allowCredentials.map(function (cred) {
           return {
             type: cred.type,
-            id: base64urlToBuffer(cred.id),
+            id: U.base64urlToBuffer(cred.id),
             transports: cred.transports || [],
           };
         });
@@ -249,15 +291,15 @@
 
       // Step 4: Encode the response
       var credentialResponse = {
-        id: bufferToBase64url(assertion.rawId),
-        rawId: bufferToBase64(assertion.rawId),
+        id: U.bufferToBase64url(assertion.rawId),
+        rawId: U.bufferToBase64url(assertion.rawId),
         type: assertion.type,
         response: {
-          clientDataJSON: bufferToBase64url(assertion.response.clientDataJSON),
-          authenticatorData: bufferToBase64url(assertion.response.authenticatorData),
-          signature: bufferToBase64url(assertion.response.signature),
+          clientDataJSON: U.bufferToBase64url(assertion.response.clientDataJSON),
+          authenticatorData: U.bufferToBase64url(assertion.response.authenticatorData),
+          signature: U.bufferToBase64url(assertion.response.signature),
           userHandle: assertion.response.userHandle
-            ? bufferToBase64url(assertion.response.userHandle)
+            ? U.bufferToBase64url(assertion.response.userHandle)
             : null,
         },
       };
@@ -265,7 +307,7 @@
       // Step 5: Submit via felogin form so TYPO3's auth chain establishes the session.
       // Pack the assertion + challengeToken into the `pass` (uident) field as JSON.
       // PasskeyFrontendAuthenticationService picks this up and verifies server-side.
-      showStatus(statusEl, 'Verifying...');
+      U.showStatus(statusEl, 'Verifying...');
       try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
 
       var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
@@ -317,9 +359,9 @@
 
       if (verifyResponse.ok && verifyData.status === 'ok') {
         try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-        showStatus(statusEl, 'Authenticated! Redirecting...');
+        U.showStatus(statusEl, 'Authenticated! Redirecting...');
         var redirect = verifyData.redirectUrl;
-        if (redirect && isSameOrigin(redirect)) {
+        if (redirect && U.isSameOrigin(redirect)) {
           window.location.href = redirect;
         } else {
           window.location.reload();
@@ -328,104 +370,23 @@
       }
 
       try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-      showError(errorEl, verifyData.error || 'Authentication failed. Please try again.');
-      hideStatus(statusEl);
+      U.showError(errorEl, verifyData.error || 'Authentication failed. Please try again.');
+      U.hideStatus(statusEl);
     } catch (err) {
       if (err.name === 'NotAllowedError') {
-        showError(errorEl, 'Authentication was cancelled or no passkey found for this site.');
+        U.showError(errorEl, 'Authentication was cancelled or no passkey found for this site.');
       } else if (err.name === 'SecurityError') {
-        showError(errorEl, 'Security error. Please check your connection and try again.');
+        U.showError(errorEl, 'Security error. Please check your connection and try again.');
       } else if (err.name === 'AbortError') {
-        showError(errorEl, 'Authentication was cancelled.');
+        U.showError(errorEl, 'Authentication was cancelled.');
       } else {
-        showError(errorEl, 'Authentication failed: ' + (err.message || 'Please try again.'));
+        U.showError(errorEl, 'Authentication failed: ' + (err.message || 'Please try again.'));
         console.error('[nr_passkeys_fe] PasskeyLogin error:', err);
       }
     }
 
-    setLoading(false, btnEl, btnText, btnLoading);
-    hideStatus(statusEl);
-  }
-
-  function setLoading(loading, btnEl, btnText, btnLoading) {
-    if (btnEl) {
-      btnEl.disabled = loading;
-    }
-    if (btnText) {
-      btnText.style.display = loading ? 'none' : '';
-    }
-    if (btnLoading) {
-      btnLoading.style.display = loading ? '' : 'none';
-      if (loading) {
-        btnLoading.removeAttribute('aria-hidden');
-      } else {
-        btnLoading.setAttribute('aria-hidden', 'true');
-      }
-    }
-  }
-
-  function showError(errorEl, message) {
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = '';
-    }
-  }
-
-  function hideError(errorEl) {
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.style.display = 'none';
-    }
-  }
-
-  function showStatus(statusEl, message) {
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.style.display = '';
-    }
-  }
-
-  function hideStatus(statusEl) {
-    if (statusEl) {
-      statusEl.textContent = '';
-      statusEl.style.display = 'none';
-    }
-  }
-
-  function isSameOrigin(url) {
-    try { return new URL(url, window.location.origin).origin === window.location.origin; }
-    catch (e) { return false; }
-  }
-
-  // Base64URL encoding/decoding utilities
-  function base64urlToBuffer(base64url) {
-    var base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    var padLen = (4 - (base64.length % 4)) % 4;
-    var padded = base64 + '='.repeat(padLen);
-    var binary = atob(padded);
-    var buffer = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) {
-      buffer[i] = binary.charCodeAt(i);
-    }
-    return buffer.buffer;
-  }
-
-  function bufferToBase64url(buffer) {
-    var bytes = new Uint8Array(buffer);
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  function bufferToBase64(buffer) {
-    var bytes = new Uint8Array(buffer);
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
+    U.setLoading(false, btnEl, btnText, btnLoading);
+    U.hideStatus(statusEl);
   }
 
   if (document.readyState === 'loading') {

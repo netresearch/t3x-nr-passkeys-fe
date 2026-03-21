@@ -65,30 +65,49 @@ final class EidDispatcher
             return new JsonResponse(['error' => 'Unknown action'], 404);
         }
 
-        // Bootstrap FE user session for eID requests.
+        [$controllerClass, $method] = self::ACTION_MAP[$action];
+
+        // Public actions (login, recovery verify) do not require an FE session
+        if (\in_array($action, self::PUBLIC_ACTIONS, true)) {
+            // loginVerify and recoveryVerify need a FE session to write session flags
+            if ($action === 'loginVerify' || $action === 'recoveryVerify') {
+                $request = $this->bootstrapFrontendUser($request);
+            }
+
+            /** @var LoginController|ManagementController|RecoveryController|EnrollmentController $controller */
+            $controller = GeneralUtility::makeInstance($controllerClass);
+
+            try {
+                return $controller->$method($request);
+            } catch (Throwable $e) {
+                GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
+                    ->getLogger(self::class)
+                    ->error('eID action failed', ['action' => $action, 'error' => $e->getMessage()]);
+
+                return new JsonResponse(['error' => 'Internal error'], 500);
+            }
+        }
+
+        // Bootstrap FE user session for authenticated eID requests.
         // The TYPO3 FrontendUserAuthenticator middleware runs AFTER the EidHandler
         // middleware in the middleware stack, so 'frontend.user' is never set for
         // eID requests. We must manually resolve the session here.
         $request = $this->bootstrapFrontendUser($request);
 
         // Enforce FE authentication for non-public actions
-        if (!\in_array($action, self::PUBLIC_ACTIONS, true)) {
-            $feUser = $request->getAttribute('frontend.user');
-            if (!$feUser instanceof FrontendUserAuthentication) {
-                return new JsonResponse(['error' => 'Authentication required'], 401);
-            }
-
-            $userRow = $feUser->user;
-            $feUserUid = \is_array($userRow) && \is_numeric($userRow['uid'] ?? null)
-                ? (int) $userRow['uid']
-                : 0;
-
-            if ($feUserUid === 0) {
-                return new JsonResponse(['error' => 'Authentication required'], 401);
-            }
+        $feUser = $request->getAttribute('frontend.user');
+        if (!$feUser instanceof FrontendUserAuthentication) {
+            return new JsonResponse(['error' => 'Authentication required'], 401);
         }
 
-        [$controllerClass, $method] = self::ACTION_MAP[$action];
+        $userRow = $feUser->user;
+        $feUserUid = \is_array($userRow) && \is_numeric($userRow['uid'] ?? null)
+            ? (int) $userRow['uid']
+            : 0;
+
+        if ($feUserUid === 0) {
+            return new JsonResponse(['error' => 'Authentication required'], 401);
+        }
 
         /** @var LoginController|ManagementController|RecoveryController|EnrollmentController $controller */
         $controller = GeneralUtility::makeInstance($controllerClass);
@@ -96,7 +115,11 @@ final class EidDispatcher
         try {
             // Dynamic dispatch: ACTION_MAP guarantees method exists (see phpstan-baseline.neon)
             return $controller->$method($request);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
+            GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
+                ->getLogger(self::class)
+                ->error('eID action failed', ['action' => $action, 'error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
     }

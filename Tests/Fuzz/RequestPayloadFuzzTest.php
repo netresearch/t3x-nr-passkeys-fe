@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Fuzz;
 
 use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
+use Netresearch\NrPasskeysFe\Controller\LoginController;
+use Netresearch\NrPasskeysFe\Controller\RecoveryController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -20,6 +22,7 @@ use Psr\Http\Message\StreamInterface;
 use Throwable;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
+use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -111,9 +114,14 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('malformedJsonProvider')]
     public function loginOptionsHandlesMalformedJson(string $body): void
     {
-        // loginOptions is a public action but requires site context — the controller
-        // will fail with 500 (no site) before any body parsing security issue arises.
-        // The important property: no unhandled exceptions propagate out.
+        // Register a controller stub that returns 500 (simulates controller error handling)
+        // The dispatcher creates controllers via GeneralUtility::makeInstance() which
+        // cannot resolve DI in test context, so we pre-register a stub.
+        $controllerStub = $this->createStub(LoginController::class);
+        $controllerStub->method('optionsAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
+        $controllerStub->method('verifyAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
+        GeneralUtility::addInstance(LoginController::class, $controllerStub);
+
         $request = $this->createRequestWithAction('loginOptions', $body);
         $response = $this->dispatcher->processRequest($request);
 
@@ -127,6 +135,11 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('malformedJsonProvider')]
     public function recoveryVerifyHandlesMalformedJson(string $body): void
     {
+        $controllerStub = $this->createStub(RecoveryController::class);
+        $controllerStub->method('verifyAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
+        $controllerStub->method('generateAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
+        GeneralUtility::addInstance(RecoveryController::class, $controllerStub);
+
         $request = $this->createRequestWithAction('recoveryVerify', $body);
         $response = $this->dispatcher->processRequest($request);
 

@@ -16,8 +16,8 @@ use PHPat\Test\PHPat;
 /**
  * Architecture rules enforced via PHPStan + phpat.
  *
- * Layering (inner → outer):
- *   Domain (Model + Dto) → Service → Controller / Auth / Middleware / EventListener
+ * Layering (inner -> outer):
+ *   Domain (Model + Dto) -> Service -> Controller / Auth / Middleware / EventListener
  *
  * Invariants:
  *   - Domain layer must not depend on extension infrastructure namespaces
@@ -31,7 +31,7 @@ final class ArchitectureTest
 {
     private const NS = 'Netresearch\\NrPasskeysFe\\';
 
-    // ─── Layer isolation ─────────────────────────────────────────────
+    // --- Layer isolation ---------------------------------------------------------
 
     public function test_domain_does_not_depend_on_infrastructure(): Rule
     {
@@ -133,7 +133,7 @@ final class ArchitectureTest
             ->because('FormEngine elements render data, they must not depend on controllers');
     }
 
-    // ─── Finality enforcement ────────────────────────────────────────
+    // --- Finality enforcement ----------------------------------------------------
 
     public function test_all_services_are_final(): Rule
     {

@@ -15,14 +15,11 @@ use Netresearch\NrPasskeysFe\Event\AfterPasskeyEnrollmentEvent;
 use Netresearch\NrPasskeysFe\Event\BeforePasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Event\BeforePasskeyEnrollmentEvent;
 use Netresearch\NrPasskeysFe\Event\EnforcementLevelResolvedEvent;
-use Netresearch\NrPasskeysFe\Event\MagicLinkRequestedEvent;
 use Netresearch\NrPasskeysFe\Event\PasskeyRemovedEvent;
 use Netresearch\NrPasskeysFe\Event\RecoveryCodesGeneratedEvent;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
-use ReflectionProperty;
 
 #[CoversClass(BeforePasskeyEnrollmentEvent::class)]
 #[CoversClass(AfterPasskeyEnrollmentEvent::class)]
@@ -30,7 +27,6 @@ use ReflectionProperty;
 #[CoversClass(AfterPasskeyAuthenticationEvent::class)]
 #[CoversClass(PasskeyRemovedEvent::class)]
 #[CoversClass(RecoveryCodesGeneratedEvent::class)]
-#[CoversClass(MagicLinkRequestedEvent::class)]
 #[CoversClass(EnforcementLevelResolvedEvent::class)]
 final class EventsTest extends TestCase
 {
@@ -149,35 +145,6 @@ final class EventsTest extends TestCase
 
         self::assertSame(15, $event->feUserUid);
         self::assertSame(10, $event->codeCount);
-    }
-
-    // -------------------------------------------------------------------------
-    // MagicLinkRequestedEvent
-    // -------------------------------------------------------------------------
-
-    #[Test]
-    public function magicLinkRequestedEventExposesAllProperties(): void
-    {
-        $event = new MagicLinkRequestedEvent(
-            feUserUid: 20,
-            email: 'user@example.com',
-        );
-
-        self::assertSame(20, $event->feUserUid);
-        self::assertSame('user@example.com', $event->email);
-    }
-
-    #[Test]
-    public function magicLinkRequestedEventHasNoTokenProperty(): void
-    {
-        $event = new MagicLinkRequestedEvent(1, 'user@example.com');
-
-        $reflection = new ReflectionClass($event);
-        $properties = $reflection->getProperties();
-        $propertyNames = \array_map(static fn(ReflectionProperty $p): string => $p->getName(), $properties);
-
-        self::assertNotContains('token', $propertyNames, 'MagicLinkRequestedEvent must not expose the token for security reasons');
-        self::assertNotContains('magicLinkToken', $propertyNames, 'MagicLinkRequestedEvent must not expose the token for security reasons');
     }
 
     // -------------------------------------------------------------------------

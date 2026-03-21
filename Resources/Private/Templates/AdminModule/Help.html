@@ -1,5 +1,4 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
-      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 <!--
   Copyright (c) 2025-2026 Netresearch DTT GmbH
@@ -11,10 +10,9 @@
 -->
 <f:layout name="Module" />
 <f:section name="Content">
-    <h1>FE Passkey Management Help</h1>
+    <h1><f:translate key="help.title" extensionName="NrPasskeysFe" /></h1>
     <p class="lead">
-        This guide explains how to roll out passkeys to your frontend users,
-        handle recovery scenarios, and understand enforcement levels.
+        <f:translate key="help.description" extensionName="NrPasskeysFe" />
     </p>
 
     <!-- ================================================================== -->
@@ -22,63 +20,44 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Rolling out frontend passkeys</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.rollout.title" extensionName="NrPasskeysFe" /></h2>
         </div>
         <div class="card-body">
             <p>
-                A phased rollout lets you introduce passkeys gradually, giving users
-                time to register their devices before enforcement becomes mandatory.
+                <f:translate key="help.rollout.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>Step 1 &mdash; Install the extension</h3>
+            <h3><f:translate key="help.rollout.step.1.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                Install <code>netresearch/nr-passkeys-fe</code> via Composer and
-                activate it in the Extension Manager. Run the database analyser to
-                create the <code>tx_nrpasskeysfe_credential</code> table.
+                <f:translate key="help.rollout.step.1.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>Step 2 &mdash; Add the plugins to your site</h3>
+            <h3><f:translate key="help.rollout.step.2.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                Add the <em>FE Passkey Login</em>, <em>FE Passkey Management</em>,
-                and (optionally) <em>FE Passkey Enrollment</em> plugins to the
-                appropriate pages of your site. Configure TypoScript to point the
-                plugins at the correct frontend user storage folder.
+                <f:translate key="help.rollout.step.2.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>Step 3 &mdash; Set groups to <em>Encourage</em></h3>
+            <h3><f:translate key="help.rollout.step.3.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                On the <a href="{dashboardUrl}">Dashboard</a> tab,
-                change a frontend user group's enforcement level to
-                <strong>Encourage</strong>. Users in that group will see a
-                non-blocking banner on the site prompting them to register a passkey.
+                <f:translate key="help.rollout.step.3.description" extensionName="NrPasskeysFe" />
             </p>
-            <f:be.infobox title="Tip" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}">
-                Start with a pilot group to validate the workflow before widening
-                the rollout to all frontend users.
+            <f:be.infobox title="{f:translate(key: 'help.rollout.step.3.tip.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}">
+                <f:translate key="help.rollout.step.3.tip" extensionName="NrPasskeysFe" />
             </f:be.infobox>
 
-            <h3>Step 4 &mdash; Set groups to <em>Required</em></h3>
+            <h3><f:translate key="help.rollout.step.4.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                When you are confident the process works, change the group to
-                <strong>Required</strong>. Users who have not yet registered a
-                passkey will be directed to the enrollment page after password login.
-                A configurable grace period gives them time to register before the
-                requirement becomes strict.
+                <f:translate key="help.rollout.step.4.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>Step 5 &mdash; After the grace period expires</h3>
+            <h3><f:translate key="help.rollout.step.5.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                Once the grace period ends, users in <strong>Required</strong>
-                groups must register a passkey before they can access the site.
-                Users in <strong>Enforced</strong> groups have no grace period at all.
+                <f:translate key="help.rollout.step.5.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>Step 6 &mdash; Monitor adoption</h3>
+            <h3><f:translate key="help.rollout.step.6.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                Use the <a href="{dashboardUrl}">Dashboard</a>
-                tab to track overall adoption rates and per-group statistics.
-                Use the Passkey Lookup panel to inspect an individual user's
-                registered credentials.
+                <f:translate key="help.rollout.step.6.description" extensionName="NrPasskeysFe" />
             </p>
         </div>
     </div>
@@ -88,58 +67,40 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Recovery procedures</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.recovery.title" extensionName="NrPasskeysFe" /></h2>
         </div>
         <div class="card-body">
             <p>
-                When a frontend user loses access to their authenticator device,
-                follow these steps:
+                <f:translate key="help.recovery.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>1. User reports lost device</h3>
+            <h3><f:translate key="help.recovery.step.1.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                The user contacts you (or a site admin) and reports which device or
-                authenticator is no longer available.
+                <f:translate key="help.recovery.step.1.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>2. Admin revokes affected passkey(s)</h3>
+            <h3><f:translate key="help.recovery.step.2.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                In <strong>Web &gt; FE Passkeys &gt; Dashboard</strong>, enter the
-                user's UID in the <em>Passkey Lookup</em> panel and revoke the
-                affected credential(s). If you're unsure which credential matches
-                the lost device, look at the creation date and label.
+                <f:translate key="help.recovery.step.2.description.1" extensionName="NrPasskeysFe" />
             </p>
             <p>
-                Alternatively, open the user's <code>fe_users</code> record in the
-                backend list module. The <em>Passkeys</em> inline element in the
-                record shows all registered credentials and allows deletion.
+                <f:translate key="help.recovery.step.2.description.2" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>3. User has zero passkeys and enforcement is active</h3>
+            <h3><f:translate key="help.recovery.step.3.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                If the user's group is set to <strong>Required</strong> or
-                <strong>Enforced</strong> and the user now has zero registered
-                passkeys, the next password-based login will direct them to the
-                enrollment page. They must register a new passkey on their
-                replacement device before they can continue.
+                <f:translate key="help.recovery.step.3.description" extensionName="NrPasskeysFe" />
             </p>
 
-            <h3>4. User cannot log in at all</h3>
+            <h3><f:translate key="help.recovery.step.4.title" extensionName="NrPasskeysFe" /></h3>
             <p>
-                If the user has no working authenticator and is rate-limited
-                (too many failed attempts), use the <em>Unlock user</em> button
-                in the Passkey Lookup panel to reset the lockout.
+                <f:translate key="help.recovery.step.4.description.1" extensionName="NrPasskeysFe" />
             </p>
             <p>
-                If they also cannot complete password-based login, the administrator
-                can temporarily lower the group enforcement level to
-                <em>Encourage</em> or <em>Off</em> so the user can log in with
-                a password and re-register a passkey.
+                <f:translate key="help.recovery.step.4.description.2" extensionName="NrPasskeysFe" />
             </p>
-            <f:be.infobox title="Important" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING')}">
-                Remember to restore the group's enforcement level after the user
-                has re-registered a passkey. Leaving enforcement lowered
-                indefinitely weakens your site's security.
+            <f:be.infobox title="{f:translate(key: 'help.recovery.warning.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING')}">
+                <f:translate key="help.recovery.warning.description" extensionName="NrPasskeysFe" />
             </f:be.infobox>
         </div>
     </div>
@@ -149,50 +110,43 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Enforcement levels</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.enforcement.title" extensionName="NrPasskeysFe" /></h2>
         </div>
         <div class="card-body">
             <table class="table table-bordered">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">Level</th>
-                        <th scope="col">Behaviour</th>
+                        <th scope="col"><f:translate key="help.enforcement.column.level" extensionName="NrPasskeysFe" /></th>
+                        <th scope="col"><f:translate key="help.enforcement.column.behaviour" extensionName="NrPasskeysFe" /></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>Off</strong></td>
-                        <td>Passkeys are available but not promoted. No banner or redirect.</td>
+                        <td><strong><f:translate key="enforcement.level.off" extensionName="NrPasskeysFe" /></strong></td>
+                        <td><f:translate key="help.enforcement.level.off" extensionName="NrPasskeysFe" /></td>
                     </tr>
                     <tr>
-                        <td><strong>Encourage</strong></td>
+                        <td><strong><f:translate key="enforcement.level.encourage" extensionName="NrPasskeysFe" /></strong></td>
                         <td>
-                            A dismissible banner prompts users without passkeys to
-                            register one. They can continue using the site with a
-                            password.
+                            <f:translate key="help.enforcement.level.encourage" extensionName="NrPasskeysFe" />
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Required</strong></td>
+                        <td><strong><f:translate key="enforcement.level.required" extensionName="NrPasskeysFe" /></strong></td>
                         <td>
-                            Users without a passkey are redirected to the enrollment
-                            page after password login. They may skip during the grace
-                            period; after it expires they must register.
+                            <f:translate key="help.enforcement.level.required" extensionName="NrPasskeysFe" />
                         </td>
                     </tr>
                     <tr>
-                        <td><strong>Enforced</strong></td>
+                        <td><strong><f:translate key="enforcement.level.enforced" extensionName="NrPasskeysFe" /></strong></td>
                         <td>
-                            Same as Required but without any grace period. Users must
-                            register a passkey immediately.
+                            <f:translate key="help.enforcement.level.enforced" extensionName="NrPasskeysFe" />
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <f:be.infobox title="Strictest wins" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::NOTICE')}">
-                When a user belongs to multiple groups, the strictest enforcement
-                level takes effect. For example, if one group is <em>Off</em> and
-                another is <em>Required</em>, the user sees <em>Required</em>.
+            <f:be.infobox title="{f:translate(key: 'help.enforcement.strictest_wins.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::NOTICE')}">
+                <f:translate key="help.enforcement.strictest_wins.description" extensionName="NrPasskeysFe" />
             </f:be.infobox>
         </div>
     </div>
@@ -202,7 +156,7 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Frequently asked questions</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.faq.title" extensionName="NrPasskeysFe" /></h2>
         </div>
         <div class="card-body">
             <div class="accordion" id="faqAccordion">
@@ -213,18 +167,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse1"
                                 aria-expanded="false" aria-controls="faqCollapse1">
-                            What happens if I set enforcement to "Required" and users have not set up passkeys?
+                            <f:translate key="help.faq.question.1" extensionName="NrPasskeysFe" />
                         </button>
                     </h3>
                     <div id="faqCollapse1" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                A grace period begins. Users who log in with a password
-                                are redirected to the enrollment page which explains
-                                passkey registration and shows how many days remain.
-                                During the grace period they can skip. Once the grace
-                                period expires, the enrollment page becomes blocking.
+                                <f:translate key="help.faq.answer.1" extensionName="NrPasskeysFe" />
                             </p>
                         </div>
                     </div>
@@ -236,18 +186,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse2"
                                 aria-expanded="false" aria-controls="faqCollapse2">
-                            Can I enforce passkeys for some groups but not others?
+                            <f:translate key="help.faq.question.2" extensionName="NrPasskeysFe" />
                         </button>
                     </h3>
                     <div id="faqCollapse2" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                Yes. Enforcement is configured per frontend user group.
-                                You can set different levels for different groups: for
-                                example, <em>Enforced</em> for premium members,
-                                <em>Required</em> for registered users, and <em>Off</em>
-                                for guest/anonymous groups.
+                                <f:translate key="help.faq.answer.2" extensionName="NrPasskeysFe" />
                             </p>
                         </div>
                     </div>
@@ -259,17 +205,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse3"
                                 aria-expanded="false" aria-controls="faqCollapse3">
-                            What if a user belongs to multiple groups with different enforcement levels?
+                            <f:translate key="help.faq.question.3" extensionName="NrPasskeysFe" />
                         </button>
                     </h3>
                     <div id="faqCollapse3" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                The <strong>strictest level wins</strong>. If a user
-                                belongs to one group with <em>Encourage</em> and
-                                another with <em>Required</em>, the effective
-                                enforcement level is <em>Required</em>.
+                                <f:translate key="help.faq.answer.3" extensionName="NrPasskeysFe" />
                             </p>
                         </div>
                     </div>
@@ -281,18 +224,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse4"
                                 aria-expanded="false" aria-controls="faqCollapse4">
-                            How does passkey login interact with site-level authentication?
+                            <f:translate key="help.faq.question.4" extensionName="NrPasskeysFe" />
                         </button>
                     </h3>
                     <div id="faqCollapse4" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                The passkey login replaces the password. Once a user
-                                has authenticated with their passkey, they are treated
-                                as a fully authenticated frontend user. The enforcement
-                                middleware runs on subsequent requests to check whether
-                                the user needs to enroll or is already compliant.
+                                <f:translate key="help.faq.answer.4" extensionName="NrPasskeysFe" />
                             </p>
                         </div>
                     </div>
@@ -304,19 +243,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse5"
                                 aria-expanded="false" aria-controls="faqCollapse5">
-                            Where are passkeys stored?
+                            <f:translate key="help.faq.question.5" extensionName="NrPasskeysFe" />
                         </button>
                     </h3>
                     <div id="faqCollapse5" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading5" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                Passkey credentials (the public key and metadata) are
-                                stored in the <code>tx_nrpasskeysfe_credential</code>
-                                database table. The private key never leaves the user's
-                                device. Each credential is scoped to a site identifier
-                                and a frontend user storage PID, preventing cross-site
-                                credential confusion.
+                                <f:translate key="help.faq.answer.5" extensionName="NrPasskeysFe" />
                             </p>
                         </div>
                     </div>

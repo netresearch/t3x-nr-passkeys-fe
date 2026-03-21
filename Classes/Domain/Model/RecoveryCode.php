@@ -81,16 +81,6 @@ final class RecoveryCode
     }
 
     /**
-     * Marks this recovery code as used by recording the current time.
-     *
-     * Once marked, isUsed() returns true and the code cannot be reused.
-     */
-    public function markUsed(): void
-    {
-        $this->usedAt = \time();
-    }
-
-    /**
      * @return array<string, mixed>
      */
     public function toArray(): array

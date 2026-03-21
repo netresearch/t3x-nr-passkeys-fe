@@ -10,9 +10,13 @@
  * 3. Call navigator.credentials.create()
  * 4. Verify with eID registrationVerify action
  * 5. Show success or error
+ *
+ * Depends on: PasskeyUtils.js (NrPasskeysFe namespace)
  */
 (function () {
   'use strict';
+
+  var U = window.NrPasskeysFe;
 
   function init() {
     var containers = document.querySelectorAll(
@@ -45,7 +49,7 @@
 
     // Feature detection
     if (!window.PublicKeyCredential) {
-      showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
+      U.showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
       if (registerBtn) {
         registerBtn.disabled = true;
       }
@@ -53,7 +57,7 @@
     }
 
     if (!window.isSecureContext) {
-      showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
+      U.showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
       if (registerBtn) {
         registerBtn.disabled = true;
       }
@@ -72,7 +76,7 @@
   }
 
   async function handleRegistration(optionsUrl, verifyUrl, labelInput, registerBtn, btnText, btnLoading, statusEl, errorEl, successEl, container) {
-    hideError(errorEl);
+    U.hideError(errorEl);
     hideElement(successEl);
 
     var label = labelInput ? labelInput.value.trim() : 'Passkey';
@@ -80,7 +84,7 @@
       label = 'Passkey';
     }
 
-    setLoading(true, registerBtn, btnText, btnLoading);
+    U.setLoading(true, registerBtn, btnText, btnLoading);
 
     try {
       // Step 1: Get registration options from eID
@@ -93,8 +97,8 @@
 
       if (!optionsResponse.ok) {
         var errData = await optionsResponse.json().catch(function () { return {}; });
-        showError(errorEl, errData.error || 'Failed to start registration. Please try again.');
-        setLoading(false, registerBtn, btnText, btnLoading);
+        U.showError(errorEl, errData.error || 'Failed to start registration. Please try again.');
+        U.setLoading(false, registerBtn, btnText, btnLoading);
         return;
       }
 
@@ -104,13 +108,13 @@
 
       // Step 2: Build PublicKeyCredentialCreationOptions
       var publicKeyOptions = {
-        challenge: base64urlToBuffer(options.challenge),
+        challenge: U.base64urlToBuffer(options.challenge),
         rp: {
           name: options.rp.name,
           id: options.rp.id,
         },
         user: {
-          id: base64urlToBuffer(options.user.id),
+          id: U.base64urlToBuffer(options.user.id),
           name: options.user.name,
           displayName: options.user.displayName,
         },
@@ -126,7 +130,7 @@
         publicKeyOptions.excludeCredentials = options.excludeCredentials.map(function (cred) {
           return {
             type: cred.type,
-            id: base64urlToBuffer(cred.id),
+            id: U.base64urlToBuffer(cred.id),
             transports: cred.transports || [],
           };
         });
@@ -137,12 +141,12 @@
 
       // Step 4: Encode the credential
       var credentialResponse = {
-        id: bufferToBase64url(credential.rawId),
-        rawId: bufferToBase64(credential.rawId),
+        id: U.bufferToBase64url(credential.rawId),
+        rawId: U.bufferToBase64url(credential.rawId),
         type: credential.type,
         response: {
-          clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
-          attestationObject: bufferToBase64url(credential.response.attestationObject),
+          clientDataJSON: U.bufferToBase64url(credential.response.clientDataJSON),
+          attestationObject: U.bufferToBase64url(credential.response.attestationObject),
         },
       };
 
@@ -151,7 +155,7 @@
       }
 
       // Step 5: Verify with eID
-      showStatus(statusEl, 'Registering passkey...');
+      U.showStatus(statusEl, 'Registering passkey...');
 
       var verifyResponse = await fetch(verifyUrl, {
         method: 'POST',
@@ -167,10 +171,10 @@
       var verifyData = await verifyResponse.json().catch(function () { return {}; });
 
       if (verifyResponse.ok && verifyData.status === 'ok') {
-        hideStatus(statusEl);
+        U.hideStatus(statusEl);
 
         // Check if we should redirect (enrollment flow)
-        if (verifyData.redirectUrl && isSameOrigin(verifyData.redirectUrl)) {
+        if (verifyData.redirectUrl && U.isSameOrigin(verifyData.redirectUrl)) {
           window.location.href = verifyData.redirectUrl;
           return;
         }
@@ -187,62 +191,22 @@
           detail: { credentialUid: verifyData.uid },
         }));
       } else {
-        showError(errorEl, verifyData.error || 'Registration failed. Please try again.');
-        hideStatus(statusEl);
+        U.showError(errorEl, verifyData.error || 'Registration failed. Please try again.');
+        U.hideStatus(statusEl);
       }
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
-        showError(errorEl, 'Registration was cancelled.');
+        U.showError(errorEl, 'Registration was cancelled.');
       } else if (err.name === 'InvalidStateError') {
-        showError(errorEl, 'This passkey is already registered.');
+        U.showError(errorEl, 'This passkey is already registered.');
       } else {
-        showError(errorEl, 'Registration failed: ' + (err.message || 'Please try again.'));
+        U.showError(errorEl, 'Registration failed: ' + (err.message || 'Please try again.'));
         console.error('[nr_passkeys_fe] PasskeyEnrollment error:', err);
       }
-      hideStatus(statusEl);
+      U.hideStatus(statusEl);
     }
 
-    setLoading(false, registerBtn, btnText, btnLoading);
-  }
-
-  function setLoading(loading, btnEl, btnText, btnLoading) {
-    if (btnEl) {
-      btnEl.disabled = loading;
-    }
-    if (btnText) {
-      btnText.style.display = loading ? 'none' : '';
-    }
-    if (btnLoading) {
-      btnLoading.style.display = loading ? '' : 'none';
-    }
-  }
-
-  function showError(errorEl, message) {
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = '';
-    }
-  }
-
-  function hideError(errorEl) {
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.style.display = 'none';
-    }
-  }
-
-  function showStatus(statusEl, message) {
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.style.display = '';
-    }
-  }
-
-  function hideStatus(statusEl) {
-    if (statusEl) {
-      statusEl.textContent = '';
-      statusEl.style.display = 'none';
-    }
+    U.setLoading(false, registerBtn, btnText, btnLoading);
   }
 
   function showElement(el) {
@@ -255,42 +219,6 @@
     if (el) {
       el.style.display = 'none';
     }
-  }
-
-  function isSameOrigin(url) {
-    try { return new URL(url, window.location.origin).origin === window.location.origin; }
-    catch (e) { return false; }
-  }
-
-  // Base64URL encoding/decoding utilities
-  function base64urlToBuffer(base64url) {
-    var base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    var padLen = (4 - (base64.length % 4)) % 4;
-    var padded = base64 + '='.repeat(padLen);
-    var binary = atob(padded);
-    var buffer = new Uint8Array(binary.length);
-    for (var i = 0; i < binary.length; i++) {
-      buffer[i] = binary.charCodeAt(i);
-    }
-    return buffer.buffer;
-  }
-
-  function bufferToBase64url(buffer) {
-    var bytes = new Uint8Array(buffer);
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  function bufferToBase64(buffer) {
-    var bytes = new Uint8Array(buffer);
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
   }
 
   if (document.readyState === 'loading') {

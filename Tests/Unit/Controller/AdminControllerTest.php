@@ -13,9 +13,10 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\AdminController;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -24,19 +25,22 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 #[CoversClass(AdminController::class)]
 final class AdminControllerTest extends TestCase
 {
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private RateLimiterService&MockObject $rateLimiterService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private FrontendUserLookupService&Stub $userLookupService;
+    private RateLimiterService&Stub $rateLimiterService;
     private AdminController $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->rateLimiterService = $this->createMock(RateLimiterService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
+            $this->userLookupService,
             $this->rateLimiterService,
             new NullLogger(),
         );
@@ -46,9 +50,22 @@ final class AdminControllerTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------
 
+    private function createSubjectWith(
+        ?FrontendCredentialRepository $credentialRepository = null,
+        ?FrontendUserLookupService $userLookupService = null,
+        ?RateLimiterService $rateLimiterService = null,
+    ): AdminController {
+        return new AdminController(
+            $credentialRepository ?? $this->credentialRepository,
+            $userLookupService ?? $this->userLookupService,
+            $rateLimiterService ?? $this->rateLimiterService,
+            new NullLogger(),
+        );
+    }
+
     private function setAdminBackendUser(int $uid = 1): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser = $this->createStub(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => 'admin', 'realName' => 'Admin'];
         $backendUser->method('isAdmin')->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -149,7 +166,6 @@ final class AdminControllerTest extends TestCase
         ];
         $this->credentialRepository
             ->method('findAllByFeUser')
-            ->with(42)
             ->willReturn($credentials);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/list', 'GET'))
@@ -220,20 +236,24 @@ final class AdminControllerTest extends TestCase
     public function removeActionRevokesCredentialAndReturnsOk(): void
     {
         $this->setAdminBackendUser(uid: 1);
+
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = $this->createSubjectWith(credentialRepository: $credentialRepository);
+
         $credential = $this->buildCredential(10, 42);
-        $this->credentialRepository
+        $credentialRepository
             ->method('findByUidAndFeUser')
             ->with(10, 42)
             ->willReturn($credential);
 
-        $this->credentialRepository
+        $credentialRepository
             ->expects($this->once())
             ->method('revoke')
             ->with(10, 1);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/remove', 'POST'))
             ->withParsedBody(['feUserUid' => 42, 'credentialUid' => 10]);
-        $response = $this->subject->removeAction($request);
+        $response = $subject->removeAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = \json_decode((string) $response->getBody(), true);
@@ -259,22 +279,18 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser(uid: 1);
 
-        $active = $this->buildCredential(10, 42);
-        $alreadyRevoked = $this->buildCredential(11, 42, revoked: true);
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = $this->createSubjectWith(credentialRepository: $credentialRepository);
 
-        $this->credentialRepository
-            ->method('findAllByFeUser')
-            ->with(42)
-            ->willReturn([$active, $alreadyRevoked]);
-
-        $this->credentialRepository
+        $credentialRepository
             ->expects($this->once())
-            ->method('revoke')
-            ->with(10, 1);
+            ->method('revokeAllByFeUser')
+            ->with(42, 1)
+            ->willReturn(1);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/revoke-all', 'POST'))
             ->withParsedBody(['feUserUid' => 42]);
-        $response = $this->subject->revokeAllAction($request);
+        $response = $subject->revokeAllAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = \json_decode((string) $response->getBody(), true);
@@ -286,7 +302,7 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionReturnsZeroWhenNoActiveCredentials(): void
     {
         $this->setAdminBackendUser();
-        $this->credentialRepository->method('findAllByFeUser')->willReturn([]);
+        $this->credentialRepository->method('revokeAllByFeUser')->willReturn(0);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/revoke-all', 'POST'))
             ->withParsedBody(['feUserUid' => 42]);
@@ -316,9 +332,8 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $this->credentialRepository
+        $this->userLookupService
             ->method('findFeUserByUid')
-            ->with(42)
             ->willReturn(null);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/unlock', 'POST'))
@@ -332,19 +347,25 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $this->credentialRepository
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        $userLookupService = $this->createStub(FrontendUserLookupService::class);
+        $subject = $this->createSubjectWith(
+            userLookupService: $userLookupService,
+            rateLimiterService: $rateLimiterService,
+        );
+
+        $userLookupService
             ->method('findFeUserByUid')
-            ->with(42)
             ->willReturn(['uid' => 42, 'username' => 'johndoe']);
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects($this->once())
             ->method('resetLockout')
             ->with('johndoe');
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/unlock', 'POST'))
             ->withParsedBody(['feUserUid' => 42, 'username' => 'johndoe']);
-        $response = $this->subject->unlockAction($request);
+        $response = $subject->unlockAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = \json_decode((string) $response->getBody(), true);
@@ -356,9 +377,8 @@ final class AdminControllerTest extends TestCase
     {
         $this->setAdminBackendUser();
 
-        $this->credentialRepository
+        $this->userLookupService
             ->method('findFeUserByUid')
-            ->with(42)
             ->willReturn(['uid' => 42, 'username' => 'differentuser']);
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/unlock', 'POST'))

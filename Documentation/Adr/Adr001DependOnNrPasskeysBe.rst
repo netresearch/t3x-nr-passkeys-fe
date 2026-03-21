@@ -1,5 +1,7 @@
 .. include:: /Includes.rst.txt
 
+.. _adr-001:
+
 ========================================================
 ADR-001: Depend on nr-passkeys-be as Composer Dependency
 ========================================================

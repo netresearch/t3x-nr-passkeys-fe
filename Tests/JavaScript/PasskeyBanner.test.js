@@ -1,5 +1,8 @@
 /**
  * Tests for PasskeyBanner.js
+ *
+ * PasskeyBanner.js is standalone (does not depend on PasskeyUtils.js)
+ * as it handles only cookie-based dismiss logic with no base64/WebAuthn needs.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 

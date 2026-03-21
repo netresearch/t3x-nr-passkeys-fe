@@ -11,10 +11,12 @@ namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
+use Netresearch\NrPasskeysFe\Event\PasskeyRemovedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -28,17 +30,18 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  * All methods require an authenticated FE user (enforced by EidDispatcher).
  * Provides registration ceremony, listing, renaming, and removal of passkeys.
  */
-final class ManagementController
+final readonly class ManagementController
 {
     use JsonBodyTrait;
 
     public function __construct(
-        private readonly PasskeyEnrollmentService $enrollmentService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly FrontendWebAuthnService $webAuthnService,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly ChallengeService $challengeService,
-        private readonly LoggerInterface $logger,
+        private PasskeyEnrollmentService $enrollmentService,
+        private FrontendCredentialRepository $credentialRepository,
+        private FrontendWebAuthnService $webAuthnService,
+        private SiteConfigurationService $siteConfigurationService,
+        private ChallengeService $challengeService,
+        private EventDispatcherInterface $eventDispatcher,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -307,6 +310,8 @@ final class ManagementController
 
         // Soft delete: revoke with the user as revoker
         $this->credentialRepository->revoke($credentialUid, $feUserUid);
+
+        $this->eventDispatcher->dispatch(new PasskeyRemovedEvent($credential, $feUserUid));
 
         $this->logger->info('FE passkey removed', [
             'fe_user_uid' => $feUserUid,

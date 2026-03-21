@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -24,13 +25,13 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 #[CoversClass(FrontendCredentialRepository::class)]
 final class FrontendCredentialRepositoryTest extends TestCase
 {
-    private ConnectionPool&MockObject $connectionPool;
+    private ConnectionPool&Stub $connectionPool;
     private FrontendCredentialRepository $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
+        $this->connectionPool = $this->createStub(ConnectionPool::class);
         $this->subject = new FrontendCredentialRepository($this->connectionPool);
     }
 
@@ -43,13 +44,12 @@ final class FrontendCredentialRepositoryTest extends TestCase
     {
         $row = $this->buildCredentialRow(uid: 1, feUser: 7, credentialId: 'cred-abc');
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn($row);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
-            ->with('tx_nrpasskeysfe_credential')
             ->willReturn($queryBuilder);
 
         $credential = $this->subject->findByCredentialId('cred-abc');
@@ -63,10 +63,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function findByCredentialIdReturnsNullWhenNotFound(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn(false);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
@@ -89,10 +89,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
             storagePid: 5,
         );
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn($row);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
@@ -107,10 +107,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function findByCredentialIdScopedReturnsNullWhenNotFound(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn(false);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
@@ -130,10 +130,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
             $this->buildCredentialRow(uid: 2, feUser: 7, siteIdentifier: 'main'),
         ];
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn($rows);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $queryBuilder->method('orderBy')->willReturnSelf();
 
         $this->connectionPool->method('getQueryBuilderForTable')
@@ -148,10 +148,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function findByFeUserReturnsEmptyArrayWhenNoneFound(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $queryBuilder->method('orderBy')->willReturnSelf();
 
         $this->connectionPool->method('getQueryBuilderForTable')
@@ -167,10 +167,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function countByFeUserReturnsCount(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(3);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
@@ -181,10 +181,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function countByFeUserReturnsZeroWhenNoResults(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(false);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
 
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
@@ -210,11 +210,10 @@ final class FrontendCredentialRepositoryTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())
             ->method('insert')
-            ->with('tx_nrpasskeysfe_credential', self::isType('array'));
+            ->with('tx_nrpasskeysfe_credential', self::isArray());
         $connection->method('lastInsertId')->willReturn('42');
 
         $this->connectionPool->method('getConnectionForTable')
-            ->with('tx_nrpasskeysfe_credential')
             ->willReturn($connection);
 
         $this->subject->save($credential);
@@ -281,7 +280,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function revokeAllByFeUserExecutesUpdateStatement(): void
     {
-        $queryBuilder = $this->createQueryBuilderMock();
+        $queryBuilder = $this->createQueryBuilderMock();  // needs expects()
         $queryBuilder->method('update')->willReturnSelf();
         $queryBuilder->method('set')->willReturnSelf();
         $queryBuilder->expects(self::once())
@@ -351,9 +350,30 @@ final class FrontendCredentialRepositoryTest extends TestCase
         ];
     }
 
+    private function createQueryBuilderStub(?Result $result = null): QueryBuilder&Stub
+    {
+        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('');
+        $expressionBuilder->method('in')->willReturn('');
+
+        $queryBuilder = $this->createStub(QueryBuilder::class);
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('count')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('createNamedParameter')->willReturn('?');
+
+        if ($result !== null) {
+            $queryBuilder->method('executeQuery')->willReturn($result);
+        }
+
+        return $queryBuilder;
+    }
+
     private function createQueryBuilderMock(?Result $result = null): QueryBuilder&MockObject
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('');
         $expressionBuilder->method('in')->willReturn('');
 

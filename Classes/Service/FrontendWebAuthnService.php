@@ -107,7 +107,7 @@ final class FrontendWebAuthnService
         );
 
         $authenticatorSelection = AuthenticatorSelectionCriteria::create(
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_PREFERRED,
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
             residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
         );
 
@@ -344,8 +344,7 @@ final class FrontendWebAuthnService
             );
         }
 
-        $this->credentialRepository->updateSignCount($credential->getUid(), $updatedSource->counter);
-        $this->credentialRepository->updateLastUsed($credential->getUid());
+        $this->credentialRepository->updateAfterAssertion($credential->getUid(), $updatedSource->counter);
 
         $this->logger->info('Frontend passkey login successful', [
             'fe_user_uid' => $credential->getFeUser(),

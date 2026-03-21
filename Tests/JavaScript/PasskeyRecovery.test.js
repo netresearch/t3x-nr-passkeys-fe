@@ -1,7 +1,13 @@
 /**
  * Tests for PasskeyRecovery.js
+ *
+ * Tests recovery-specific behavior. Shared utilities are tested
+ * in PasskeyLogin.test.js via PasskeyUtils.js.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Load the shared utility module so NrPasskeysFe is available
+import '../../Resources/Public/JavaScript/PasskeyUtils.js';
 
 function clearBody() {
     while (document.body.firstChild) {
@@ -204,9 +210,8 @@ describe('PasskeyRecovery — error display', () => {
     it('shows error message on invalid code', () => {
         const { error } = createRecoveryContainer();
 
-        // Simulate showError
-        error.textContent = 'Please enter a valid recovery code (format: XXXX-XXXX).';
-        error.style.display = '';
+        // Use shared utility
+        window.NrPasskeysFe.showError(error, 'Please enter a valid recovery code (format: XXXX-XXXX).');
 
         expect(error.textContent).toContain('XXXX-XXXX');
         expect(error.style.display).toBe('');
@@ -215,8 +220,7 @@ describe('PasskeyRecovery — error display', () => {
     it('shows error on server rejection', () => {
         const { error } = createRecoveryContainer();
 
-        error.textContent = 'Invalid recovery code. Please check and try again.';
-        error.style.display = '';
+        window.NrPasskeysFe.showError(error, 'Invalid recovery code. Please check and try again.');
 
         expect(error.textContent).toContain('Invalid recovery code');
     });

@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\Event\AfterCacheableContentIsGeneratedEvent;
 
@@ -116,17 +117,25 @@ final readonly class InjectPasskeyBanner
     ): string {
         $enrollmentUrlEscaped = \htmlspecialchars($enrollmentUrl, ENT_QUOTES, 'UTF-8');
 
-        $title = 'Secure your account with a passkey';
-        $description = 'Passkeys let you sign in faster and more securely using your device\'s biometrics or security key.';
+        $title = LocalizationUtility::translate('banner.encourage.title', 'NrPasskeysFe')
+            ?? 'Passkeys available for your account';
+        $description = LocalizationUtility::translate('banner.encourage.description', 'NrPasskeysFe')
+            ?? 'Set up passwordless login with a passkey. Sign in faster using your fingerprint, face, or device PIN.';
 
         if ($level === 'required' && $graceDeadline !== null) {
+            $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')
+                ?? 'Passkey setup required';
             $remainingDays = (int) $graceDeadline->diff(new DateTimeImmutable())->days;
             $description = \sprintf(
-                'You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.',
+                LocalizationUtility::translate('banner.required.grace_description', 'NrPasskeysFe')
+                    ?? 'You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.',
                 \max(0, $remainingDays),
             );
         } elseif ($level === 'enforced' || $level === 'required') {
-            $description = 'Passkey enrollment is required to continue accessing your account.';
+            $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')
+                ?? 'Passkey setup required';
+            $description = LocalizationUtility::translate('banner.enforced.description', 'NrPasskeysFe')
+                ?? 'Passkey enrollment is required to continue accessing your account.';
         }
 
         $titleEscaped = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
@@ -140,8 +149,10 @@ final readonly class InjectPasskeyBanner
 
         $enrollLink = '';
         if ($enrollmentUrl !== '') {
+            $ctaLabel = LocalizationUtility::translate('banner.button.setup', 'NrPasskeysFe') ?? 'Set up now';
+            $ctaLabelEscaped = \htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
             $enrollLink = '<a href="' . $enrollmentUrlEscaped . '" class="nr-passkeys-banner__cta">'
-                . 'Set up passkey</a>';
+                . $ctaLabelEscaped . '</a>';
         }
 
         return <<<HTML

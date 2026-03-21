@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
+use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -24,20 +25,9 @@ use Psr\Http\Server\RequestHandlerInterface;
  * to `true`, which PasskeyEnrollmentInterstitial (and any other middleware)
  * can check to avoid intercepting these requests.
  */
-final class PasskeyPublicRouteResolver implements MiddlewareInterface
+final readonly class PasskeyPublicRouteResolver implements MiddlewareInterface
 {
     private const EID = 'nr_passkeys_fe';
-
-    /**
-     * Actions that must be accessible without authentication.
-     *
-     * @var list<string>
-     */
-    private const PUBLIC_ACTIONS = [
-        'loginOptions',
-        'loginVerify',
-        'recoveryVerify',
-    ];
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -62,6 +52,6 @@ final class PasskeyPublicRouteResolver implements MiddlewareInterface
             return false;
         }
 
-        return \in_array($action, self::PUBLIC_ACTIONS, true);
+        return \in_array($action, EidDispatcher::PUBLIC_ACTIONS, true);
     }
 }

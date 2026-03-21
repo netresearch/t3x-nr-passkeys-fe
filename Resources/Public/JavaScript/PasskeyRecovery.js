@@ -7,9 +7,13 @@
  * - Auto-formats recovery codes (XXXX-XXXX) as the user types
  * - Submits to eID recoveryVerify action
  * - Handles error display and loading state
+ *
+ * Depends on: PasskeyUtils.js (NrPasskeysFe namespace)
  */
 (function () {
   'use strict';
+
+  var U = window.NrPasskeysFe;
 
   function init() {
     var containers = document.querySelectorAll('[data-nr-passkeys-fe="recovery"]');
@@ -75,11 +79,11 @@
   }
 
   async function handleRecoveryVerify(eidUrl, codeInput, submitBtn, btnText, btnLoading, statusEl, errorEl, form) {
-    hideError(errorEl);
+    U.hideError(errorEl);
 
     var code = codeInput ? codeInput.value.trim() : '';
     if (!code || code.length !== 9) {
-      showError(errorEl, 'Please enter a valid recovery code (format: XXXX-XXXX).');
+      U.showError(errorEl, 'Please enter a valid recovery code (format: XXXX-XXXX).');
       if (codeInput) {
         codeInput.focus();
       }
@@ -90,14 +94,14 @@
     var usernameInput = form ? form.querySelector('[name="recovery_username"]') : null;
     var username = usernameInput ? usernameInput.value.trim() : '';
     if (!username) {
-      showError(errorEl, 'Please enter your username.');
+      U.showError(errorEl, 'Please enter your username.');
       if (usernameInput) {
         usernameInput.focus();
       }
       return;
     }
 
-    setLoading(true, submitBtn, btnText, btnLoading);
+    U.setLoading(true, submitBtn, btnText, btnLoading);
 
     try {
       var verifyUrl = eidUrl + '?eID=nr_passkeys_fe&action=recoveryVerify';
@@ -111,9 +115,9 @@
       var data = await response.json().catch(function () { return {}; });
 
       if (response.ok && data.status === 'ok') {
-        showStatus(statusEl, 'Recovery code accepted. Redirecting...');
+        U.showStatus(statusEl, 'Recovery code accepted. Redirecting...');
         var redirect = data.redirectUrl;
-        if (redirect && isSameOrigin(redirect)) {
+        if (redirect && U.isSameOrigin(redirect)) {
           window.location.href = redirect;
         } else {
           window.location.reload();
@@ -122,58 +126,20 @@
       }
 
       if (response.status === 429) {
-        showError(errorEl, 'Too many attempts. Please try again later.');
+        U.showError(errorEl, 'Too many attempts. Please try again later.');
       } else {
-        showError(errorEl, data.error || 'Invalid recovery code. Please check and try again.');
+        U.showError(errorEl, data.error || 'Invalid recovery code. Please check and try again.');
         if (codeInput) {
           codeInput.value = '';
           codeInput.focus();
         }
       }
     } catch (e) {
-      showError(errorEl, 'Network error. Please check your connection and try again.');
+      U.showError(errorEl, 'Network error. Please check your connection and try again.');
       console.error('[nr_passkeys_fe] RecoveryVerify error:', e);
     }
 
-    setLoading(false, submitBtn, btnText, btnLoading);
-  }
-
-  function isSameOrigin(url) {
-    try { return new URL(url, window.location.origin).origin === window.location.origin; }
-    catch (e) { return false; }
-  }
-
-  function setLoading(loading, btnEl, btnText, btnLoading) {
-    if (btnEl) {
-      btnEl.disabled = loading;
-    }
-    if (btnText) {
-      btnText.style.display = loading ? 'none' : '';
-    }
-    if (btnLoading) {
-      btnLoading.style.display = loading ? '' : 'none';
-    }
-  }
-
-  function showError(errorEl, message) {
-    if (errorEl) {
-      errorEl.textContent = message;
-      errorEl.style.display = '';
-    }
-  }
-
-  function hideError(errorEl) {
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.style.display = 'none';
-    }
-  }
-
-  function showStatus(statusEl, message) {
-    if (statusEl) {
-      statusEl.textContent = message;
-      statusEl.style.display = '';
-    }
+    U.setLoading(false, submitBtn, btnText, btnLoading);
   }
 
   if (document.readyState === 'loading') {

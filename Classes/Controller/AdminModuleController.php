@@ -23,7 +23,7 @@ use TYPO3\CMS\Core\Page\PageRenderer;
  *
  * Provides the dashboard and help views under Web > FE Passkey Management.
  */
-final class AdminModuleController
+final readonly class AdminModuleController
 {
     /** @var array<string, string> */
     private const ENFORCEMENT_LEVELS = [
@@ -34,10 +34,10 @@ final class AdminModuleController
     ];
 
     public function __construct(
-        private readonly ModuleTemplateFactory $moduleTemplateFactory,
-        private readonly FrontendAdoptionStatsService $adoptionStatsService,
-        private readonly PageRenderer $pageRenderer,
-        private readonly UriBuilder $uriBuilder,
+        private ModuleTemplateFactory $moduleTemplateFactory,
+        private FrontendAdoptionStatsService $adoptionStatsService,
+        private PageRenderer $pageRenderer,
+        private UriBuilder $uriBuilder,
     ) {}
 
     /**

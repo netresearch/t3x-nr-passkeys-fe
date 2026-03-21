@@ -1,5 +1,7 @@
 .. include:: /Includes.rst.txt
 
+.. _adr-010:
+
 ==========================================
 ADR-010: Recovery Codes Hashed with bcrypt
 ==========================================

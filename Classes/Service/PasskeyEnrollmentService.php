@@ -25,14 +25,14 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
  * (policy enforcement such as max passkeys per user). Dispatches
  * Before/After enrollment events for extension points.
  */
-final class PasskeyEnrollmentService
+final readonly class PasskeyEnrollmentService
 {
     public function __construct(
-        private readonly FrontendWebAuthnService $webAuthnService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly FrontendConfiguration $configuration,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private FrontendWebAuthnService $webAuthnService,
+        private FrontendCredentialRepository $credentialRepository,
+        private FrontendConfiguration $configuration,
+        private SiteConfigurationService $siteConfigurationService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /**
@@ -75,11 +75,7 @@ final class PasskeyEnrollmentService
 
         // Dispatch before event — listeners may abort by throwing
         $this->eventDispatcher->dispatch(
-            new BeforePasskeyEnrollmentEvent(
-                feUserUid: $feUserUid,
-                siteIdentifier: $siteIdentifier,
-                attestationJson: $attestationJson,
-            ),
+            new BeforePasskeyEnrollmentEvent($feUserUid, $siteIdentifier, $attestationJson),
         );
 
         $credential = $this->webAuthnService->verifyRegistrationResponse(
@@ -94,11 +90,7 @@ final class PasskeyEnrollmentService
 
         // Dispatch after event
         $this->eventDispatcher->dispatch(
-            new AfterPasskeyEnrollmentEvent(
-                feUserUid: $feUserUid,
-                credential: $credential,
-                siteIdentifier: $siteIdentifier,
-            ),
+            new AfterPasskeyEnrollmentEvent($feUserUid, $credential, $siteIdentifier),
         );
 
         return $credential;

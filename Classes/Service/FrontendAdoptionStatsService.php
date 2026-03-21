@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
-use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendAdoptionStats;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
@@ -19,10 +18,10 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
  * Used by the admin dashboard to show how many fe_users have
  * enrolled passkeys, broken down by fe_group.
  */
-final class FrontendAdoptionStatsService
+final readonly class FrontendAdoptionStatsService
 {
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
+        private ConnectionPool $connectionPool,
     ) {}
 
     /**
@@ -30,7 +29,7 @@ final class FrontendAdoptionStatsService
      */
     public function getStats(string $siteIdentifier = ''): FrontendAdoptionStats
     {
-        $totalUsers = $this->countTotalFeUsers();
+        $totalUsers = $this->countTotalFeUsers($siteIdentifier);
         $usersWithPasskeys = $this->countUsersWithPasskeys($siteIdentifier);
 
         $adoptionPercentage = $totalUsers > 0
@@ -48,11 +47,37 @@ final class FrontendAdoptionStatsService
     }
 
     /**
-     * Count total active fe_users.
+     * Count total active fe_users, optionally scoped to a site identifier.
+     *
+     * When a site identifier is given, only users that have at least one
+     * credential on that site are counted. Without a site scope the global
+     * count of all active fe_users is returned.
      */
-    private function countTotalFeUsers(): int
+    private function countTotalFeUsers(string $siteIdentifier = ''): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+
+        if ($siteIdentifier !== '') {
+            $queryBuilder
+                ->count('DISTINCT u.uid')
+                ->from('fe_users', 'u')
+                ->join(
+                    'u',
+                    'tx_nrpasskeysfe_credential',
+                    'c',
+                    $queryBuilder->expr()->eq('c.fe_user', $queryBuilder->quoteIdentifier('u.uid')),
+                )
+                ->where(
+                    $queryBuilder->expr()->eq(
+                        'c.site_identifier',
+                        $queryBuilder->createNamedParameter($siteIdentifier),
+                    ),
+                );
+
+            $result = $queryBuilder->executeQuery()->fetchOne();
+
+            return \is_numeric($result) ? (int) $result : 0;
+        }
 
         $result = $queryBuilder
             ->count('uid')
@@ -68,25 +93,34 @@ final class FrontendAdoptionStatsService
      */
     private function countUsersWithPasskeys(string $siteIdentifier): int
     {
-        $connection = $this->connectionPool->getConnectionForTable('tx_nrpasskeysfe_credential');
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_nrpasskeysfe_credential');
 
-        $sql = 'SELECT COUNT(DISTINCT fe_user) FROM tx_nrpasskeysfe_credential WHERE revoked_at = 0';
-        $params = [];
-        $types = [];
+        $queryBuilder
+            ->count('DISTINCT fe_user')
+            ->from('tx_nrpasskeysfe_credential')
+            ->where(
+                $queryBuilder->expr()->eq('revoked_at', 0),
+            );
 
         if ($siteIdentifier !== '') {
-            $sql .= ' AND site_identifier = ?';
-            $params[] = $siteIdentifier;
-            $types[] = ParameterType::STRING;
+            $queryBuilder->andWhere(
+                $queryBuilder->expr()->eq(
+                    'site_identifier',
+                    $queryBuilder->createNamedParameter($siteIdentifier),
+                ),
+            );
         }
 
-        $result = $connection->executeQuery($sql, $params, $types)->fetchOne();
+        $result = $queryBuilder->executeQuery()->fetchOne();
 
         return \is_numeric($result) ? (int) $result : 0;
     }
 
     /**
      * Get per-group breakdown of passkey adoption.
+     *
+     * Uses two aggregate queries (GROUP BY) instead of per-group queries
+     * to avoid the N+1 query pattern.
      *
      * @return array<string, array{groupName: string, userCount: int, withPasskeys: int, enforcement: string}>
      */
@@ -100,76 +134,137 @@ final class FrontendAdoptionStatsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $stats = [];
+        if ($groups === []) {
+            return [];
+        }
 
+        // Build group metadata map
+        $stats = [];
         foreach ($groups as $group) {
-            $groupUid = (int) ($group['uid'] ?? 0);
+            $groupUid = (string) (int) ($group['uid'] ?? 0);
             $groupTitle = \is_string($group['title'] ?? null) ? $group['title'] : '';
             $enforcement = \is_string($group['passkey_enforcement'] ?? null) ? $group['passkey_enforcement'] : 'off';
 
-            $userCount = $this->countUsersInGroup($groupUid);
-            $withPasskeys = $this->countUsersWithPasskeysInGroup($groupUid, $siteIdentifier);
-
-            $stats[(string) $groupUid] = [
+            $stats[$groupUid] = [
                 'groupName' => $groupTitle,
-                'userCount' => $userCount,
-                'withPasskeys' => $withPasskeys,
+                'userCount' => 0,
+                'withPasskeys' => 0,
                 'enforcement' => $enforcement,
             ];
+        }
+
+        // Count users per group (portable, uses QueryBuilder::inSet)
+        $usersPerGroup = $this->countUsersPerGroup($groups);
+        foreach ($usersPerGroup as $groupUid => $count) {
+            $key = (string) $groupUid;
+            if (isset($stats[$key])) {
+                $stats[$key]['userCount'] = $count;
+            }
+        }
+
+        // Count users with passkeys per group (portable, uses QueryBuilder::inSet)
+        $passkeysPerGroup = $this->countUsersWithPasskeysPerGroup($groups, $siteIdentifier);
+        foreach ($passkeysPerGroup as $groupUid => $count) {
+            $key = (string) $groupUid;
+            if (isset($stats[$key])) {
+                $stats[$key]['withPasskeys'] = $count;
+            }
         }
 
         return $stats;
     }
 
     /**
-     * Count fe_users that belong to a specific group.
+     * Count users per group using portable QueryBuilder queries.
      *
-     * TYPO3 stores fe_groups membership as comma-separated UIDs in fe_users.usergroup.
+     * Uses per-group queries with ExpressionBuilder::inSet() for cross-database
+     * compatibility (MySQL, PostgreSQL, SQLite). The N+1 pattern is acceptable
+     * here because this is an admin dashboard endpoint, not a hot path.
+     *
+     * @param list<array<string, mixed>> $groups
+     * @return array<int, int> Map of group UID to user count
      */
-    private function countUsersInGroup(int $groupUid): int
+    private function countUsersPerGroup(array $groups): array
     {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+        $result = [];
 
-        $result = $queryBuilder
-            ->count('uid')
-            ->from('fe_users')
-            ->where(
-                $queryBuilder->expr()->inSet(
-                    'usergroup',
-                    $queryBuilder->createNamedParameter((string) $groupUid),
-                ),
-            )
-            ->executeQuery()
-            ->fetchOne();
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            if ($groupUid === 0) {
+                continue;
+            }
 
-        return \is_numeric($result) ? (int) $result : 0;
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+            $count = $queryBuilder
+                ->count('uid')
+                ->from('fe_users')
+                ->where(
+                    $queryBuilder->expr()->inSet(
+                        'usergroup',
+                        $queryBuilder->createNamedParameter((string) $groupUid),
+                    ),
+                )
+                ->executeQuery()
+                ->fetchOne();
+
+            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
+        }
+
+        return $result;
     }
 
     /**
-     * Count fe_users in a group that have at least one active passkey.
+     * Count users with active passkeys per group using portable QueryBuilder queries.
+     *
+     * Uses per-group queries with ExpressionBuilder::inSet() for cross-database
+     * compatibility. See {@see countUsersPerGroup()} for rationale on N+1 pattern.
+     *
+     * @param list<array<string, mixed>> $groups
+     * @return array<int, int> Map of group UID to count of users with passkeys
      */
-    private function countUsersWithPasskeysInGroup(int $groupUid, string $siteIdentifier): int
+    private function countUsersWithPasskeysPerGroup(array $groups, string $siteIdentifier): array
     {
-        $connection = $this->connectionPool->getConnectionForTable('fe_users');
+        $result = [];
 
-        $sql = <<<'SQL'
-            SELECT COUNT(DISTINCT u.uid)
-            FROM fe_users u
-            INNER JOIN tx_nrpasskeysfe_credential c ON c.fe_user = u.uid AND c.revoked_at = 0
-            WHERE FIND_IN_SET(?, u.usergroup) > 0
-            SQL;
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            if ($groupUid === 0) {
+                continue;
+            }
 
-        $params = [(string) $groupUid];
-        $types = [ParameterType::STRING];
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+            $queryBuilder
+                ->count('DISTINCT u.uid')
+                ->from('fe_users', 'u')
+                ->join(
+                    'u',
+                    'tx_nrpasskeysfe_credential',
+                    'c',
+                    (string) $queryBuilder->expr()->and(
+                        $queryBuilder->expr()->eq('c.fe_user', $queryBuilder->quoteIdentifier('u.uid')),
+                        $queryBuilder->expr()->eq('c.revoked_at', 0),
+                    ),
+                )
+                ->where(
+                    $queryBuilder->expr()->inSet(
+                        'u.usergroup',
+                        $queryBuilder->createNamedParameter((string) $groupUid),
+                    ),
+                );
 
-        if ($siteIdentifier !== '') {
-            $sql .= ' AND c.site_identifier = ?';
-            $params[] = $siteIdentifier;
-            $types[] = ParameterType::STRING;
+            if ($siteIdentifier !== '') {
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq(
+                        'c.site_identifier',
+                        $queryBuilder->createNamedParameter($siteIdentifier),
+                    ),
+                );
+            }
+
+            $count = $queryBuilder->executeQuery()->fetchOne();
+            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
         }
 
-        $result = $connection->executeQuery($sql, $params, $types)->fetchOne();
-
-        return \is_numeric($result) ? (int) $result : 0;
+        return $result;
     }
 }
