@@ -16,7 +16,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -27,18 +27,18 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 #[CoversClass(EnrollmentController::class)]
 final class EnrollmentControllerTest extends TestCase
 {
-    private FrontendEnforcementService&MockObject $enforcementService;
-    private SiteConfigurationService&MockObject $siteConfigService;
-    private SiteInterface&MockObject $site;
+    private FrontendEnforcementService&Stub $enforcementService;
+    private SiteConfigurationService&Stub $siteConfigService;
+    private SiteInterface&Stub $site;
     private EnrollmentController $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->enforcementService = $this->createMock(FrontendEnforcementService::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->site = $this->createStub(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -153,10 +153,21 @@ final class EnrollmentControllerTest extends TestCase
         $feUser->method('getKey')
             ->with('ses', 'nr_passkeys_fe_enrollment_nonce')
             ->willReturn($nonce);
-        $feUser->expects($this->once())
+        $feUser->expects($this->exactly(2))
             ->method('setKey')
-            ->with('ses', 'nr_passkeys_fe_skip_enrollment', true);
-        $feUser->expects($this->once())
+            ->willReturnCallback(function (string $type, string $key, mixed $value): void {
+                static $callCount = 0;
+                $callCount++;
+                self::assertSame('ses', $type);
+                if ($callCount === 1) {
+                    self::assertSame('nr_passkeys_fe_skip_enrollment', $key);
+                    self::assertTrue($value);
+                } else {
+                    self::assertSame('nr_passkeys_fe_enrollment_nonce', $key);
+                    self::assertSame('', $value);
+                }
+            });
+        $feUser->expects($this->exactly(2))
             ->method('storeSessionData');
 
         $request = (new ServerRequest('https://example.com/', 'POST'))
@@ -175,7 +186,7 @@ final class EnrollmentControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, array $body = []): ServerRequest
     {
-        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))

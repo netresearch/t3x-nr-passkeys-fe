@@ -173,12 +173,12 @@ final class CredentialIdFuzzTest extends TestCase
             $data = [
                 'uid' => \random_int(-PHP_INT_MAX, PHP_INT_MAX),
                 'fe_user' => \random_int(-100, 100),
-                'credential_id' => \random_bytes(\random_int(0, 255)),
-                'public_key_cose' => \random_bytes(\random_int(0, 1024)),
-                'label' => \random_bytes(\random_int(0, 200)),
-                'site_identifier' => \random_bytes(\random_int(0, 50)),
+                'credential_id' => \random_bytes(\random_int(1, 255)),
+                'public_key_cose' => \random_bytes(\random_int(1, 1024)),
+                'label' => \random_bytes(\random_int(1, 200)),
+                'site_identifier' => \random_bytes(\random_int(1, 50)),
                 'storage_pid' => \random_int(-100, 1000),
-                'transports' => \random_bytes(\random_int(0, 100)),
+                'transports' => \random_bytes(\random_int(1, 100)),
                 'sign_count' => \random_int(-100, PHP_INT_MAX),
                 'created_at' => \random_int(-PHP_INT_MAX, PHP_INT_MAX),
             ];

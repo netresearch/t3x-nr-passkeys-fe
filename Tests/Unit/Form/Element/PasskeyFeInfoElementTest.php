@@ -14,7 +14,7 @@ use Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
@@ -22,7 +22,7 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 #[CoversClass(PasskeyFeInfoElement::class)]
 final class PasskeyFeInfoElementTest extends TestCase
 {
-    private FrontendCredentialRepository&MockObject $credentialRepository;
+    private FrontendCredentialRepository&Stub $credentialRepository;
 
     protected function setUp(): void
     {
@@ -33,7 +33,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             \define('LF', "\n");
         }
 
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
     }
 
     protected function tearDown(): void
@@ -45,12 +45,14 @@ final class PasskeyFeInfoElementTest extends TestCase
     #[Test]
     public function renderReturnsEmptyHtmlForNonFeUsersTable(): void
     {
-        $subject = $this->createSubject([
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject->setData([
             'tableName' => 'be_users',
             'databaseRow' => ['uid' => 1],
         ]);
 
-        $this->credentialRepository->expects(self::never())->method('findAllByFeUser');
+        $credentialRepository->expects(self::never())->method('findAllByFeUser');
 
         $result = $subject->render();
 
@@ -60,12 +62,14 @@ final class PasskeyFeInfoElementTest extends TestCase
     #[Test]
     public function renderReturnsEmptyHtmlForZeroUid(): void
     {
-        $subject = $this->createSubject([
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject->setData([
             'tableName' => 'fe_users',
             'databaseRow' => ['uid' => 0],
         ]);
 
-        $this->credentialRepository->expects(self::never())->method('findAllByFeUser');
+        $credentialRepository->expects(self::never())->method('findAllByFeUser');
 
         $result = $subject->render();
 
@@ -75,12 +79,14 @@ final class PasskeyFeInfoElementTest extends TestCase
     #[Test]
     public function renderReturnsEmptyHtmlForMissingUid(): void
     {
-        $subject = $this->createSubject([
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject->setData([
             'tableName' => 'fe_users',
             'databaseRow' => [],
         ]);
 
-        $this->credentialRepository->expects(self::never())->method('findAllByFeUser');
+        $credentialRepository->expects(self::never())->method('findAllByFeUser');
 
         $result = $subject->render();
 
@@ -98,7 +104,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
-        $this->credentialRepository->method('findAllByFeUser')->with(42)->willReturn([]);
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([]);
 
         $result = $subject->render();
 
@@ -128,7 +134,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             'site_identifier' => 'main',
         ]);
 
-        $this->credentialRepository->method('findAllByFeUser')->with(42)->willReturn([$credential]);
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([$credential]);
 
         $result = $subject->render();
 
@@ -159,7 +165,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             'site_identifier' => 'main',
         ]);
 
-        $this->credentialRepository->method('findAllByFeUser')->with(42)->willReturn([$credential]);
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([$credential]);
 
         $result = $subject->render();
 
@@ -193,7 +199,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             'site_identifier' => 'main',
         ]);
 
-        $this->credentialRepository->method('findAllByFeUser')->with(42)->willReturn([$credential]);
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([$credential]);
 
         $result = $subject->render();
 
@@ -221,7 +227,7 @@ final class PasskeyFeInfoElementTest extends TestCase
             'site_identifier' => 'my-site',
         ]);
 
-        $this->credentialRepository->method('findAllByFeUser')->with(42)->willReturn([$credential]);
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([$credential]);
 
         $result = $subject->render();
 
@@ -263,7 +269,7 @@ final class PasskeyFeInfoElementTest extends TestCase
 
     private function setUpBackendUser(): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser = $this->createStub(BackendUserAuthentication::class);
         $backendUser->method('shallDisplayDebugInformation')->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
@@ -272,7 +278,7 @@ final class PasskeyFeInfoElementTest extends TestCase
     {
         $this->setUpBackendUser();
 
-        $languageService = $this->createMock(LanguageService::class);
+        $languageService = $this->createStub(LanguageService::class);
         $languageService->method('sL')->willReturnCallback(
             static function (string $key): string {
                 $map = [

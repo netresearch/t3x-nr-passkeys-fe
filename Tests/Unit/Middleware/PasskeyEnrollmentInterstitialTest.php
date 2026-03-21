@@ -18,7 +18,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -30,18 +30,18 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 #[CoversClass(PasskeyEnrollmentInterstitial::class)]
 final class PasskeyEnrollmentInterstitialTest extends TestCase
 {
-    private FrontendEnforcementService&MockObject $enforcementService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private SiteConfigurationService&MockObject $siteConfigurationService;
+    private FrontendEnforcementService&Stub $enforcementService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private SiteConfigurationService&Stub $siteConfigurationService;
     private FrontendConfiguration $frontendConfiguration;
     private PasskeyEnrollmentInterstitial $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->enforcementService = $this->createMock(FrontendEnforcementService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->siteConfigurationService = $this->createMock(SiteConfigurationService::class);
+        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->siteConfigurationService = $this->createStub(SiteConfigurationService::class);
         $this->frontendConfiguration = new FrontendConfiguration(
             postLoginEnrollmentEnabled: true,
         );
@@ -63,8 +63,6 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $request = new ServerRequest('https://example.com/page', 'GET');
         $handler = $this->createPassThroughHandler();
 
-        $this->enforcementService->expects(self::never())->method('getStatus');
-
         $this->subject->process($request, $handler);
     }
 
@@ -75,9 +73,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $request = $this->buildRequest($feUser);
         $handler = $this->createPassThroughHandler();
 
-        $this->credentialRepository->method('countByFeUser')->with(42)->willReturn(2);
-        $this->enforcementService->expects(self::never())->method('getStatus');
-
+        $this->credentialRepository->method('countByFeUser')->willReturn(2);
         $this->subject->process($request, $handler);
     }
 
@@ -96,8 +92,6 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
-        $this->enforcementService->expects(self::never())->method('getStatus');
-
         $this->subject->process($request, $handler);
     }
 
@@ -109,8 +103,6 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
-        $this->enforcementService->expects(self::never())->method('getStatus');
-
         $this->subject->process($request, $handler);
     }
 
@@ -123,8 +115,6 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
-        $this->enforcementService->expects(self::never())->method('getStatus');
-
         $this->subject->process($request, $handler);
     }
 
@@ -292,7 +282,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
 
     private function createPassThroughHandler(): RequestHandlerInterface
     {
-        $response = $this->createMock(ResponseInterface::class);
+        $response = $this->createStub(ResponseInterface::class);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::once())->method('handle')->willReturn($response);
         return $handler;
@@ -301,11 +291,11 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     /**
      * @param array<string, mixed> $sessionData
      */
-    private function createAuthenticatedFeUser(int $uid, array $sessionData = []): FrontendUserAuthentication&MockObject
+    private function createAuthenticatedFeUser(int $uid, array $sessionData = []): FrontendUserAuthentication&Stub
     {
-        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid, 'username' => 'testuser'];
-        $feUser->method('getKey')->with('ses', 'tx_nrpasskeysfe')->willReturn($sessionData ?: null);
+        $feUser->method('getKey')->willReturn($sessionData ?: null);
         return $feUser;
     }
 

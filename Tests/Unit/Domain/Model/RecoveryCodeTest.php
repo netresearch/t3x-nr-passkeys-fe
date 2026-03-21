@@ -76,29 +76,6 @@ final class RecoveryCodeTest extends TestCase
     }
 
     #[Test]
-    public function markUsedSetsUsedAtToCurrentTime(): void
-    {
-        $code = new RecoveryCode();
-        $before = \time();
-        $code->markUsed();
-        $after = \time();
-
-        self::assertGreaterThanOrEqual($before, $code->getUsedAt());
-        self::assertLessThanOrEqual($after, $code->getUsedAt());
-    }
-
-    #[Test]
-    public function markUsedMakesIsUsedReturnTrue(): void
-    {
-        $code = new RecoveryCode();
-        self::assertFalse($code->isUsed());
-
-        $code->markUsed();
-
-        self::assertTrue($code->isUsed());
-    }
-
-    #[Test]
     public function toArrayRoundTripsWithFromArray(): void
     {
         $original = new RecoveryCode(

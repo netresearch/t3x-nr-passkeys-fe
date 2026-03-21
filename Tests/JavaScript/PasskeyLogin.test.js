@@ -1,7 +1,13 @@
 /**
  * Tests for PasskeyLogin.js
+ *
+ * Tests shared utilities from PasskeyUtils.js (base64url encoding/decoding)
+ * and PasskeyLogin-specific DOM setup, URL construction, and error handling.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Load the shared utility module so NrPasskeysFe is available
+import '../../Resources/Public/JavaScript/PasskeyUtils.js';
 
 // ---------------------------------------------------------------
 // Helpers — DOM setup
@@ -54,6 +60,124 @@ function createLoginContainer({ eidUrl = '/index.php', siteIdentifier = 'test-si
 }
 
 // ---------------------------------------------------------------
+// Shared utility tests (NrPasskeysFe from PasskeyUtils.js)
+// ---------------------------------------------------------------
+
+describe('NrPasskeysFe — base64url utilities', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('base64urlToBuffer produces correct ArrayBuffer length', () => {
+        const input = btoa('hello').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        const result = window.NrPasskeysFe.base64urlToBuffer(input);
+        expect(result.byteLength).toBe(5); // 'hello' = 5 bytes
+    });
+
+    it('bufferToBase64url round-trips correctly', () => {
+        const original = new Uint8Array([1, 2, 3, 255, 0, 127]);
+        const encoded = window.NrPasskeysFe.bufferToBase64url(original.buffer);
+        const decoded = new Uint8Array(window.NrPasskeysFe.base64urlToBuffer(encoded));
+
+        for (let i = 0; i < original.length; i++) {
+            expect(decoded[i]).toBe(original[i]);
+        }
+    });
+
+    it('bufferToBase64url produces URL-safe characters (no +, /, =)', () => {
+        // Use bytes that produce + and / in standard base64
+        const bytes = new Uint8Array([251, 255, 254]);
+        const encoded = window.NrPasskeysFe.bufferToBase64url(bytes.buffer);
+
+        expect(encoded).not.toContain('+');
+        expect(encoded).not.toContain('/');
+        expect(encoded).not.toContain('=');
+    });
+
+    it('base64urlToBuffer handles empty string', () => {
+        const result = window.NrPasskeysFe.base64urlToBuffer('');
+        expect(result.byteLength).toBe(0);
+    });
+});
+
+describe('NrPasskeysFe — DOM helpers', () => {
+    afterEach(() => {
+        clearBody();
+        vi.restoreAllMocks();
+    });
+
+    it('showError sets text and shows element', () => {
+        const el = document.createElement('div');
+        el.style.display = 'none';
+        window.NrPasskeysFe.showError(el, 'Test error');
+        expect(el.textContent).toBe('Test error');
+        expect(el.style.display).toBe('');
+    });
+
+    it('hideError clears text and hides element', () => {
+        const el = document.createElement('div');
+        el.textContent = 'Some error';
+        window.NrPasskeysFe.hideError(el);
+        expect(el.textContent).toBe('');
+        expect(el.style.display).toBe('none');
+    });
+
+    it('showStatus sets text and shows element', () => {
+        const el = document.createElement('div');
+        el.style.display = 'none';
+        window.NrPasskeysFe.showStatus(el, 'Loading...');
+        expect(el.textContent).toBe('Loading...');
+        expect(el.style.display).toBe('');
+    });
+
+    it('hideStatus clears text and hides element', () => {
+        const el = document.createElement('div');
+        el.textContent = 'Loading...';
+        window.NrPasskeysFe.hideStatus(el);
+        expect(el.textContent).toBe('');
+        expect(el.style.display).toBe('none');
+    });
+
+    it('setLoading disables button and toggles text/loading visibility', () => {
+        const btn = document.createElement('button');
+        const btnText = document.createElement('span');
+        const btnLoading = document.createElement('span');
+        btnLoading.setAttribute('aria-hidden', 'true');
+
+        window.NrPasskeysFe.setLoading(true, btn, btnText, btnLoading);
+        expect(btn.disabled).toBe(true);
+        expect(btnText.style.display).toBe('none');
+        expect(btnLoading.style.display).toBe('');
+
+        window.NrPasskeysFe.setLoading(false, btn, btnText, btnLoading);
+        expect(btn.disabled).toBe(false);
+        expect(btnText.style.display).toBe('');
+        expect(btnLoading.style.display).toBe('none');
+    });
+
+    it('isSameOrigin returns true for same origin', () => {
+        expect(window.NrPasskeysFe.isSameOrigin('/dashboard')).toBe(true);
+    });
+
+    it('isSameOrigin returns false for different origin', () => {
+        expect(window.NrPasskeysFe.isSameOrigin('https://evil.example.com/redirect')).toBe(false);
+    });
+
+    it('showError handles null element gracefully', () => {
+        // Should not throw
+        window.NrPasskeysFe.showError(null, 'msg');
+    });
+
+    it('hideError handles null element gracefully', () => {
+        window.NrPasskeysFe.hideError(null);
+    });
+
+    it('setLoading handles null elements gracefully', () => {
+        window.NrPasskeysFe.setLoading(true, null, null, null);
+    });
+});
+
+// ---------------------------------------------------------------
 // Feature-detection tests (unit logic, no module loading needed)
 // ---------------------------------------------------------------
 
@@ -67,56 +191,6 @@ describe('PasskeyLogin — feature detection logic', () => {
         const supported = typeof window.PublicKeyCredential !== 'undefined';
         // In a plain jsdom env without the stub, it may or may not exist — just check the type
         expect(typeof supported).toBe('boolean');
-    });
-
-    it('base64url decode produces correct ArrayBuffer length', () => {
-        // Mirror the base64urlToBuffer logic from PasskeyLogin.js
-        function base64urlToBuffer(base64url) {
-            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-            const padLen = (4 - (base64.length % 4)) % 4;
-            const padded = base64 + '='.repeat(padLen);
-            const binary = atob(padded);
-            const buffer = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                buffer[i] = binary.charCodeAt(i);
-            }
-            return buffer.buffer;
-        }
-
-        const input = btoa('hello').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        const result = base64urlToBuffer(input);
-        expect(result.byteLength).toBe(5); // 'hello' = 5 bytes
-    });
-
-    it('base64url encode round-trips correctly', () => {
-        function bufferToBase64url(buffer) {
-            const bytes = new Uint8Array(buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        }
-
-        function base64urlToBuffer(base64url) {
-            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-            const padLen = (4 - (base64.length % 4)) % 4;
-            const padded = base64 + '='.repeat(padLen);
-            const binary = atob(padded);
-            const buffer = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) {
-                buffer[i] = binary.charCodeAt(i);
-            }
-            return buffer.buffer;
-        }
-
-        const original = new Uint8Array([1, 2, 3, 255, 0, 127]);
-        const encoded = bufferToBase64url(original.buffer);
-        const decoded = new Uint8Array(base64urlToBuffer(encoded));
-
-        for (let i = 0; i < original.length; i++) {
-            expect(decoded[i]).toBe(original[i]);
-        }
     });
 });
 

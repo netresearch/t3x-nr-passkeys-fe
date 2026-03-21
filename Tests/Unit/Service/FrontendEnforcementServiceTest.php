@@ -17,7 +17,7 @@ use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
@@ -30,24 +30,24 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 #[CoversClass(FrontendEnforcementService::class)]
 final class FrontendEnforcementServiceTest extends TestCase
 {
-    private SiteConfigurationService&MockObject $siteConfigService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private RecoveryCodeService&MockObject $recoveryCodeService;
-    private EventDispatcherInterface&MockObject $eventDispatcher;
-    private ConnectionPool&MockObject $connectionPool;
-    private SiteInterface&MockObject $site;
+    private SiteConfigurationService&Stub $siteConfigService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private RecoveryCodeService&Stub $recoveryCodeService;
+    private EventDispatcherInterface&Stub $eventDispatcher;
+    private ConnectionPool&Stub $connectionPool;
+    private SiteInterface&Stub $site;
     private FrontendEnforcementService $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->recoveryCodeService = $this->createMock(RecoveryCodeService::class);
-        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
+        $this->eventDispatcher = $this->createStub(EventDispatcherInterface::class);
+        $this->connectionPool = $this->createStub(ConnectionPool::class);
+        $this->site = $this->createStub(SiteInterface::class);
 
         // Default: event dispatcher just passes through
         $this->eventDispatcher->method('dispatch')
@@ -242,7 +242,8 @@ final class FrontendEnforcementServiceTest extends TestCase
             ['uid' => 42, 'usergroup' => '', 'passkey_grace_period_start' => 0],
         );
 
-        $this->eventDispatcher->expects(self::once())
+        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $eventDispatcher->expects(self::once())
             ->method('dispatch')
             ->with(self::callback(static function (EnforcementLevelResolvedEvent $event): bool {
                 return $event->feUserUid === 42
@@ -250,14 +251,22 @@ final class FrontendEnforcementServiceTest extends TestCase
             }))
             ->willReturnArgument(0);
 
-        $this->subject->getStatus(42, 'main', $this->site);
+        $subject = new FrontendEnforcementService(
+            $this->siteConfigService,
+            $this->credentialRepository,
+            $this->recoveryCodeService,
+            $eventDispatcher,
+            $this->connectionPool,
+        );
+
+        $subject->getStatus(42, 'main', $this->site);
     }
 
     #[Test]
     public function getStatusUsesOverriddenLevelFromEvent(): void
     {
         // Create a separate service instance with a custom event dispatcher
-        $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $eventDispatcher = $this->createStub(EventDispatcherInterface::class);
         $eventDispatcher->method('dispatch')
             ->willReturnCallback(static function (EnforcementLevelResolvedEvent $event): EnforcementLevelResolvedEvent {
                 $event->setEffectiveLevel('off');
@@ -328,11 +337,19 @@ final class FrontendEnforcementServiceTest extends TestCase
                 ['uid' => 42],
             );
 
-        $this->connectionPool->method('getConnectionForTable')
-            ->with('fe_users')
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getConnectionForTable')
             ->willReturn($connection);
 
-        $this->subject->startGracePeriod(42);
+        $subject = new FrontendEnforcementService(
+            $this->siteConfigService,
+            $this->credentialRepository,
+            $this->recoveryCodeService,
+            $this->eventDispatcher,
+            $connectionPool,
+        );
+
+        $subject->startGracePeriod(42);
     }
 
     // ---------------------------------------------------------------
@@ -375,12 +392,12 @@ final class FrontendEnforcementServiceTest extends TestCase
      */
     private function setupDbQueries(array $userRow, ?array $groups = null): void
     {
-        $feUserResult = $this->createMock(Result::class);
+        $feUserResult = $this->createStub(Result::class);
         $feUserResult->method('fetchAssociative')->willReturn($userRow);
         $feUserQb = $this->createQueryBuilderMock($feUserResult);
 
         if ($groups !== null) {
-            $groupResult = $this->createMock(Result::class);
+            $groupResult = $this->createStub(Result::class);
             $groupResult->method('fetchAllAssociative')->willReturn($groups);
             $groupQb = $this->createQueryBuilderMock($groupResult);
 
@@ -400,13 +417,13 @@ final class FrontendEnforcementServiceTest extends TestCase
         }
     }
 
-    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&MockObject
+    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('');
         $expressionBuilder->method('in')->willReturn('');
 
-        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder = $this->createStub(QueryBuilder::class);
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('count')->willReturnSelf();

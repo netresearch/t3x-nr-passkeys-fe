@@ -187,7 +187,7 @@ final class SiteConfigurationServiceTest extends TestCase
     #[Test]
     public function getCurrentSiteReturnsSiteFromRequestAttribute(): void
     {
-        $site = $this->createMock(SiteInterface::class);
+        $site = $this->createStub(SiteInterface::class);
 
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getAttribute')
@@ -223,12 +223,12 @@ final class SiteConfigurationServiceTest extends TestCase
         string $baseUrl,
         string $identifier = 'test-site',
     ): SiteInterface {
-        $site = $this->createMock(Site::class);
+        $site = $this->createStub(Site::class);
 
-        $settings = $this->createSettingsMock($settingsArray);
+        $settings = $this->createSettingsStub($settingsArray);
         $site->method('getSettings')->willReturn($settings);
 
-        $uri = $this->createMock(UriInterface::class);
+        $uri = $this->createStub(UriInterface::class);
         $uri->method('__toString')->willReturn($baseUrl);
         $site->method('getBase')->willReturn($uri);
 
@@ -240,9 +240,9 @@ final class SiteConfigurationServiceTest extends TestCase
     /**
      * @param array<string, mixed> $data
      */
-    private function createSettingsMock(array $data): SiteSettings
+    private function createSettingsStub(array $data): SiteSettings
     {
-        $settings = $this->createMock(SiteSettings::class);
+        $settings = $this->createStub(SiteSettings::class);
         $settings->method('get')->willReturnCallback(
             static function (string $key, mixed $default = null) use ($data): mixed {
                 // Support dot-notation: nr_passkeys_fe.rpId

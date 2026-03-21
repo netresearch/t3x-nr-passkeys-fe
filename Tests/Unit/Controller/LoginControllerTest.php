@@ -13,11 +13,12 @@ use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -27,24 +28,26 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 #[CoversClass(LoginController::class)]
 final class LoginControllerTest extends TestCase
 {
-    private FrontendWebAuthnService&MockObject $webAuthnService;
-    private SiteConfigurationService&MockObject $siteConfigService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private RateLimiterService&MockObject $rateLimiterService;
-    private ChallengeService&MockObject $challengeService;
-    private SiteInterface&MockObject $site;
+    private FrontendWebAuthnService&Stub $webAuthnService;
+    private SiteConfigurationService&Stub $siteConfigService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private FrontendUserLookupService&Stub $userLookupService;
+    private RateLimiterService&Stub $rateLimiterService;
+    private ChallengeService&Stub $challengeService;
+    private SiteInterface&Stub $site;
     private LoginController $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->webAuthnService = $this->createMock(FrontendWebAuthnService::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->challengeService = $this->createMock(ChallengeService::class);
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->challengeService = $this->createStub(ChallengeService::class);
+        $this->site = $this->createStub(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -56,8 +59,10 @@ final class LoginControllerTest extends TestCase
             $this->webAuthnService,
             $this->siteConfigService,
             $this->credentialRepository,
+            $this->userLookupService,
             $this->rateLimiterService,
             $this->challengeService,
+            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -134,7 +139,7 @@ final class LoginControllerTest extends TestCase
     {
         $this->setupDbUserFound(42);
 
-        $credentialMock = $this->createMock(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
+        $credentialMock = $this->createStub(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
         $this->credentialRepository->method('findByFeUser')->willReturn([$credentialMock]);
 
         $optionsData = ['challenge' => 'abc123', 'rpId' => 'example.com', 'allowCredentials' => []];
@@ -223,7 +228,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns200OnSuccess(): void
     {
-        $credentialMock = $this->createMock(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
+        $credentialMock = $this->createStub(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
         $credentialMock->method('getUid')->willReturn(7);
 
         $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
@@ -258,13 +263,13 @@ final class LoginControllerTest extends TestCase
 
     private function setupDbUserFound(int $uid): void
     {
-        $this->credentialRepository->method('findFeUserUidByUsername')
+        $this->userLookupService->method('findFeUserUidByUsername')
             ->willReturn($uid);
     }
 
     private function setupDbUserNotFound(): void
     {
-        $this->credentialRepository->method('findFeUserUidByUsername')
+        $this->userLookupService->method('findFeUserUidByUsername')
             ->willReturn(null);
     }
 

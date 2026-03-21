@@ -55,7 +55,7 @@ final class RecoveryCodeFuzzTest extends TestCase
         $connection = $this->createStub(Connection::class);
         $connection->method('insert')->willReturn(1);
         $connection->method('delete')->willReturn(1);
-        $connection->method('lastInsertId')->willReturn(1);
+        $connection->method('lastInsertId')->willReturn('1');
 
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getQueryBuilderForTable')->willReturn($queryBuilder);

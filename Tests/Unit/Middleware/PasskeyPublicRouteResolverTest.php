@@ -122,7 +122,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     {
         $handlerCalled = false;
         $handler = $this->createMock(RequestHandlerInterface::class);
-        $response = $this->createMock(ResponseInterface::class);
+        $response = $this->createStub(ResponseInterface::class);
         $handler->expects(self::once())
             ->method('handle')
             ->willReturnCallback(function () use (&$handlerCalled, $response) {
@@ -172,8 +172,8 @@ final class PasskeyPublicRouteResolverTest extends TestCase
      */
     private function createHandlerCapturingRequest(?ServerRequestInterface &$capturedRequest): RequestHandlerInterface
     {
-        $response = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
+        $response = $this->createStub(ResponseInterface::class);
+        $handler = $this->createStub(RequestHandlerInterface::class);
         $handler->method('handle')->willReturnCallback(
             function (ServerRequestInterface $req) use (&$capturedRequest, $response): ResponseInterface {
                 $capturedRequest = $req;
