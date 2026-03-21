@@ -127,11 +127,10 @@ Safari for iOS             14.5+
 Screenshots
 ===========
 
-..  note::
+..  todo::
 
     Screenshots will be added once the extension is deployed on a
-    staging site. See ``Documentation/Images/`` for the placeholder
-    directory.
+    staging site.
 
 Relationship to nr-passkeys-be
 ================================
