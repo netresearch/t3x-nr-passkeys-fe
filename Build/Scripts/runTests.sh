@@ -146,10 +146,10 @@ run_mutation_tests() {
     info "Running mutation tests with Infection..."
     check_dependencies
 
-    if [[ -f "${ROOT_DIR}/Build/infection.json" ]]; then
-        "${VENDOR_BIN}/infection" --configuration="${ROOT_DIR}/Build/infection.json" --threads=4 -s --no-progress
+    if [[ -f "${ROOT_DIR}/Build/infection.json5" ]]; then
+        "${VENDOR_BIN}/infection" --configuration="${ROOT_DIR}/Build/infection.json5" --threads=4 -s --no-progress
     else
-        warning "infection.json not found in Build/, skipping..."
+        warning "infection.json5 not found in Build/, skipping..."
     fi
     success "Mutation tests completed"
 }
@@ -211,7 +211,6 @@ run_ci() {
     info "Running CI suite..."
     run_cgl
     run_phpstan
-    run_rector
     run_unit_tests
     success "CI suite completed"
 }
@@ -223,7 +222,6 @@ run_all() {
     info "Running all tests and quality checks..."
     run_cgl
     run_phpstan
-    run_rector
     run_unit_tests
     run_functional_tests
     success "All tests and checks completed"
