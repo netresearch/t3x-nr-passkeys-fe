@@ -191,7 +191,7 @@ SET @enrollment_page = (SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 
 -- felogin with passkey button injected via template override
 -- pages = SysFolder UID so felogin can find fe_users records
 SET @fe_storage = (SELECT uid FROM pages WHERE slug='/fe-users-storage' LIMIT 1);
-INSERT INTO tt_content (pid, CType, header, sorting, tstamp, crdate, pages, recursive)
+INSERT INTO tt_content (pid, CType, header, sorting, tstamp, crdate, pages, `recursive`)
 VALUES (@login_page, 'felogin_login', 'Login', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), @fe_storage, 1);
 
 -- Passkey-only login (standalone plugin, no felogin fallback)
