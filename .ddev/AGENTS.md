@@ -21,6 +21,7 @@ mounted as a path repository. Uses **PHP 8.3**, **MariaDB 10.11**, and **NodeJS 
 | `commands/web/install-v13` | Container command: install TYPO3 13.4 LTS with both extensions |
 | `commands/web/install-v14` | Container command: install TYPO3 14.x with both extensions |
 | `commands/web/install-all` | Container command: install v13 + v14 in sequence |
+| `data/demo-pages.sql` | SQL fixture: demo pages, FE user (demo/demo), FE group |
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START commands -->
@@ -81,6 +82,20 @@ development error reporting without manual configuration.
 | Documentation | https://docs.nr-passkeys-fe.ddev.site/ |
 
 Backend credentials: `admin` / `Joh316!!`
+
+### Demo Frontend Login Pages
+Created automatically by `install-v13` / `install-v14` from the fixture at `data/demo-pages.sql`.
+
+| Page | URL | Purpose |
+|------|-----|---------|
+| Login | `/passkey-login` | Combined: felogin password + passkey button via template override |
+| Passkey-Only Login | `/passkey-only` | Standalone passkey plugin (no password fallback) |
+| My Account | `/my-account` | Passkey management (visible only when logged in) |
+| Passkey Setup | `/passkey-setup` | Passkey enrollment |
+
+**Demo FE user:** `demo` / `demo` (stored in SysFolder "FE Users" under root page)
+
+**How to reset demo data:** Re-run `ddev install-v13` or `ddev install-v14` — both drop and recreate the database, then re-import the fixture.
 <!-- AGENTS-GENERATED:END patterns -->
 
 <!-- AGENTS-GENERATED:START code-style -->

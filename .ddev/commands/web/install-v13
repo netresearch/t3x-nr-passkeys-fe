@@ -150,56 +150,40 @@ fi
 # Generate styleguide demo content
 vendor/bin/typo3 styleguide:generate --create || echo "Styleguide generation skipped"
 
-# Create demo pages with passkey plugins and test FE user
-echo "Creating demo pages and test FE user (under pid=$DEMO_PID)..."
-mysql -h db -u root -p"root" "$VERSION" << SQL
--- FE Users storage folder
-INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'FE Users', '/fe-users-storage', 254, 9000);
-SET @storage_pid = LAST_INSERT_ID();
+# Import demo pages and test FE user from fixture file
+DEMO_SQL="$FE_EXTENSION_PATH/.ddev/data/demo-pages.sql"
+echo "Importing demo pages and test FE user (under pid=$DEMO_PID)..."
+if [ -f "$DEMO_SQL" ]; then
+    sed "s/@DEMO_PID@/$DEMO_PID/g" "$DEMO_SQL" | mysql -h db -u root -p"root" "$VERSION"
+    echo "Demo pages imported."
+else
+    echo "WARNING: $DEMO_SQL not found — skipping demo page import"
+fi
 
-INSERT INTO fe_groups (pid, title, passkey_enforcement)
-VALUES (@storage_pid, 'Demo Users', 'off');
-SET @group_uid = LAST_INSERT_ID();
+# Add version-specific plugin content elements (v13 uses CType='list' + list_type)
+echo "Adding plugin content elements..."
+mysql -h db -u root -p"root" "$VERSION" << 'PLUGINSQL'
+SET @login_page = (SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1);
+SET @passkey_only_page = (SELECT uid FROM pages WHERE slug='/passkey-only' LIMIT 1);
+SET @account_page = (SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1);
+SET @enrollment_page = (SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1);
 
-INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable)
-VALUES (@storage_pid, 'demo', '\$2y\$12\$SNGQTjRm9lUY3/wnRKEadu/HxuD4ANotWwBIeBz2JkW9XWMd5Lhcq', CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0);
+-- felogin with passkey button injected via template override
+INSERT INTO tt_content (pid, CType, list_type, header, sorting, tstamp, crdate)
+VALUES (@login_page, 'felogin_login', '', 'Login', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
--- Demo page: Combined login (felogin for password + standalone passkey plugin)
-INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Login', '/passkey-login', 1, 9100);
-SET @login_page = LAST_INSERT_ID();
+-- Passkey-only login (standalone plugin, no felogin fallback)
+INSERT INTO tt_content (pid, CType, list_type, header, sorting, tstamp, crdate)
+VALUES (@passkey_only_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
--- Demo page: Passkey-only login (no felogin, just our plugin)
-INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Passkey-Only Login', '/passkey-only', 1, 9150);
-SET @passkey_only_page = LAST_INSERT_ID();
+-- Passkey management
+INSERT INTO tt_content (pid, CType, list_type, header, sorting, tstamp, crdate)
+VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 
-INSERT INTO pages (pid, title, slug, doktype, sorting, fe_group)
-VALUES ($DEMO_PID, 'My Account', '/my-account', 1, 9200, '-2');
-SET @account_page = LAST_INSERT_ID();
-
-INSERT INTO pages (pid, title, slug, doktype, sorting)
-VALUES ($DEMO_PID, 'Passkey Setup', '/passkey-setup', 1, 9300);
-SET @enrollment_page = LAST_INSERT_ID();
-
--- Login page: felogin with passkey button injected via template override
--- (our TypoScript adds passkey button next to the Login button automatically)
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@login_page, 'felogin_login', '', 'Login', 100);
-
--- Passkey-only page: standalone passkey plugin (no felogin fallback)
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@passkey_only_page, 'list', 'nrpasskeysfe_passkeylogin', 'Passkey-Only Login', 100);
-
--- My Account: passkey management
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@account_page, 'list', 'nrpasskeysfe_passkeymanagement', 'My Passkeys', 100);
-
--- Enrollment page
-INSERT INTO tt_content (pid, CType, list_type, header, sorting)
-VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100);
-SQL
+-- Passkey enrollment
+INSERT INTO tt_content (pid, CType, list_type, header, sorting, tstamp, crdate)
+VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+PLUGINSQL
 
 # Include nr_passkeys_fe TypoScript
 cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
@@ -252,5 +236,5 @@ echo "    /passkey-only   - Passkey-only login (no password fallback)"
 echo "    /my-account     - Passkey management (requires login)"
 echo "    /passkey-setup  - Passkey enrollment"
 echo ""
-echo "  FE User: demo / password"
+echo "  FE User: demo / demo"
 echo "  BE Admin: admin / Joh316!!"
