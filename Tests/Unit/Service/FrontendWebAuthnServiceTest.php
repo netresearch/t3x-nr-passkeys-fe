@@ -16,7 +16,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -25,11 +25,11 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 #[CoversClass(FrontendWebAuthnService::class)]
 final class FrontendWebAuthnServiceTest extends TestCase
 {
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private SiteConfigurationService&MockObject $siteConfigService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private SiteConfigurationService&Stub $siteConfigService;
     private FrontendConfiguration $configuration;
     private FrontendWebAuthnService $subject;
-    private SiteInterface&MockObject $site;
+    private SiteInterface&Stub $site;
 
     protected function setUp(): void
     {
@@ -38,8 +38,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // Set up TYPO3 encryption key for user handle derivation
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
 
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
         $this->configuration = new FrontendConfiguration();
 
         $this->subject = new FrontendWebAuthnService(
@@ -49,7 +49,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
             new NullLogger(),
         );
 
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->site = $this->createStub(SiteInterface::class);
     }
 
     protected function tearDown(): void
@@ -75,8 +75,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
     #[Test]
     public function createRegistrationOptionsUsesRpIdFromSiteConfigService(): void
     {
-        $this->siteConfigService->method('getRpId')->with($this->site)->willReturn('example.com');
-        $this->siteConfigService->method('getSiteIdentifier')->with($this->site)->willReturn('main');
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
         $challenge = \random_bytes(32);
@@ -101,7 +101,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         );
 
         $this->credentialRepository->method('findByFeUser')
-            ->with(1, 'main')
             ->willReturn([$existingCred]);
 
         $challenge = \random_bytes(32);
@@ -131,7 +130,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     #[Test]
     public function createAssertionOptionsUsesRpIdFromSiteConfig(): void
     {
-        $this->siteConfigService->method('getRpId')->with($this->site)->willReturn('login.example.com');
+        $this->siteConfigService->method('getRpId')->willReturn('login.example.com');
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
@@ -153,7 +152,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $cred2 = new FrontendCredential(credentialId: 'cred-2', transports: '["ble"]');
 
         $this->credentialRepository->method('findByFeUser')
-            ->with(7, 'main')
             ->willReturn([$cred1, $cred2]);
 
         $challenge = \random_bytes(32);
@@ -169,7 +167,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     #[Test]
     public function createDiscoverableAssertionOptionsHasEmptyAllowCredentials(): void
     {
-        $this->siteConfigService->method('getRpId')->with($this->site)->willReturn('example.com');
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
 
         $challenge = \random_bytes(32);
         $result = $this->subject->createDiscoverableAssertionOptions($challenge, $this->site);

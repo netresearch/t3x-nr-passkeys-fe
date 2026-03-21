@@ -1,7 +1,13 @@
 /**
  * Tests for PasskeyManagement.js
+ *
+ * Tests management-specific behavior. Shared utilities are tested
+ * in PasskeyLogin.test.js via PasskeyUtils.js.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
+
+// Load the shared utility module so NrPasskeysFe is available
+import '../../Resources/Public/JavaScript/PasskeyUtils.js';
 
 function clearBody() {
     while (document.body.firstChild) {

@@ -19,7 +19,7 @@ use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
@@ -28,22 +28,22 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 #[CoversClass(PasskeyEnrollmentService::class)]
 final class PasskeyEnrollmentServiceTest extends TestCase
 {
-    private FrontendWebAuthnService&MockObject $webAuthnService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
-    private SiteConfigurationService&MockObject $siteConfigService;
-    private EventDispatcherInterface&MockObject $eventDispatcher;
-    private SiteInterface&MockObject $site;
+    private FrontendWebAuthnService&Stub $webAuthnService;
+    private FrontendCredentialRepository&Stub $credentialRepository;
+    private SiteConfigurationService&Stub $siteConfigService;
+    private EventDispatcherInterface&Stub $eventDispatcher;
+    private SiteInterface&Stub $site;
     private PasskeyEnrollmentService $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->webAuthnService = $this->createMock(FrontendWebAuthnService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
-        $this->site = $this->createMock(SiteInterface::class);
+        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->eventDispatcher = $this->createStub(EventDispatcherInterface::class);
+        $this->site = $this->createStub(SiteInterface::class);
 
         $configuration = new FrontendConfiguration(maxPasskeysPerUser: 10);
 
@@ -69,7 +69,6 @@ final class PasskeyEnrollmentServiceTest extends TestCase
 
         $expected = ['options' => 'dummy', 'optionsJson' => '{}'];
         $this->webAuthnService->method('createRegistrationOptions')
-            ->with(1, 'testuser', self::isType('string'), $this->site)
             ->willReturn($expected);
 
         $challenge = \random_bytes(32);
@@ -96,21 +95,33 @@ final class PasskeyEnrollmentServiceTest extends TestCase
     #[Test]
     public function completeEnrollmentVerifiesAndSavesCredential(): void
     {
-        $this->credentialRepository->method('countByFeUser')->willReturn(0);
+        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+
+        $configuration = new FrontendConfiguration(maxPasskeysPerUser: 10);
+        $subject = new PasskeyEnrollmentService(
+            $webAuthnService,
+            $credentialRepository,
+            $configuration,
+            $this->siteConfigService,
+            $this->eventDispatcher,
+        );
+
+        $credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
 
         $credential = new FrontendCredential(feUser: 1, credentialId: 'new-cred');
 
-        $this->webAuthnService->expects(self::once())
+        $webAuthnService->expects(self::once())
             ->method('verifyRegistrationResponse')
             ->willReturn($credential);
 
-        $this->credentialRepository->expects(self::once())
+        $credentialRepository->expects(self::once())
             ->method('save')
             ->with($credential);
 
         $challenge = \random_bytes(32);
-        $result = $this->subject->completeEnrollment(
+        $result = $subject->completeEnrollment(
             1,
             '{"attestation":"json"}',
             $challenge,

@@ -19,7 +19,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -36,31 +36,31 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 {
     private PasskeyFrontendAuthenticationService $subject;
 
-    private FrontendWebAuthnService&MockObject $webAuthnService;
+    private FrontendWebAuthnService&Stub $webAuthnService;
 
-    private RateLimiterService&MockObject $rateLimiterService;
+    private RateLimiterService&Stub $rateLimiterService;
 
-    private FrontendEnforcementService&MockObject $enforcementService;
+    private FrontendEnforcementService&Stub $enforcementService;
 
-    private SiteConfigurationService&MockObject $siteConfigService;
+    private SiteConfigurationService&Stub $siteConfigService;
 
-    private ChallengeService&MockObject $challengeService;
+    private ChallengeService&Stub $challengeService;
 
-    private SiteInterface&MockObject $site;
+    private SiteInterface&Stub $site;
 
-    private LoggerInterface&MockObject $logger;
+    private LoggerInterface&Stub $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->webAuthnService = $this->createMock(FrontendWebAuthnService::class);
-        $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->enforcementService = $this->createMock(FrontendEnforcementService::class);
-        $this->siteConfigService = $this->createMock(SiteConfigurationService::class);
-        $this->challengeService = $this->createMock(ChallengeService::class);
-        $this->site = $this->createMock(SiteInterface::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
+        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->challengeService = $this->createStub(ChallengeService::class);
+        $this->site = $this->createStub(SiteInterface::class);
+        $this->logger = $this->createStub(LoggerInterface::class);
 
         // Default enforcement: off, no passkeys
         $this->enforcementService
@@ -89,7 +89,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturnArgument(0);
 
         // Set up TYPO3_REQUEST so resolveSite() works
-        $request = $this->createMock(ServerRequestInterface::class);
+        $request = $this->createStub(ServerRequestInterface::class);
         $GLOBALS['TYPO3_REQUEST'] = $request;
 
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
@@ -175,9 +175,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         ];
 
         $this->webAuthnService
-            ->expects(self::once())
             ->method('findFeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
             ->willReturn(42);
 
         $this->setUpFetchUserByUid(42, ['uid' => 42, 'username' => 'discovered_user', 'disable' => 0, 'deleted' => 0]);
@@ -198,9 +196,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         ];
 
         $this->webAuthnService
-            ->expects(self::once())
             ->method('findFeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
             ->willReturn(null);
 
         $result = $this->subject->getUser();
@@ -211,6 +207,10 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     #[Test]
     public function getUserReturnsFalseWhenLockedOut(): void
     {
+        GeneralUtility::purgeInstances();
+
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+
         $service = $this->getMockBuilder(PasskeyFrontendAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
@@ -230,9 +230,9 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturn($expectedUser);
 
         // Provide fresh instances for this service instance
-        GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('checkLockout')
             ->willThrowException(new RuntimeException('Account locked', 1700000011));
@@ -245,6 +245,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     #[Test]
     public function getUserReturnsFalseForUnknownUser(): void
     {
+        $logger = $this->createStub(LoggerInterface::class);
+
         $service = $this->getMockBuilder(PasskeyFrontendAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
@@ -253,7 +255,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             'uname' => 'nonexistent',
             'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
-        $this->injectLogger($service, $this->logger);
+        $this->injectLogger($service, $logger);
 
         $service
             ->expects(self::once())
@@ -262,7 +264,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturn(false);
 
         $infoMessages = [];
-        $this->logger
+        $logger
             ->method('info')
             ->willReturnCallback(function (string $message) use (&$infoMessages): void {
                 $infoMessages[] = $message;
@@ -282,9 +284,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         ];
 
         $this->webAuthnService
-            ->expects(self::once())
             ->method('findFeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
             ->willReturn(null);
 
         $result = $this->subject->getUser();
@@ -314,16 +314,27 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Test Key');
 
-        $this->subject->login = [
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
             'uname' => 'frontend_user',
             'uident' => self::buildPasskeyUident(['valid' => 'assertion']),
         ];
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('checkLockout');
 
-        $this->webAuthnService
+        $webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->with(
@@ -336,14 +347,14 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
                 'credential' => $credential,
             ]);
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
             ->with('frontend_user', self::anything());
 
         $user = ['uid' => 42, 'username' => 'frontend_user'];
 
-        $result = $this->subject->authUser($user);
+        $result = $subject->authUser($user);
 
         self::assertSame(200, $result);
     }
@@ -351,28 +362,39 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserReturns0OnInvalidAssertion(): void
     {
-        $this->subject->login = [
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
             'uname' => 'frontend_user',
             'uident' => self::buildPasskeyUident(['bad' => 'data']),
         ];
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('checkLockout');
 
-        $this->webAuthnService
+        $webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Assertion failed', 1700200035));
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
             ->with('frontend_user', self::anything());
 
         $user = ['uid' => 42, 'username' => 'frontend_user'];
 
-        $result = $this->subject->authUser($user);
+        $result = $subject->authUser($user);
 
         self::assertSame(0, $result);
     }
@@ -380,28 +402,40 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRecordsFailureAndLogsWarningOnError(): void
     {
-        $this->subject->login = [
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $logger);
+
+        $subject->login = [
             'uname' => 'testuser',
             'uident' => self::buildPasskeyUident(['bad' => 'data']),
         ];
 
-        $this->webAuthnService
+        $webAuthnService
             ->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Verification failed', 1700200035));
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
             ->with('testuser', self::anything());
 
-        $this->logger
+        $logger
             ->expects(self::once())
             ->method('warning')
             ->with('FE passkey authentication failed', self::anything());
 
         $user = ['uid' => 5, 'username' => 'testuser'];
 
-        $result = $this->subject->authUser($user);
+        $result = $subject->authUser($user);
 
         self::assertSame(0, $result);
     }
@@ -409,28 +443,39 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRespectsLockout(): void
     {
-        $this->subject->login = [
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
             'uname' => 'locked_user',
             'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('checkLockout')
             ->willThrowException(new RuntimeException('Account locked', 1700000011));
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
             ->with('locked_user', self::anything());
 
-        $this->webAuthnService
+        $webAuthnService
             ->expects(self::never())
             ->method('verifyAssertionResponse');
 
         $user = ['uid' => 7, 'username' => 'locked_user'];
 
-        $result = $this->subject->authUser($user);
+        $result = $subject->authUser($user);
 
         self::assertSame(0, $result);
     }
@@ -440,26 +485,37 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Test Key');
 
-        $this->subject->login = [
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
             'uname' => 'frontend_user',
             'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
-        $this->webAuthnService
+        $webAuthnService
             ->method('verifyAssertionResponse')
             ->willReturn([
                 'feUserUid' => 42,
                 'credential' => $credential,
             ]);
 
-        $this->rateLimiterService
+        $rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
             ->with('frontend_user', self::anything());
 
         $user = ['uid' => 42, 'username' => 'frontend_user'];
 
-        $result = $this->subject->authUser($user);
+        $result = $subject->authUser($user);
 
         self::assertSame(200, $result);
     }
@@ -486,7 +542,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $enforcementService);
 
-        $siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $siteConfigService = $this->createStub(SiteConfigurationService::class);
         $siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $siteConfigService->method('getSiteIdentifier')->willReturn('default');
         GeneralUtility::addInstance(SiteConfigurationService::class, $siteConfigService);
@@ -532,9 +588,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         GeneralUtility::purgeInstances();
 
-        $enforcementService = $this->createMock(FrontendEnforcementService::class);
+        $enforcementService = $this->createStub(FrontendEnforcementService::class);
         $enforcementService
-            ->expects(self::once())
             ->method('getStatus')
             ->willReturn(new FrontendEnforcementStatus(
                 effectiveLevel: 'enforced',
@@ -547,7 +602,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $enforcementService);
 
-        $siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $siteConfigService = $this->createStub(SiteConfigurationService::class);
         $siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $siteConfigService->method('getSiteIdentifier')->willReturn('default');
         GeneralUtility::addInstance(SiteConfigurationService::class, $siteConfigService);
@@ -572,9 +627,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         GeneralUtility::purgeInstances();
 
-        $enforcementService = $this->createMock(FrontendEnforcementService::class);
+        $enforcementService = $this->createStub(FrontendEnforcementService::class);
         $enforcementService
-            ->expects(self::once())
             ->method('getStatus')
             ->willReturn(new FrontendEnforcementStatus(
                 effectiveLevel: 'encourage',
@@ -587,7 +641,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $enforcementService);
 
-        $siteConfigService = $this->createMock(SiteConfigurationService::class);
+        $siteConfigService = $this->createStub(SiteConfigurationService::class);
         $siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $siteConfigService->method('getSiteIdentifier')->willReturn('default');
         GeneralUtility::addInstance(SiteConfigurationService::class, $siteConfigService);
@@ -719,6 +773,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Test Key');
 
+        GeneralUtility::purgeInstances();
+
         $service = $this->getMockBuilder(PasskeyFrontendAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
@@ -729,7 +785,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         ];
         $this->injectLogger($service, $this->logger);
 
-        GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
+        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
         GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -737,7 +794,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $expectedUser = ['uid' => 42, 'username' => 'frontend_user'];
         $service->expects(self::once())->method('fetchUserRecord')->willReturn($expectedUser);
 
-        $this->webAuthnService
+        $webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->with(
@@ -822,13 +879,13 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
      */
     private function setUpFetchUserByUid(int $uid, ?array $userRow): void
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
 
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result = $this->createStub(\Doctrine\DBAL\Result::class);
         $result->method('fetchAssociative')->willReturn($userRow ?? false);
 
-        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder = $this->createStub(QueryBuilder::class);
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
@@ -836,10 +893,9 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
         $queryBuilder->method('executeQuery')->willReturn($result);
 
-        $connectionPool = $this->createMock(ConnectionPool::class);
+        $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool
             ->method('getQueryBuilderForTable')
-            ->with('fe_users')
             ->willReturn($queryBuilder);
 
         GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);

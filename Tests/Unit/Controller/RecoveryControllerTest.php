@@ -11,11 +11,11 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
-use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
@@ -25,23 +25,24 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 #[CoversClass(RecoveryController::class)]
 final class RecoveryControllerTest extends TestCase
 {
-    private RecoveryCodeService&MockObject $recoveryCodeService;
-    private RateLimiterService&MockObject $rateLimiterService;
-    private FrontendCredentialRepository&MockObject $credentialRepository;
+    private RecoveryCodeService&Stub $recoveryCodeService;
+    private RateLimiterService&Stub $rateLimiterService;
+    private FrontendUserLookupService&Stub $userLookupService;
     private RecoveryController $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->recoveryCodeService = $this->createMock(RecoveryCodeService::class);
-        $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->credentialRepository = $this->createMock(FrontendCredentialRepository::class);
+        $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
 
         $this->subject = new RecoveryController(
             $this->recoveryCodeService,
             $this->rateLimiterService,
-            $this->credentialRepository,
+            $this->userLookupService,
+            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -140,7 +141,7 @@ final class RecoveryControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid): ServerRequest
     {
-        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))

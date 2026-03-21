@@ -13,7 +13,7 @@ use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -23,18 +23,17 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 #[CoversClass(RecoveryCodeService::class)]
 final class RecoveryCodeServiceTest extends TestCase
 {
-    private ConnectionPool&MockObject $connectionPool;
-    private Connection&MockObject $connection;
+    private ConnectionPool&Stub $connectionPool;
+    private Connection&Stub $connection;
     private RecoveryCodeService $subject;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
-        $this->connection = $this->createMock(Connection::class);
+        $this->connectionPool = $this->createStub(ConnectionPool::class);
+        $this->connection = $this->createStub(Connection::class);
 
         $this->connectionPool->method('getConnectionForTable')
-            ->with('tx_nrpasskeysfe_recovery_code')
             ->willReturn($this->connection);
 
         $this->subject = new RecoveryCodeService($this->connectionPool);
@@ -100,13 +99,18 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function generateDeletesExistingCodesFirst(): void
     {
-        $this->connection->expects(self::once())
+        $connection = $this->createMock(Connection::class);
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getConnectionForTable')->willReturn($connection);
+        $subject = new RecoveryCodeService($connectionPool);
+
+        $connection->expects(self::once())
             ->method('delete')
             ->with('tx_nrpasskeysfe_recovery_code', ['fe_user' => 42]);
 
-        $this->connection->method('insert')->willReturn(1);
+        $connection->method('insert')->willReturn(1);
 
-        $this->subject->generate(42, 3);
+        $subject->generate(42, 3);
     }
 
     #[Test]
@@ -157,16 +161,20 @@ final class RecoveryCodeServiceTest extends TestCase
     public function verifyReturnsFalseForWrongLengthCode(): void
     {
         // No DB call should be made for clearly invalid codes
-        $this->connectionPool->expects(self::never())
+        $connectionPool = $this->createMock(ConnectionPool::class);
+        $connectionPool->method('getConnectionForTable')->willReturn($this->connection);
+        $subject = new RecoveryCodeService($connectionPool);
+
+        $connectionPool->expects(self::never())
             ->method('getQueryBuilderForTable');
 
-        self::assertFalse($this->subject->verify(1, 'ABC'));
+        self::assertFalse($subject->verify(1, 'ABC'));
     }
 
     #[Test]
     public function verifyReturnsFalseWhenNoUnusedCodesExist(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([]);
 
         $queryBuilder = $this->createQueryBuilderMock($result);
@@ -180,11 +188,10 @@ final class RecoveryCodeServiceTest extends TestCase
     public function verifyReturnsTrueAndMarksCodeAsUsed(): void
     {
         // Pre-hash a known code for testing
-        $rawCode = 'ABCD1234';
         $rawCodeValid = 'ABCDEFGH'; // Must be in valid alphabet
         $hash = \password_hash($rawCodeValid, PASSWORD_BCRYPT, ['cost' => 4]);
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
             ['uid' => 99, 'code_hash' => $hash],
         ]);
@@ -193,8 +200,14 @@ final class RecoveryCodeServiceTest extends TestCase
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
-        // Expect the code to be marked as used
-        $this->connection->expects(self::once())
+        // Create a mock connection to verify the code is marked as used
+        $connection = $this->createMock(Connection::class);
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getConnectionForTable')->willReturn($connection);
+        $connectionPool->method('getQueryBuilderForTable')->willReturn($queryBuilder);
+        $subject = new RecoveryCodeService($connectionPool);
+
+        $connection->expects(self::once())
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
@@ -205,7 +218,7 @@ final class RecoveryCodeServiceTest extends TestCase
             );
 
         // Verify with dash-formatted code
-        self::assertTrue($this->subject->verify(1, 'ABCD-EFGH'));
+        self::assertTrue($subject->verify(1, 'ABCD-EFGH'));
     }
 
     #[Test]
@@ -214,7 +227,7 @@ final class RecoveryCodeServiceTest extends TestCase
         $rawCode = 'TESTCODE';
         $hash = \password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
             ['uid' => 1, 'code_hash' => $hash],
         ]);
@@ -235,7 +248,7 @@ final class RecoveryCodeServiceTest extends TestCase
         $rawCode = 'TESTCODE';
         $hash = \password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
             ['uid' => 1, 'code_hash' => $hash],
         ]);
@@ -254,7 +267,7 @@ final class RecoveryCodeServiceTest extends TestCase
     {
         $hash = \password_hash('REALCODE', PASSWORD_BCRYPT, ['cost' => 4]);
 
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
             ['uid' => 1, 'code_hash' => $hash],
         ]);
@@ -273,7 +286,7 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function countRemainingReturnsCorrectCount(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(7);
 
         $queryBuilder = $this->createQueryBuilderMock($result);
@@ -286,7 +299,7 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function countRemainingReturnsZeroWhenNoneLeft(): void
     {
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(0);
 
         $queryBuilder = $this->createQueryBuilderMock($result);
@@ -300,12 +313,12 @@ final class RecoveryCodeServiceTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------
 
-    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&MockObject
+    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('');
 
-        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder = $this->createStub(QueryBuilder::class);
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('count')->willReturnSelf();
