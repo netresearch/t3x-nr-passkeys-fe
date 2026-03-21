@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Controller;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -24,14 +25,15 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  * Provides AJAX endpoints for listing, revoking, and unlocking
  * frontend user passkeys. All endpoints require a backend admin session.
  */
-final class AdminController
+final readonly class AdminController
 {
     use JsonBodyTrait;
 
     public function __construct(
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly LoggerInterface $logger,
+        private FrontendCredentialRepository $credentialRepository,
+        private FrontendUserLookupService $userLookupService,
+        private RateLimiterService $rateLimiterService,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -135,15 +137,7 @@ final class AdminController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $credentials = $this->credentialRepository->findAllByFeUser($feUserUid);
-        $revokedCount = 0;
-
-        foreach ($credentials as $credential) {
-            if (!$credential->isRevoked()) {
-                $this->credentialRepository->revoke($credential->getUid(), $adminUid);
-                ++$revokedCount;
-            }
-        }
+        $revokedCount = $this->credentialRepository->revokeAllByFeUser($feUserUid, $adminUid);
 
         $this->logger->info('Admin revoked all FE passkeys', [
             'admin_uid' => $adminUid,
@@ -178,7 +172,7 @@ final class AdminController
         }
 
         // Validate feUserUid matches username to ensure audit-log integrity
-        $row = $this->credentialRepository->findFeUserByUid($feUserUid);
+        $row = $this->userLookupService->findFeUserByUid($feUserUid);
 
         if ($row === null || $row['username'] !== $username) {
             return new JsonResponse(['error' => 'User not found or username mismatch'], 404);

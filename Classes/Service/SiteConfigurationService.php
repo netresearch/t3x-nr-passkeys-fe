@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
  * This service centralises that lookup so every other service has
  * a single source of truth for per-site WebAuthn parameters.
  */
-final class SiteConfigurationService
+final readonly class SiteConfigurationService
 {
     /**
      * Get the Relying Party ID for a site.

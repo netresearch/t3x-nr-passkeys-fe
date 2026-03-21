@@ -18,17 +18,17 @@ use Throwable;
  * Use fromExtensionConfiguration() to create an instance from the TYPO3
  * extension configuration API, or construct directly with an array for testing.
  */
-final class FrontendConfiguration
+final readonly class FrontendConfiguration
 {
     public function __construct(
-        private readonly bool $enableFePasskeys = true,
-        private readonly string $defaultEnforcementLevel = 'off',
-        private readonly int $maxPasskeysPerUser = 10,
-        private readonly bool $recoveryCodesEnabled = true,
-        private readonly int $recoveryCodeCount = 10,
-        private readonly bool $magicLinkEnabled = false,
-        private readonly bool $enrollmentBannerEnabled = true,
-        private readonly bool $postLoginEnrollmentEnabled = true,
+        private bool $enableFePasskeys = true,
+        private string $defaultEnforcementLevel = 'off',
+        private int $maxPasskeysPerUser = 10,
+        private bool $recoveryCodesEnabled = true,
+        private int $recoveryCodeCount = 10,
+        private bool $magicLinkEnabled = false,
+        private bool $enrollmentBannerEnabled = true,
+        private bool $postLoginEnrollmentEnabled = true,
     ) {}
 
     public function isEnableFePasskeys(): bool
