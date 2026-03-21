@@ -11,16 +11,18 @@
 |------|---------|---------|
 | `ci.yml` | push, pull_request | Main CI: CGL, PHPStan, Unit tests, Functional tests, JS tests, Mutation |
 | `pr-quality.yml` | pull_request | PR Quality Gates: size check, auto-approve Dependabot/Renovate |
-| `ter-publish.yml` | push tag `v*` | Publish to TYPO3 Extension Repository (TER) |
+| `ter-publish.yml` | release: published | Publish to TYPO3 Extension Repository (TER) |
 | `codeql.yml` | push main, schedule | GitHub CodeQL security scanning (PHP + JS) |
 | `dependency-review.yml` | pull_request | Dependency vulnerability review |
 | `scorecard.yml` | schedule, push main | OpenSSF Security Scorecard |
 | `auto-merge-deps.yml` | pull_request | Auto-merge minor/patch Dependabot PRs |
+| `release.yml` | push tag `v*` | Create GitHub release with attestations |
+| `security.yml` | push main, PR, schedule | TYPO3 security checks |
 
 ## CI Workflow Details
 
 ### ci.yml
-Runs a matrix build across PHP 8.2/8.3/8.4 × TYPO3 13.4/14.1.
+Runs a matrix build across PHP 8.2/8.3/8.4/8.5 × TYPO3 13.4/14.1.
 
 Steps in order:
 1. Checkout
@@ -51,7 +53,7 @@ GitHub Security → Code scanning alerts.
 - All workflow files must pin actions to SHA (not tags)
 - Use `fail_level: error` for all reviewdog-based linting actions
 - Do NOT use `--no-verify` in any workflow step
-- Secrets: `TER_API_TOKEN`, `TAILOR_API_TOKEN` (set in repo secrets)
+- Secrets: `TYPO3_TER_ACCESS_TOKEN` (set in repo secrets)
 - Functional tests require the `mysql` service with the test database
 
 ## Adding a New Workflow

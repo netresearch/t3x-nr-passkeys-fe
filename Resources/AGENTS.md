@@ -13,13 +13,14 @@ Resources/
     Language/
       locallang.xlf            -> Main XLIFF file (all labels, en)
       locallang_db.xlf         -> TCA/database field labels
-      locallang_be.xlf         -> Backend module labels
+      locallang_mod.xlf        -> Backend module labels
     Layouts/
       Default.html             -> Base Fluid layout (FE plugins)
     Partials/                  -> Reusable Fluid partials
     Templates/
       AdminModule/             -> Backend admin module templates
-        Index.html             -> Dashboard + Enforcement tabs
+        Dashboard.html         -> Dashboard + Enforcement tabs
+        Help.html              -> Help page
       Enrollment/
         Index.html             -> Enrollment form (WebAuthn ceremony)
         Success.html           -> Post-enrollment success page
@@ -85,7 +86,7 @@ const credential = await navigator.credentials.get({
 - Keys use dot notation: `login.button.passkey`, `error.challenge_expired`
 - All keys defined in `locallang.xlf` (English source)
 - Database field labels go in `locallang_db.xlf`
-- Backend module labels go in `locallang_be.xlf`
+- Backend module labels go in `locallang_mod.xlf`
 - Format: XLIFF 1.2 (`version="1.2"`)
 
 ## Boundaries

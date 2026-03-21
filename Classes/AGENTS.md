@@ -13,7 +13,7 @@ All classes are under `Netresearch\NrPasskeysFe\` (PSR-4 from `Classes/`).
 Authentication/
   PasskeyFrontendAuthenticationService   -> TYPO3 auth service (priority 80 via ext_localconf)
 Configuration/
-  SitePasskeyConfig                      -> Value object for per-site passkey config
+  FrontendConfiguration                  -> Value object for extension + site config
 Controller/
   EidDispatcher                          -> Routes eID requests to sub-controllers
   LoginController                        -> Passkey auth (options, verify, recovery)
@@ -25,7 +25,7 @@ Controller/
   JsonBodyTrait                          -> Shared JSON request parsing
 Domain/
   Dto/                                   -> Typed request/response DTOs
-  Enum/EnforcementLevel                  -> Re-exported from nr-passkeys-be
+  Enum/RecoveryMethod                    -> Recovery method enum
   Model/FrontendCredential               -> Credential entity (plain PHP)
   Model/RecoveryCode                     -> Recovery code entity (plain PHP)
 Event/                                   -> 8 PSR-14 event classes (see Events.rst)
