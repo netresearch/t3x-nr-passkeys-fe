@@ -129,7 +129,31 @@ run_functional_tests() {
     info "Running functional tests with DBMS=${DBMS}..."
     check_dependencies
 
-    export typo3DatabaseDriver="pdo_sqlite"
+    # Determine database driver for functional tests.
+    # Priority: explicit env var > --dbms flag > MySQL auto-detect in CI > SQLite fallback
+    if [[ -z "${typo3DatabaseDriver:-}" ]]; then
+        if [[ "${DBMS}" == "mysql" || "${DBMS}" == "mariadb" ]] || \
+           { [[ "${CI:-}" == "true" ]] && mysqladmin ping --host=127.0.0.1 --silent 2>/dev/null; }; then
+            export typo3DatabaseDriver="pdo_mysql"
+            export typo3DatabaseHost="${typo3DatabaseHost:-127.0.0.1}"
+            export typo3DatabasePort="${typo3DatabasePort:-3306}"
+            export typo3DatabaseName="${typo3DatabaseName:-typo3_test}"
+            export typo3DatabaseUsername="${typo3DatabaseUsername:-root}"
+            export typo3DatabasePassword="${typo3DatabasePassword:-root}"
+            info "Using MySQL for functional tests"
+        elif [[ "${DBMS}" == "postgres" ]]; then
+            export typo3DatabaseDriver="pdo_pgsql"
+            export typo3DatabaseHost="${typo3DatabaseHost:-127.0.0.1}"
+            export typo3DatabasePort="${typo3DatabasePort:-5432}"
+            export typo3DatabaseName="${typo3DatabaseName:-typo3_test}"
+            export typo3DatabaseUsername="${typo3DatabaseUsername:-root}"
+            export typo3DatabasePassword="${typo3DatabasePassword:-root}"
+            info "Using PostgreSQL for functional tests"
+        else
+            export typo3DatabaseDriver="pdo_sqlite"
+            info "Using SQLite for functional tests"
+        fi
+    fi
 
     if [[ -f "${ROOT_DIR}/Build/phpunit.functional.xml" ]]; then
         "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.functional.xml" ${EXTRA_TEST_OPTIONS}

@@ -17,8 +17,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Expression\CompositeExpression;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
@@ -196,94 +196,65 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         array $usersWithPasskeysPerGroup = [],
         string $siteIdentifier = '',
     ): void {
-        // fe_users count query builder (used when no site scope)
-        $feUsersCountResult = $this->createStub(Result::class);
-        $feUsersCountResult->method('fetchOne')->willReturn($totalFeUsers);
+        // The service calls getQueryBuilderForTable() for every query.
+        // Each call must return a fresh QueryBuilder stub with the correct Result.
+        // Call order:
+        //   1. countTotalFeUsers       -> fe_users  (fetchOne -> $totalFeUsers)
+        //   2. countUsersWithPasskeys  -> tx_nrpasskeysfe_credential (fetchOne -> $usersWithPasskeys)
+        //   3. getPerGroupStats        -> fe_groups (fetchAllAssociative -> $groups)
+        //   4. countUsersPerGroup      -> fe_users per group (fetchOne -> count)
+        //   5. countUsersWithPasskeysPerGroup -> fe_users per group (fetchOne -> count)
 
-        $feUsersCountQb = $this->createQueryBuilderMock($feUsersCountResult);
+        $queryBuilders = [];
 
-        // fe_groups query builder
+        // 1. countTotalFeUsers
+        $totalResult = $this->createStub(Result::class);
+        $totalResult->method('fetchOne')->willReturn($totalFeUsers);
+        $queryBuilders[] = $this->createQueryBuilderMock($totalResult);
+
+        // 2. countUsersWithPasskeys
+        $passkeysResult = $this->createStub(Result::class);
+        $passkeysResult->method('fetchOne')->willReturn($usersWithPasskeys);
+        $queryBuilders[] = $this->createQueryBuilderMock($passkeysResult);
+
+        // 3. fe_groups query
         $feGroupsResult = $this->createStub(Result::class);
         $feGroupsResult->method('fetchAllAssociative')->willReturn($groups);
-        $feGroupsQb = $this->createQueryBuilderMock($feGroupsResult);
+        $queryBuilders[] = $this->createQueryBuilderMock($feGroupsResult);
 
-        // Build the callback for getQueryBuilderForTable
+        // 4. countUsersPerGroup - one QB per group
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            $count = $usersPerGroup[$groupUid] ?? 0;
+            $result = $this->createStub(Result::class);
+            $result->method('fetchOne')->willReturn($count);
+            $queryBuilders[] = $this->createQueryBuilderMock($result);
+        }
+
+        // 5. countUsersWithPasskeysPerGroup - one QB per group
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            $count = $usersWithPasskeysPerGroup[$groupUid] ?? 0;
+            $result = $this->createStub(Result::class);
+            $result->method('fetchOne')->willReturn($count);
+            $queryBuilders[] = $this->createQueryBuilderMock($result);
+        }
+
+        $callIndex = 0;
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturnCallback(
-                static function (string $table) use ($feUsersCountQb, $feGroupsQb): QueryBuilder {
-                    if ($table === 'fe_groups') {
-                        return $feGroupsQb;
-                    }
-
-                    return $feUsersCountQb;
+                static function () use (&$queryBuilders, &$callIndex): QueryBuilder {
+                    return $queryBuilders[$callIndex++] ?? throw new RuntimeException('No more QueryBuilder stubs');
                 },
             );
-
-        // Build aggregate query results for Connection::executeQuery
-        // The connection is used for:
-        //   1. countTotalFeUsers with site scope (returns fetchOne)
-        //   2. countUsersWithPasskeys (returns fetchOne)
-        //   3. countUsersPerGroup (returns fetchAllAssociative)
-        //   4. countUsersWithPasskeysPerGroup (returns fetchAllAssociative)
-        $usersPerGroupRows = [];
-        foreach ($usersPerGroup as $groupUid => $count) {
-            $usersPerGroupRows[] = ['group_uid' => $groupUid, 'user_count' => $count];
-        }
-
-        $passkeysPerGroupRows = [];
-        foreach ($usersWithPasskeysPerGroup as $groupUid => $count) {
-            $passkeysPerGroupRows[] = ['group_uid' => $groupUid, 'with_passkeys' => $count];
-        }
-
-        $credentialConnection = $this->createStub(Connection::class);
-
-        // Build all expected Result objects in call order
-        $sqlResults = [];
-
-        if ($siteIdentifier !== '') {
-            // Site-scoped total user count (fetchOne)
-            $siteTotalResult = $this->createStub(Result::class);
-            $siteTotalResult->method('fetchOne')->willReturn($totalFeUsers);
-            $siteTotalResult->method('fetchAllAssociative')->willReturn([]);
-            $sqlResults[] = $siteTotalResult;
-        }
-
-        // Users with passkeys count (fetchOne)
-        $usersWithPasskeysResult = $this->createStub(Result::class);
-        $usersWithPasskeysResult->method('fetchOne')->willReturn($usersWithPasskeys);
-        $usersWithPasskeysResult->method('fetchAllAssociative')->willReturn([]);
-        $sqlResults[] = $usersWithPasskeysResult;
-
-        if ($groups !== []) {
-            // Aggregate: users per group (fetchAllAssociative)
-            $usersPerGroupResult = $this->createStub(Result::class);
-            $usersPerGroupResult->method('fetchOne')->willReturn(0);
-            $usersPerGroupResult->method('fetchAllAssociative')->willReturn($usersPerGroupRows);
-            $sqlResults[] = $usersPerGroupResult;
-
-            // Aggregate: users with passkeys per group (fetchAllAssociative)
-            $passkeysPerGroupResult = $this->createStub(Result::class);
-            $passkeysPerGroupResult->method('fetchOne')->willReturn(0);
-            $passkeysPerGroupResult->method('fetchAllAssociative')->willReturn($passkeysPerGroupRows);
-            $sqlResults[] = $passkeysPerGroupResult;
-        }
-
-        $sqlCallCount = 0;
-        $credentialConnection->method('executeQuery')
-            ->willReturnCallback(
-                static function () use (&$sqlResults, &$sqlCallCount): Result {
-                    return $sqlResults[$sqlCallCount++] ?? throw new RuntimeException('No more SQL results');
-                },
-            );
-
-        $this->connectionPool->method('getConnectionForTable')
-            ->willReturn($credentialConnection);
     }
 
     private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
     {
         $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('');
+        $compositeExpression = $this->createStub(CompositeExpression::class);
+        $expressionBuilder->method('and')->willReturn($compositeExpression);
         $expressionBuilder->method('inSet')->willReturn('');
 
         $queryBuilder = $this->createStub(QueryBuilder::class);
@@ -291,8 +262,11 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('count')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('join')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('andWhere')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
+        $queryBuilder->method('quoteIdentifier')->willReturn('`uid`');
 
         if ($result !== null) {
             $queryBuilder->method('executeQuery')->willReturn($result);

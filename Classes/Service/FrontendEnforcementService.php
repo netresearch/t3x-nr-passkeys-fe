@@ -59,7 +59,7 @@ final class FrontendEnforcementService
         SiteInterface $site,
     ): FrontendEnforcementStatus {
         $cacheKey = $feUserUid . '|' . $siteIdentifier;
-        if (isset($this->statusCache[$cacheKey])) {
+        if (\array_key_exists($cacheKey, $this->statusCache)) {
             return $this->statusCache[$cacheKey];
         }
 

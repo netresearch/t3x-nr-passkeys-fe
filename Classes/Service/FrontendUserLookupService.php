@@ -88,7 +88,7 @@ final readonly class FrontendUserLookupService
 
         return [
             'uid' => \is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : 0,
-            'username' => \is_string($row['username'] ?? null) ? (string) $row['username'] : '',
+            'username' => \is_string($row['username'] ?? null) ? $row['username'] : '',
         ];
     }
 }
