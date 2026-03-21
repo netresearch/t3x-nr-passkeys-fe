@@ -27,7 +27,7 @@ SET @group_uid = LAST_INSERT_ID();
 -- ---------------------------------------------------------------------------
 INSERT INTO fe_users (pid, username, password, usergroup, email, name, disable, tstamp, crdate)
 VALUES (@storage_pid, 'demo',
-    '$argon2i$v=19$m=65536,t=4,p=1$Qlp2a0NGRzdRaElSaExmMg$lD1Nn2qzwlxjQiHWXC2cIxprpBrcmDLm/UYJYXcvBZ8',
+    '$argon2i$v=19$m=65536,t=4,p=1$UUptMHFDSXYyWXVnbVhMcg$tJOMm/FiSoea98Qx4wbfV19mhd/RTNIRWL1QTRddLtU',
     CAST(@group_uid AS CHAR), 'demo@example.com', 'Demo User', 0,
     UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 

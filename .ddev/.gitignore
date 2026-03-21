@@ -32,6 +32,3 @@
 /traefik/certs/nr-passkeys-fe.key
 /xhprof/xhprof_prepend.php
 /**/README.*
-import.yaml
-import-db
-sequelace.yaml

@@ -103,7 +103,7 @@ $prUrl = $githubUrl && $prNumber ? $githubUrl . '/pull/' . $prNumber : null;
             <h3>Credentials</h3>
             <ul>
                 <li><strong>BE Admin:</strong> <code>admin</code> / <code>Joh316!!</code></li>
-                <li><strong>FE User:</strong> <code>demo</code> / <code>password</code></li>
+                <li><strong>FE User:</strong> <code>demo</code> / <code>demo</code></li>
             </ul>
         </div>
         <div class="card">

@@ -162,7 +162,7 @@ page.10 {
     mysql -h db -u root -proot "$VERSION" -e "
     UPDATE pages SET title = 'EXT:nr_passkeys_fe Demo' WHERE uid = 1;
     INSERT INTO tt_content (pid, CType, header, bodytext, sorting)
-    VALUES (1, 'text', 'Welcome', '<p>This is the <strong>nr_passkeys_fe</strong> development environment for TYPO3 v14.</p><p>Use the navigation above to test passkey login, enrollment, and management.</p><p><strong>FE User:</strong> demo / password<br><strong>BE Admin:</strong> admin / Joh316!!</p>', 100);
+    VALUES (1, 'text', 'Welcome', '<p>This is the <strong>nr_passkeys_fe</strong> development environment for TYPO3 v14.</p><p>Use the navigation above to test passkey login, enrollment, and management.</p><p><strong>FE User:</strong> demo / demo<br><strong>BE Admin:</strong> admin / Joh316!!</p>', 100);
     "
     DEMO_PID=1
 fi
@@ -189,8 +189,10 @@ SET @account_page = (SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1);
 SET @enrollment_page = (SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1);
 
 -- felogin with passkey button injected via template override
-INSERT INTO tt_content (pid, CType, header, sorting, tstamp, crdate)
-VALUES (@login_page, 'felogin_login', 'Login', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
+-- pages = SysFolder UID so felogin can find fe_users records
+SET @fe_storage = (SELECT uid FROM pages WHERE slug='/fe-users-storage' LIMIT 1);
+INSERT INTO tt_content (pid, CType, header, sorting, tstamp, crdate, pages, recursive)
+VALUES (@login_page, 'felogin_login', 'Login', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP(), @fe_storage, 1);
 
 -- Passkey-only login (standalone plugin, no felogin fallback)
 INSERT INTO tt_content (pid, CType, header, sorting, tstamp, crdate)
