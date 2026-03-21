@@ -41,17 +41,10 @@ return [
                 'readOnly' => true,
             ],
         ],
-        'site_identifier' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_recovery_code.site_identifier',
-            'config' => [
-                'type' => 'input',
-                'readOnly' => true,
-            ],
-        ],
     ],
     'types' => [
         '0' => [
-            'showitem' => 'fe_user, code_hash, site_identifier, used_at',
+            'showitem' => 'fe_user, code_hash, used_at',
         ],
     ],
 ];

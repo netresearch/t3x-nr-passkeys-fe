@@ -19,6 +19,12 @@ declare(strict_types=1);
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_login.description',
 );
 
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
+    '*',
+    'FILE:EXT:nr_passkeys_fe/Configuration/FlexForms/LoginPlugin.xml',
+    'nrpasskeysfe_passkeylogin',
+);
+
 // Register Passkey Management plugin
 \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
     'nr_passkeys_fe',
@@ -29,6 +35,12 @@ declare(strict_types=1);
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_management.description',
 );
 
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
+    '*',
+    'FILE:EXT:nr_passkeys_fe/Configuration/FlexForms/ManagementPlugin.xml',
+    'nrpasskeysfe_passkeymanagement',
+);
+
 // Register Passkey Enrollment plugin
 \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerPlugin(
     'nr_passkeys_fe',
@@ -37,4 +49,10 @@ declare(strict_types=1);
     'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-enrollment.svg',
     'forms',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_enrollment.description',
+);
+
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addPiFlexFormValue(
+    '*',
+    'FILE:EXT:nr_passkeys_fe/Configuration/FlexForms/EnrollmentPlugin.xml',
+    'nrpasskeysfe_passkeyenrollment',
 );
