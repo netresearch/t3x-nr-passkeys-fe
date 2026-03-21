@@ -142,8 +142,8 @@ final readonly class FrontendAdoptionStatsService
             ];
         }
 
-        // Aggregate query 1: Count users per group (single query)
-        $usersPerGroup = $this->countUsersPerGroup();
+        // Count users per group (portable, uses QueryBuilder::inSet)
+        $usersPerGroup = $this->countUsersPerGroup($groups);
         foreach ($usersPerGroup as $groupUid => $count) {
             $key = (string) $groupUid;
             if (isset($stats[$key])) {
@@ -151,8 +151,8 @@ final readonly class FrontendAdoptionStatsService
             }
         }
 
-        // Aggregate query 2: Count users with passkeys per group (single query)
-        $passkeysPerGroup = $this->countUsersWithPasskeysPerGroup($siteIdentifier);
+        // Count users with passkeys per group (portable, uses QueryBuilder::inSet)
+        $passkeysPerGroup = $this->countUsersWithPasskeysPerGroup($groups, $siteIdentifier);
         foreach ($passkeysPerGroup as $groupUid => $count) {
             $key = (string) $groupUid;
             if (isset($stats[$key])) {
@@ -164,76 +164,94 @@ final readonly class FrontendAdoptionStatsService
     }
 
     /**
-     * Count users per group using a single aggregate query.
+     * Count users per group using portable QueryBuilder queries.
      *
+     * Uses per-group queries with ExpressionBuilder::inSet() for cross-database
+     * compatibility (MySQL, PostgreSQL, SQLite). The N+1 pattern is acceptable
+     * here because this is an admin dashboard endpoint, not a hot path.
+     *
+     * @param list<array<string, mixed>> $groups
      * @return array<int, int> Map of group UID to user count
      */
-    private function countUsersPerGroup(): array
+    private function countUsersPerGroup(array $groups): array
     {
-        $connection = $this->connectionPool->getConnectionForTable('fe_users');
-
-        $sql = <<<'SQL'
-            SELECT ug.uid AS group_uid, COUNT(DISTINCT u.uid) AS user_count
-            FROM fe_groups ug
-            INNER JOIN fe_users u ON FIND_IN_SET(ug.uid, u.usergroup) > 0
-            WHERE u.deleted = 0 AND u.disable = 0
-            GROUP BY ug.uid
-            SQL;
-
-        $rows = $connection->executeQuery($sql)->fetchAllAssociative();
-
         $result = [];
-        foreach ($rows as $row) {
-            $groupUid = $row['group_uid'] ?? 0;
-            $userCount = $row['user_count'] ?? 0;
-            $result[\is_numeric($groupUid) ? (int) $groupUid : 0] = \is_numeric($userCount) ? (int) $userCount : 0;
+
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            if ($groupUid === 0) {
+                continue;
+            }
+
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+            $count = $queryBuilder
+                ->count('uid')
+                ->from('fe_users')
+                ->where(
+                    $queryBuilder->expr()->inSet(
+                        'usergroup',
+                        $queryBuilder->createNamedParameter((string) $groupUid),
+                    ),
+                )
+                ->executeQuery()
+                ->fetchOne();
+
+            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
         }
 
         return $result;
     }
 
     /**
-     * Count users with active passkeys per group using a single aggregate query.
+     * Count users with active passkeys per group using portable QueryBuilder queries.
      *
+     * Uses per-group queries with ExpressionBuilder::inSet() for cross-database
+     * compatibility. See {@see countUsersPerGroup()} for rationale on N+1 pattern.
+     *
+     * @param list<array<string, mixed>> $groups
      * @return array<int, int> Map of group UID to count of users with passkeys
      */
-    private function countUsersWithPasskeysPerGroup(string $siteIdentifier): array
+    private function countUsersWithPasskeysPerGroup(array $groups, string $siteIdentifier): array
     {
-        $connection = $this->connectionPool->getConnectionForTable('fe_users');
-
-        $sql = <<<'SQL'
-            SELECT ug.uid AS group_uid, COUNT(DISTINCT u.uid) AS with_passkeys
-            FROM fe_groups ug
-            INNER JOIN fe_users u ON FIND_IN_SET(ug.uid, u.usergroup) > 0
-            INNER JOIN tx_nrpasskeysfe_credential c ON c.fe_user = u.uid AND c.revoked_at = 0
-            WHERE u.deleted = 0 AND u.disable = 0
-            GROUP BY ug.uid
-            SQL;
-
-        $params = [];
-        $types = [];
-
-        if ($siteIdentifier !== '') {
-            $sql = <<<'SQL'
-                SELECT ug.uid AS group_uid, COUNT(DISTINCT u.uid) AS with_passkeys
-                FROM fe_groups ug
-                INNER JOIN fe_users u ON FIND_IN_SET(ug.uid, u.usergroup) > 0
-                INNER JOIN tx_nrpasskeysfe_credential c ON c.fe_user = u.uid AND c.revoked_at = 0
-                WHERE u.deleted = 0 AND u.disable = 0
-                  AND c.site_identifier = ?
-                GROUP BY ug.uid
-                SQL;
-            $params[] = $siteIdentifier;
-            $types[] = ParameterType::STRING;
-        }
-
-        $rows = $connection->executeQuery($sql, $params, $types)->fetchAllAssociative();
-
         $result = [];
-        foreach ($rows as $row) {
-            $groupUid = $row['group_uid'] ?? 0;
-            $withPasskeys = $row['with_passkeys'] ?? 0;
-            $result[\is_numeric($groupUid) ? (int) $groupUid : 0] = \is_numeric($withPasskeys) ? (int) $withPasskeys : 0;
+
+        foreach ($groups as $group) {
+            $groupUid = (int) ($group['uid'] ?? 0);
+            if ($groupUid === 0) {
+                continue;
+            }
+
+            $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+            $queryBuilder
+                ->count('DISTINCT u.uid')
+                ->from('fe_users', 'u')
+                ->join(
+                    'u',
+                    'tx_nrpasskeysfe_credential',
+                    'c',
+                    $queryBuilder->expr()->and(
+                        $queryBuilder->expr()->eq('c.fe_user', $queryBuilder->quoteIdentifier('u.uid')),
+                        $queryBuilder->expr()->eq('c.revoked_at', 0),
+                    ),
+                )
+                ->where(
+                    $queryBuilder->expr()->inSet(
+                        'u.usergroup',
+                        $queryBuilder->createNamedParameter((string) $groupUid),
+                    ),
+                );
+
+            if ($siteIdentifier !== '') {
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->eq(
+                        'c.site_identifier',
+                        $queryBuilder->createNamedParameter($siteIdentifier),
+                    ),
+                );
+            }
+
+            $count = $queryBuilder->executeQuery()->fetchOne();
+            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
         }
 
         return $result;

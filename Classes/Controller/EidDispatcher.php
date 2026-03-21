@@ -69,7 +69,12 @@ final class EidDispatcher
 
         // Public actions (login, recovery verify) do not require an FE session
         if (\in_array($action, self::PUBLIC_ACTIONS, true)) {
-            /** @var LoginController|ManagementController|RecoveryController|EnrollmentController $controller */
+            // loginVerify and recoveryVerify need a FE session to write session flags
+            if ($action === 'loginVerify' || $action === 'recoveryVerify') {
+                $request = $this->bootstrapFrontendUser($request);
+            }
+
+            /** @var LoginController|RecoveryController $controller */
             $controller = GeneralUtility::makeInstance($controllerClass);
 
             try {

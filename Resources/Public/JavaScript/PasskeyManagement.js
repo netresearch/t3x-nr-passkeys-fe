@@ -258,7 +258,7 @@
   }
 
   function handleRemove(uid, label, removeUrl, listBody, emptyEl, errorEl, statusEl, container, listUrl) {
-    var confirmed = window.confirm('Remove passkey "' + label + '"? This cannot be undone.');
+    var confirmed = window.confirm('Remove passkey "' + sanitizeForDialog(label) + '"? This cannot be undone.');
     if (!confirmed) {
       return;
     }
@@ -299,6 +299,11 @@
     }
     var d = new Date(ts * 1000);
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+  }
+
+  function sanitizeForDialog(text) {
+    // Strip control characters that could confuse dialog display
+    return String(text).replace(/[\x00-\x1f]/g, '');
   }
 
   function escapeAttr(text) {

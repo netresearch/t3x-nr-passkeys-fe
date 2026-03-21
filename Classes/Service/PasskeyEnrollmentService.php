@@ -75,11 +75,7 @@ final readonly class PasskeyEnrollmentService
 
         // Dispatch before event — listeners may abort by throwing
         $this->eventDispatcher->dispatch(
-            new BeforePasskeyEnrollmentEvent(
-                feUserUid: $feUserUid,
-                siteIdentifier: $siteIdentifier,
-                attestationJson: $attestationJson,
-            ),
+            new BeforePasskeyEnrollmentEvent($feUserUid, $siteIdentifier, $attestationJson),
         );
 
         $credential = $this->webAuthnService->verifyRegistrationResponse(
@@ -94,11 +90,7 @@ final readonly class PasskeyEnrollmentService
 
         // Dispatch after event
         $this->eventDispatcher->dispatch(
-            new AfterPasskeyEnrollmentEvent(
-                feUserUid: $feUserUid,
-                credential: $credential,
-                siteIdentifier: $siteIdentifier,
-            ),
+            new AfterPasskeyEnrollmentEvent($feUserUid, $credential, $siteIdentifier),
         );
 
         return $credential;

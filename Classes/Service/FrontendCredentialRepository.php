@@ -244,7 +244,7 @@ final readonly class FrontendCredentialRepository
         $queryBuilder = $this->getQueryBuilder();
         $now = \time();
 
-        return (int) $queryBuilder
+        return $queryBuilder
             ->update(self::TABLE)
             ->set('revoked_at', $now)
             ->set('revoked_by', $revokedBy)
