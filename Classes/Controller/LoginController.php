@@ -11,9 +11,12 @@ namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysFe\Event\BeforePasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -32,17 +35,19 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * Both endpoints are PUBLIC (no FE session required). Authentication state
  * is established by verifyAction on success.
  */
-final class LoginController
+final readonly class LoginController
 {
     use JsonBodyTrait;
 
     public function __construct(
-        private readonly FrontendWebAuthnService $webAuthnService,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly ChallengeService $challengeService,
-        private readonly LoggerInterface $logger,
+        private FrontendWebAuthnService $webAuthnService,
+        private SiteConfigurationService $siteConfigurationService,
+        private FrontendCredentialRepository $credentialRepository,
+        private FrontendUserLookupService $userLookupService,
+        private RateLimiterService $rateLimiterService,
+        private ChallengeService $challengeService,
+        private EventDispatcherInterface $eventDispatcher,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -179,6 +184,8 @@ final class LoginController
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
+        $this->eventDispatcher->dispatch(new BeforePasskeyAuthenticationEvent(null, $assertion));
+
         try {
             $result = $this->webAuthnService->verifyAssertionResponse(
                 assertionJson: $assertion,
@@ -236,6 +243,6 @@ final class LoginController
 
     private function findFeUserUid(string $username): ?int
     {
-        return $this->credentialRepository->findFeUserUidByUsername($username);
+        return $this->userLookupService->findFeUserUidByUsername($username);
     }
 }

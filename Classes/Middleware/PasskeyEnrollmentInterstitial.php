@@ -37,16 +37,16 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
  * - Enforcement level is Off or Encourage
  * - Required + in grace period + session skip flag set
  */
-final class PasskeyEnrollmentInterstitial implements MiddlewareInterface
+final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterface
 {
     private const SESSION_KEY = 'tx_nrpasskeysfe';
     private const EID = 'nr_passkeys_fe';
 
     public function __construct(
-        private readonly FrontendEnforcementService $enforcementService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly FrontendConfiguration $frontendConfiguration,
+        private FrontendEnforcementService $enforcementService,
+        private FrontendCredentialRepository $credentialRepository,
+        private SiteConfigurationService $siteConfigurationService,
+        private FrontendConfiguration $frontendConfiguration,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface

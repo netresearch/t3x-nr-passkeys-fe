@@ -19,7 +19,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
  * Codes use a 30-character alphabet that excludes ambiguous glyphs
  * (0/O, 1/I/L) for human readability. Stored as bcrypt hashes.
  */
-final class RecoveryCodeService
+final readonly class RecoveryCodeService
 {
     private const TABLE = 'tx_nrpasskeysfe_recovery_code';
 
@@ -41,7 +41,7 @@ final class RecoveryCodeService
     private const DUMMY_HASH = '$2y$12$000000000000000000000uGBbLJHBfROXxjMI.RxFKYbIpkYl/6Gy';
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
+        private ConnectionPool $connectionPool,
     ) {}
 
     /**

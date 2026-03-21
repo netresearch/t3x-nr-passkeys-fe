@@ -25,14 +25,14 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
  * (policy enforcement such as max passkeys per user). Dispatches
  * Before/After enrollment events for extension points.
  */
-final class PasskeyEnrollmentService
+final readonly class PasskeyEnrollmentService
 {
     public function __construct(
-        private readonly FrontendWebAuthnService $webAuthnService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly FrontendConfiguration $configuration,
-        private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly EventDispatcherInterface $eventDispatcher,
+        private FrontendWebAuthnService $webAuthnService,
+        private FrontendCredentialRepository $credentialRepository,
+        private FrontendConfiguration $configuration,
+        private SiteConfigurationService $siteConfigurationService,
+        private EventDispatcherInterface $eventDispatcher,
     ) {}
 
     /**

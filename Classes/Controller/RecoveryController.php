@@ -10,8 +10,10 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
-use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Event\RecoveryCodesGeneratedEvent;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -26,15 +28,16 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * - generateAction: Authenticated — generates new recovery codes, returns plaintext
  * - verifyAction:   Public — verifies a recovery code and establishes FE session
  */
-final class RecoveryController
+final readonly class RecoveryController
 {
     use JsonBodyTrait;
 
     public function __construct(
-        private readonly RecoveryCodeService $recoveryCodeService,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly FrontendCredentialRepository $credentialRepository,
-        private readonly LoggerInterface $logger,
+        private RecoveryCodeService $recoveryCodeService,
+        private RateLimiterService $rateLimiterService,
+        private FrontendUserLookupService $userLookupService,
+        private EventDispatcherInterface $eventDispatcher,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -61,6 +64,8 @@ final class RecoveryController
             ]);
             return new JsonResponse(['error' => 'Failed to generate recovery codes'], 500);
         }
+
+        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, \count($codes)));
 
         $this->logger->info('FE recovery codes generated', [
             'fe_user_uid' => $feUserUid,
@@ -161,6 +166,6 @@ final class RecoveryController
 
     private function findFeUserUid(string $username): ?int
     {
-        return $this->credentialRepository->findFeUserUidByUsername($username);
+        return $this->userLookupService->findFeUserUidByUsername($username);
     }
 }
