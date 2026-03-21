@@ -73,7 +73,7 @@
     }
     // SameSite=Lax is safe for this non-sensitive preference cookie
     document.cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value) +
-      expires + '; path=/; SameSite=Lax';
+      expires + '; path=/; SameSite=Lax; Secure';
   }
 
   function getCookie(name) {

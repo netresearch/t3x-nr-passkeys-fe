@@ -60,8 +60,6 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysFe']['writerConfigu
 
 // Register cache for FE challenge nonces (used by FrontendWebAuthnService)
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_nonce'] ??= [];
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_nonce']['backend'] ??=
-    \TYPO3\CMS\Core\Cache\Backend\SimpleFileBackend::class;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_nonce']['options'] ??= [
     'defaultLifetime' => 300,
 ];
