@@ -3,6 +3,7 @@
 
 <f:section name="Content">
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:asset.script identifier="nr-passkeys-fe-utils" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-management" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyManagement.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" type="module" />
 <f:asset.script identifier="nr-passkeys-fe-recovery-codes" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecoveryCodes.js" type="module" />
@@ -66,7 +67,7 @@
                             <f:if condition="{credential.createdAt}">
                                 <f:then>
                                     <time datetime="{credential.createdAt -> f:format.date(format: 'c')}">
-                                        {credential.createdAt -> f:format.date(format: 'd.m.Y H:i')}
+                                        {credential.createdAt -> f:format.date(format: 'Y-m-d H:i')}
                                     </time>
                                 </f:then>
                                 <f:else>—</f:else>
@@ -76,7 +77,7 @@
                             <f:if condition="{credential.lastUsedAt}">
                                 <f:then>
                                     <time datetime="{credential.lastUsedAt -> f:format.date(format: 'c')}">
-                                        {credential.lastUsedAt -> f:format.date(format: 'd.m.Y H:i')}
+                                        {credential.lastUsedAt -> f:format.date(format: 'Y-m-d H:i')}
                                     </time>
                                 </f:then>
                                 <f:else>
@@ -172,7 +173,7 @@
                     <f:translate key="management.recovery.manage" extensionName="nr_passkeys_fe" />
                 </span>
                 <span class="nr-passkeys-fe-btn__loading" style="display:none" aria-hidden="true">
-                    Generating...
+                    <f:translate key="management.recovery.codes.generate.generating" extensionName="nr_passkeys_fe" />
                 </span>
             </button>
             <button type="button"

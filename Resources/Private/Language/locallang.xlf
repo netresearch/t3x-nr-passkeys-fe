@@ -314,6 +314,12 @@
             <trans-unit id="banner.required.description" resname="banner.required.description">
                 <source>Your account requires a passkey. Please set one up to continue using this site.</source>
             </trans-unit>
+            <trans-unit id="banner.required.grace_description" resname="banner.required.grace_description">
+                <source>You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.</source>
+            </trans-unit>
+            <trans-unit id="banner.enforced.description" resname="banner.enforced.description">
+                <source>Passkey enrollment is required to continue accessing your account.</source>
+            </trans-unit>
             <trans-unit id="banner.button.setup" resname="banner.button.setup">
                 <source>Set up now</source>
             </trans-unit>
@@ -389,6 +395,216 @@
             </trans-unit>
             <trans-unit id="enforcement.level.enforced" resname="enforcement.level.enforced">
                 <source>Enforced</source>
+            </trans-unit>
+
+            <!-- Dashboard: FE User Passkey Lookup -->
+            <trans-unit id="dashboard.lookup.title" resname="dashboard.lookup.title">
+                <source>Frontend User Passkey Lookup</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.uid_label" resname="dashboard.lookup.uid_label">
+                <source>FE User UID</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.placeholder" resname="dashboard.lookup.placeholder">
+                <source>e.g. 42</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.load_button" resname="dashboard.lookup.load_button">
+                <source>Load passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.label" resname="dashboard.lookup.column.label">
+                <source>Label</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.site" resname="dashboard.lookup.column.site">
+                <source>Site</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.created" resname="dashboard.lookup.column.created">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.last_used" resname="dashboard.lookup.column.last_used">
+                <source>Last used</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.status" resname="dashboard.lookup.column.status">
+                <source>Status</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.column.actions" resname="dashboard.lookup.column.actions">
+                <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.revoke_all" resname="dashboard.lookup.revoke_all">
+                <source>Revoke all passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.revoke_all_tooltip" resname="dashboard.lookup.revoke_all_tooltip">
+                <source>Revoke all active passkeys for this user</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.unlock_user" resname="dashboard.lookup.unlock_user">
+                <source>Unlock user</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.unlock_user_tooltip" resname="dashboard.lookup.unlock_user_tooltip">
+                <source>Clear rate-limiter lockout for this user</source>
+            </trans-unit>
+
+            <!-- Help page -->
+            <trans-unit id="help.title" resname="help.title">
+                <source>FE Passkey Management Help</source>
+            </trans-unit>
+            <trans-unit id="help.description" resname="help.description">
+                <source>This guide explains how to roll out passkeys to your frontend users, handle recovery scenarios, and understand enforcement levels.</source>
+            </trans-unit>
+
+            <!-- Help: Rolling out passkeys -->
+            <trans-unit id="help.rollout.title" resname="help.rollout.title">
+                <source>Rolling out frontend passkeys</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.description" resname="help.rollout.description">
+                <source>A phased rollout lets you introduce passkeys gradually, giving users time to register their devices before enforcement becomes mandatory.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.1.title" resname="help.rollout.step.1.title">
+                <source>Step 1 — Install the extension</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.1.description" resname="help.rollout.step.1.description">
+                <source>Install netresearch/nr-passkeys-fe via Composer and activate it in the Extension Manager. Run the database analyser to create the tx_nrpasskeysfe_credential table.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.2.title" resname="help.rollout.step.2.title">
+                <source>Step 2 — Add the plugins to your site</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.2.description" resname="help.rollout.step.2.description">
+                <source>Add the FE Passkey Login, FE Passkey Management, and (optionally) FE Passkey Enrollment plugins to the appropriate pages of your site. Configure TypoScript to point the plugins at the correct frontend user storage folder.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.3.title" resname="help.rollout.step.3.title">
+                <source>Step 3 — Set groups to Encourage</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.3.description" resname="help.rollout.step.3.description">
+                <source>On the Dashboard tab, change a frontend user group's enforcement level to Encourage. Users in that group will see a non-blocking banner on the site prompting them to register a passkey.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.3.tip" resname="help.rollout.step.3.tip">
+                <source>Start with a pilot group to validate the workflow before widening the rollout to all frontend users.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.3.tip.title" resname="help.rollout.step.3.tip.title">
+                <source>Tip</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.4.title" resname="help.rollout.step.4.title">
+                <source>Step 4 — Set groups to Required</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.4.description" resname="help.rollout.step.4.description">
+                <source>When you are confident the process works, change the group to Required. Users who have not yet registered a passkey will be directed to the enrollment page after password login. A configurable grace period gives them time to register before the requirement becomes strict.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.5.title" resname="help.rollout.step.5.title">
+                <source>Step 5 — After the grace period expires</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.5.description" resname="help.rollout.step.5.description">
+                <source>Once the grace period ends, users in Required groups must register a passkey before they can access the site. Users in Enforced groups have no grace period at all.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.6.title" resname="help.rollout.step.6.title">
+                <source>Step 6 — Monitor adoption</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step.6.description" resname="help.rollout.step.6.description">
+                <source>Use the Dashboard tab to track overall adoption rates and per-group statistics. Use the Passkey Lookup panel to inspect an individual user's registered credentials.</source>
+            </trans-unit>
+
+            <!-- Help: Recovery procedures -->
+            <trans-unit id="help.recovery.title" resname="help.recovery.title">
+                <source>Recovery procedures</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.description" resname="help.recovery.description">
+                <source>When a frontend user loses access to their authenticator device, follow these steps:</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.1.title" resname="help.recovery.step.1.title">
+                <source>1. User reports lost device</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.1.description" resname="help.recovery.step.1.description">
+                <source>The user contacts you (or a site admin) and reports which device or authenticator is no longer available.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.2.title" resname="help.recovery.step.2.title">
+                <source>2. Admin revokes affected passkey(s)</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.2.description.1" resname="help.recovery.step.2.description.1">
+                <source>In Web > FE Passkeys > Dashboard, enter the user's UID in the Passkey Lookup panel and revoke the affected credential(s). If you're unsure which credential matches the lost device, look at the creation date and label.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.2.description.2" resname="help.recovery.step.2.description.2">
+                <source>Alternatively, open the user's fe_users record in the backend list module. The Passkeys inline element in the record shows all registered credentials and allows deletion.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.3.title" resname="help.recovery.step.3.title">
+                <source>3. User has zero passkeys and enforcement is active</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.3.description" resname="help.recovery.step.3.description">
+                <source>If the user's group is set to Required or Enforced and the user now has zero registered passkeys, the next password-based login will direct them to the enrollment page. They must register a new passkey on their replacement device before they can continue.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.4.title" resname="help.recovery.step.4.title">
+                <source>4. User cannot log in at all</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.4.description.1" resname="help.recovery.step.4.description.1">
+                <source>If the user has no working authenticator and is rate-limited (too many failed attempts), use the Unlock user button in the Passkey Lookup panel to reset the lockout.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step.4.description.2" resname="help.recovery.step.4.description.2">
+                <source>If they also cannot complete password-based login, the administrator can temporarily lower the group enforcement level to Encourage or Off so the user can log in with a password and re-register a passkey.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.warning.title" resname="help.recovery.warning.title">
+                <source>Important</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.warning.description" resname="help.recovery.warning.description">
+                <source>Remember to restore the group's enforcement level after the user has re-registered a passkey. Leaving enforcement lowered indefinitely weakens your site's security.</source>
+            </trans-unit>
+
+            <!-- Help: Enforcement levels -->
+            <trans-unit id="help.enforcement.title" resname="help.enforcement.title">
+                <source>Enforcement levels</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.column.level" resname="help.enforcement.column.level">
+                <source>Level</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.column.behaviour" resname="help.enforcement.column.behaviour">
+                <source>Behaviour</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.level.off" resname="help.enforcement.level.off">
+                <source>Passkeys are available but not promoted. No banner or redirect.</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.level.encourage" resname="help.enforcement.level.encourage">
+                <source>A dismissible banner prompts users without passkeys to register one. They can continue using the site with a password.</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.level.required" resname="help.enforcement.level.required">
+                <source>Users without a passkey are redirected to the enrollment page after password login. They may skip during the grace period; after it expires they must register.</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.level.enforced" resname="help.enforcement.level.enforced">
+                <source>Same as Required but without any grace period. Users must register a passkey immediately.</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.strictest_wins.title" resname="help.enforcement.strictest_wins.title">
+                <source>Strictest wins</source>
+            </trans-unit>
+            <trans-unit id="help.enforcement.strictest_wins.description" resname="help.enforcement.strictest_wins.description">
+                <source>When a user belongs to multiple groups, the strictest enforcement level takes effect. For example, if one group is Off and another is Required, the user sees Required.</source>
+            </trans-unit>
+
+            <!-- Help: FAQ -->
+            <trans-unit id="help.faq.title" resname="help.faq.title">
+                <source>Frequently asked questions</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question.1" resname="help.faq.question.1">
+                <source>What happens if I set enforcement to "Required" and users have not set up passkeys?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer.1" resname="help.faq.answer.1">
+                <source>A grace period begins. Users who log in with a password are redirected to the enrollment page which explains passkey registration and shows how many days remain. During the grace period they can skip. Once the grace period expires, the enrollment page becomes blocking.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question.2" resname="help.faq.question.2">
+                <source>Can I enforce passkeys for some groups but not others?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer.2" resname="help.faq.answer.2">
+                <source>Yes. Enforcement is configured per frontend user group. You can set different levels for different groups: for example, Enforced for premium members, Required for registered users, and Off for guest/anonymous groups.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question.3" resname="help.faq.question.3">
+                <source>What if a user belongs to multiple groups with different enforcement levels?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer.3" resname="help.faq.answer.3">
+                <source>The strictest level wins. If a user belongs to one group with Encourage and another with Required, the effective enforcement level is Required.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question.4" resname="help.faq.question.4">
+                <source>How does passkey login interact with site-level authentication?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer.4" resname="help.faq.answer.4">
+                <source>The passkey login replaces the password. Once a user has authenticated with their passkey, they are treated as a fully authenticated frontend user. The enforcement middleware runs on subsequent requests to check whether the user needs to enroll or is already compliant.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question.5" resname="help.faq.question.5">
+                <source>Where are passkeys stored?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer.5" resname="help.faq.answer.5">
+                <source>Passkey credentials (the public key and metadata) are stored in the tx_nrpasskeysfe_credential database table. The private key never leaves the user's device. Each credential is scoped to a site identifier and a frontend user storage PID, preventing cross-site credential confusion.</source>
             </trans-unit>
 
             <!-- Admin module JS labels (prefixed js.) -->
