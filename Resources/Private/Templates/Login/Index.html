@@ -3,9 +3,9 @@
 
 <f:section name="Content">
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
-<f:asset.script identifier="nr-passkeys-fe-utils" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" type="module" />
-<f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" type="module" />
-<f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" type="module" />
+<f:asset.script identifier="nr-passkeys-fe-utils" priority="true" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" />
+<f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" />
+<f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" />
 
 <div class="nr-passkeys-fe-card nr-passkeys-fe-card--stacked{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}">
 

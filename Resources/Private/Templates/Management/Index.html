@@ -3,10 +3,10 @@
 
 <f:section name="Content">
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
-<f:asset.script identifier="nr-passkeys-fe-utils" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" type="module" />
-<f:asset.script identifier="nr-passkeys-fe-management" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyManagement.js" type="module" />
-<f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" type="module" />
-<f:asset.script identifier="nr-passkeys-fe-recovery-codes" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecoveryCodes.js" type="module" />
+<f:asset.script identifier="nr-passkeys-fe-utils" priority="true" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" />
+<f:asset.script identifier="nr-passkeys-fe-management" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyManagement.js" />
+<f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" />
+<f:asset.script identifier="nr-passkeys-fe-recovery-codes" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecoveryCodes.js" />
 <div class="nr-passkeys-fe-management{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
      id="nr-passkeys-fe-management"
      data-nr-passkeys-fe="management"
