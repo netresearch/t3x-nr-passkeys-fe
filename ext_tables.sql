@@ -3,9 +3,19 @@
 # - varbinary, blob, char(36): no TCA type maps to these SQL types
 # - UNIQUE KEY, KEY: TCA does not define indexes
 #
-# Columns on fe_groups/fe_users are NOT listed here — they are
-# auto-derived from TCA Overrides (select→varchar, number→int, passthrough→int).
+# fe_users and fe_groups columns are listed explicitly because TCA
+# auto-schema does not reliably create them via symlinked extensions.
 #
+
+CREATE TABLE fe_users (
+    passkey_grace_period_start int(11) unsigned NOT NULL DEFAULT 0,
+    passkey_nudge_until int(11) unsigned NOT NULL DEFAULT 0,
+);
+
+CREATE TABLE fe_groups (
+    passkey_enforcement varchar(20) NOT NULL DEFAULT 'off',
+    passkey_grace_period_days int(11) unsigned NOT NULL DEFAULT 0,
+);
 
 CREATE TABLE tx_nrpasskeysfe_credential (
     fe_user int(11) unsigned NOT NULL DEFAULT 0,
