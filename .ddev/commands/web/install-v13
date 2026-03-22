@@ -187,6 +187,10 @@ INSERT INTO tt_content (pid, CType, list_type, header, sorting, tstamp, crdate)
 VALUES (@enrollment_page, 'list', 'nrpasskeysfe_passkeyenrollment', 'Set Up Passkey', 100, UNIX_TIMESTAMP(), UNIX_TIMESTAMP());
 PLUGINSQL
 
+# Set felogin FlexForm (storagePid) via PHP/PDO to avoid shell quote stripping
+echo "Configuring felogin storage PID..."
+php "$FE_EXTENSION_PATH/.ddev/data/fix-felogin-flexform.php" "$VERSION"
+
 # Include nr_passkeys_fe TypoScript
 cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
 
