@@ -114,8 +114,9 @@
   function initRecoveryToggle(container) {
     var recoveryLink = container.querySelector('[data-action="show-recovery"]');
     // The recovery section can be inside the container or a sibling
-    var recoverySection = container.querySelector('#nr-passkeys-fe-recovery')
-      || document.getElementById('nr-passkeys-fe-recovery');
+    // Support both standalone (#nr-passkeys-fe-recovery) and felogin (#nr-passkeys-fe-felogin-recovery) IDs
+    var recoverySection = container.querySelector('[id$="-recovery"][data-nr-passkeys-fe="recovery"]')
+      || document.querySelector('[id$="-recovery"][data-nr-passkeys-fe="recovery"]');
     var passkeyContent = container.querySelector('.nr-passkeys-fe-passkey-content');
 
     if (recoveryLink && recoverySection) {
