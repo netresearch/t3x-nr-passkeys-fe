@@ -66,7 +66,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
         // Check for token-based passkey login (pre-verified by eID endpoint)
         $tokenUid = $this->resolvePasskeyToken();
-        if ($tokenUid !== null) {
+        if ($tokenUid > 0) {
             $this->getLogger()->info('FE passkey token login', ['fe_user_uid' => $tokenUid]);
             $user = $this->fetchUserByUid($tokenUid);
             if (\is_array($user)) {
@@ -140,7 +140,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // (TYPO3 creates new instances via makeInstanceService), so we cannot
         // rely on instance properties set in getUser().
         $tokenUid = $this->resolvePasskeyToken();
-        if ($tokenUid !== null && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+        if ($tokenUid > 0 && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $this->getLogger()->info('FE passkey token auth accepted', [
                 'fe_user_uid' => $tokenUid,
             ]);
@@ -274,27 +274,30 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
      * Returns the fe_user UID if a valid token is found, null otherwise.
      * The token is consumed (deleted) on use to prevent replay.
      */
-    private function resolvePasskeyToken(): ?int
+    /**
+     * @return int 0 = no valid token found
+     */
+    private function resolvePasskeyToken(): int
     {
         $rawUident = $this->login['uident'] ?? '';
         $uident = \is_string($rawUident) ? $rawUident : '';
         if ($uident === '' || $uident[0] !== '{') {
-            return null;
+            return 0;
         }
 
         try {
             $data = \json_decode($uident, true, 8, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            return null;
+            return 0;
         }
 
         if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey_token') {
-            return null;
+            return 0;
         }
 
         $token = $data['token'] ?? '';
         if (!\is_string($token) || $token === '') {
-            return null;
+            return 0;
         }
 
         try {
@@ -305,7 +308,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $feUserUid = $cache->get($cacheKey);
             if ($feUserUid === false) {
                 $this->getLogger()->warning('FE passkey token not found or expired');
-                return null;
+                return 0;
             }
 
             // Do NOT remove the token here — authUser() runs on a DIFFERENT
@@ -313,12 +316,12 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // ensures automatic expiry. The token is consumed after authUser().
 
             $uid = \is_numeric($feUserUid) ? (int) $feUserUid : 0;
-            return $uid > 0 ? $uid : null;
+            return $uid;
         } catch (Throwable $e) {
             $this->getLogger()->warning('FE passkey token resolution failed', [
                 'error' => $e->getMessage(),
             ]);
-            return null;
+            return 0;
         }
     }
 
@@ -334,7 +337,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     {
         if ($this->passkeyPayload !== false) {
             // Token-authenticated payloads are handled by resolvePasskeyToken()
-            if (isset($this->passkeyPayload['_token_authenticated'])) {
+            if (\is_array($this->passkeyPayload) && \array_key_exists('_token_authenticated', $this->passkeyPayload)) {
                 return null;
             }
 
