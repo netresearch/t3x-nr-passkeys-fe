@@ -2,7 +2,7 @@ name: nr-passkeys-fe
 type: typo3
 docroot: ""
 no_project_mount: true
-php_version: "8.3"
+php_version: "8.5"
 composer_version: "2"
 nodejs_version: "20"
 webserver_type: apache-fpm
@@ -14,7 +14,7 @@ web_environment:
   - TYPO3_CONTEXT=Development
 database:
   type: mariadb
-  version: "10.11"
+  version: "11.4"
 additional_hostnames:
     - docs.nr-passkeys-fe
     - v13.nr-passkeys-fe

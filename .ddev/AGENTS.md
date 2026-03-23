@@ -6,14 +6,14 @@
 ## Overview
 DDEV local development environment for **EXT:nr_passkeys_fe** (TYPO3 frontend passkey authentication).
 Supports TYPO3 v13.4 LTS and v14.x. Requires the sibling BE extension (`t3x-nr-passkeys-be/main`)
-mounted as a path repository. Uses **PHP 8.3**, **MariaDB 10.11**, and **NodeJS 20** (for Vitest JS tests).
+mounted as a path repository. Uses **PHP 8.5**, **MariaDB 11.4**, and **NodeJS 20** (for Vitest JS tests).
 <!-- AGENTS-GENERATED:END overview -->
 
 <!-- AGENTS-GENERATED:START filemap -->
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `config.yaml` | Main DDEV configuration (PHP 8.3, MariaDB 10.11, NodeJS 20) |
+| `config.yaml` | Main DDEV configuration (PHP 8.5, MariaDB 11.4, NodeJS 20) |
 | `docker-compose.web.yaml` | Web service: extension mounts, TYPO3 env vars, named volumes |
 | `web-build/Dockerfile` | Custom image: PCOV, landing page, stub version dirs |
 | `commands/host/docs` | Host command: render RST documentation via Docker |
