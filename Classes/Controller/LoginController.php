@@ -231,52 +231,6 @@ final readonly class LoginController
         }
     }
 
-    /**
-     * Establish a real frontend login session for the given fe_user UID.
-     *
-     * Uses FrontendUserAuthentication::createUserSession() to promote the
-     * anonymous session to an authenticated user session. This makes the
-     * login persist across page requests without needing the auth service chain.
-     */
-    private function triggerFeLogin(ServerRequestInterface $request, int $feUserUid): void
-    {
-        $feUserAuth = $request->getAttribute('frontend.user');
-        if (!$feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
-            $this->logger->warning('FE passkey login: frontend.user not available in request attributes');
-            return;
-        }
-
-        // Fetch the full fe_users record (required by createUserSession)
-        $userRecord = $this->userLookupService->findFeUserByUid($feUserUid);
-        if ($userRecord === null) {
-            $this->logger->warning('FE passkey login: fe_user not found', ['uid' => $feUserUid]);
-            return;
-        }
-
-        // Build a full user record array as TYPO3 expects
-        $connection = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-            \TYPO3\CMS\Core\Database\ConnectionPool::class,
-        )->getConnectionForTable('fe_users');
-        $fullRecord = $connection->select(['*'], 'fe_users', ['uid' => $feUserUid])->fetchAssociative();
-
-        if (!\is_array($fullRecord)) {
-            $this->logger->warning('FE passkey login: could not fetch full fe_user record', ['uid' => $feUserUid]);
-            return;
-        }
-
-        // Establish the session
-        $feUserAuth->createUserSession($fullRecord);
-        $feUserAuth->user = $fullRecord;
-
-        // Set passkey-authenticated flag on the session
-        $feUserAuth->setKey('ses', 'nr_passkeys_fe_passkey_authenticated', true);
-        $feUserAuth->storeSessionData();
-
-        // Update the Context aspect so downstream code sees the logged-in user
-        $context = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Context\Context::class);
-        $context->setAspect('frontend.user', $feUserAuth->createUserAspect());
-    }
-
     private function findFeUserUid(string $username): ?int
     {
         return $this->userLookupService->findFeUserUidByUsername($username);

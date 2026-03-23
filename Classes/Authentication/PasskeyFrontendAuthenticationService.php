@@ -54,7 +54,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     /**
      * Decoded passkey payload from uident, cached per request.
      *
-     * @var array{assertion: string, challengeToken: string}|null|false false = not yet parsed
+     * @var array{assertion: string, challengeToken: string}|array{_token_authenticated: true}|null|false false = not yet parsed
      */
     private array|false|null $passkeyPayload = false;
 
@@ -140,7 +140,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // (TYPO3 creates new instances via makeInstanceService), so we cannot
         // rely on instance properties set in getUser().
         $tokenUid = $this->resolvePasskeyToken();
-        if ($tokenUid !== null && $tokenUid === (int) ($user['uid'] ?? 0)) {
+        if ($tokenUid !== null && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $this->getLogger()->info('FE passkey token auth accepted', [
                 'fe_user_uid' => $tokenUid,
             ]);
@@ -149,7 +149,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             try {
                 $rawUident = $this->login['uident'] ?? '';
                 $data = \json_decode(\is_string($rawUident) ? $rawUident : '', true);
-                $token = $data['token'] ?? '';
+                $token = \is_array($data) ? ($data['token'] ?? '') : '';
                 if (\is_string($token) && $token !== '') {
                     GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
                         ->getCache('nr_passkeys_fe_nonce')
@@ -312,7 +312,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // service instance and needs to read the same token. The 120s TTL
             // ensures automatic expiry. The token is consumed after authUser().
 
-            $uid = (int) $feUserUid;
+            $uid = \is_numeric($feUserUid) ? (int) $feUserUid : 0;
             return $uid > 0 ? $uid : null;
         } catch (Throwable $e) {
             $this->getLogger()->warning('FE passkey token resolution failed', [
@@ -333,7 +333,15 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     private function getPasskeyPayload(): ?array
     {
         if ($this->passkeyPayload !== false) {
-            return $this->passkeyPayload;
+            // Token-authenticated payloads are handled by resolvePasskeyToken()
+            if (isset($this->passkeyPayload['_token_authenticated'])) {
+                return null;
+            }
+
+            /** @var array{assertion: string, challengeToken: string}|null */
+            $cached = $this->passkeyPayload;
+
+            return $cached;
         }
 
         $this->passkeyPayload = null;
