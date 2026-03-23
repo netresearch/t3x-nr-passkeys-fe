@@ -1,6 +1,6 @@
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
-<!-- Last updated: 2026-03-15 | Last verified: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 | Last verified: 2026-03-23 -->
 
 # AGENTS.md
 
@@ -12,7 +12,7 @@
 Passkeys. Supports TouchID, FaceID, YubiKey, Windows Hello for frontend users (``fe_users``).
 Includes felogin integration, self-service management, recovery codes, per-site + per-group
 enforcement (Off → Encourage → Required → Enforced), post-login enrollment interstitial,
-backend admin module, and 8 PSR-14 events.
+backend admin module, and 7 PSR-14 events.
 
 Requires ``netresearch/nr-passkeys-be`` ^0.6 as a Composer dependency (reuses WebAuthn
 ceremonies, challenge service, rate limiter). See ADR-001.
@@ -63,22 +63,22 @@ Classes/                       -> PHP source (PSR-4: Netresearch\NrPasskeysFe\)
   Domain/Dto/                   -> Typed DTOs
   Domain/Enum/                  -> RecoveryMethod enum
   Domain/Model/                 -> FrontendCredential, RecoveryCode (plain PHP)
-  Event/                        -> 8 PSR-14 event classes
+  Event/                        -> 7 PSR-14 event classes
   EventListener/                -> felogin integration, encourage banner
   Form/Element/                 -> PasskeyFeInfoElement (TCA read-only)
   Middleware/                   -> PasskeyPublicRouteResolver, PasskeyEnrollmentInterstitial
   Service/                      -> FrontendWebAuthnService, SiteConfigurationService,
                                    FrontendCredentialRepository, FrontendEnforcementService,
                                    RecoveryCodeService, PasskeyEnrollmentService,
-                                   FrontendAdoptionStatsService
+                                   FrontendAdoptionStatsService, FrontendUserLookupService
 Build/                         -> Tooling configuration (NOT .Build/ which is composer output)
 Configuration/                 -> TYPO3 config (TCA, FlexForms, Services.yaml, TypoScript,
                                    RequestMiddlewares, JavaScriptModules)
 Documentation/                 -> TYPO3 RST documentation (docs.typo3.org format)
   Adr/                          -> 12 Architecture Decision Records
 Resources/Private/             -> Fluid templates (Login, Enrollment, Management, AdminModule)
-Resources/Public/JavaScript/   -> 7 JS modules (Login, Enrollment, Management, Recovery,
-                                   RecoveryCodes, Banner, FeAdmin)
+Resources/Public/JavaScript/   -> 8 JS modules (Login, Enrollment, Management, Recovery,
+                                   RecoveryCodes, Banner, FeAdmin, Utils)
 Tests/Unit/                    -> Unit tests (PHPUnit)
 Tests/Functional/              -> Functional tests (require MySQL, CI only)
 Tests/Fuzz/                    -> Fuzz tests (property-based)
@@ -117,6 +117,7 @@ Makefile                       -> make up, make ci, make help
 | Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together |
 | Adding admin API endpoint | Add to eID dispatcher routing, document in DeveloperGuide/Api.rst |
 | New PSR-14 event | Add to `Classes/Event/`, dispatch in relevant service/controller |
+| Passkey/recovery login via eID | eID verifies, returns token, JS submits token via felogin form, auth service reads token from cache |
 
 ## Boundaries
 

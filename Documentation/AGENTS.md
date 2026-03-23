@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Documentation/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # Documentation/ AGENTS.md
 
@@ -33,7 +33,7 @@ Documentation/
     UserManagement.rst               -> Admin credential management
   DeveloperGuide/
     Index.rst                        -> Architecture overview + toctree
-    Events.rst                       -> PSR-14 events reference (all 8 events)
+    Events.rst                       -> PSR-14 events reference (all 7 events)
     ExtensionPoints.rst              -> Templates, services, JS overrides
     Api.rst                          -> eID API reference (all endpoints)
   Security/

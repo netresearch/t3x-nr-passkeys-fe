@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Tests/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # Tests/ AGENTS.md
 
@@ -59,6 +59,10 @@ composer ci:mutation
 - Use `dg/bypass-finals` for mocking final classes
 - **Never** share a service/repository instance across tests
   (each test creates its own instance via `setUp()`)
+- Auth service tests (and any test using cache-based token flow) must register a
+  `CacheManager` stub in `setUp()` before instantiating the service
+- `getUser()` and `authUser()` run on **separate** service instances -- tests must
+  account for this (create two instances or test each method independently)
 - Data providers: use `#[DataProvider]` attribute (PHPUnit 10+)
 
 ### Functional Tests

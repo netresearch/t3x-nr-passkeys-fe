@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Classes/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # Classes/ AGENTS.md
 
@@ -28,7 +28,7 @@ Domain/
   Enum/RecoveryMethod                    -> Recovery method enum
   Model/FrontendCredential               -> Credential entity (plain PHP)
   Model/RecoveryCode                     -> Recovery code entity (plain PHP)
-Event/                                   -> 8 PSR-14 event classes (see Events.rst)
+Event/                                   -> 7 PSR-14 event classes (see Events.rst)
 EventListener/                           -> felogin integration, encourage banner
 Form/Element/PasskeyFeInfoElement        -> TCA read-only display in fe_users records
 Middleware/
@@ -42,6 +42,7 @@ Service/
   RecoveryCodeService                    -> Recovery code generation + verification
   PasskeyEnrollmentService               -> Orchestrates enrollment ceremony + saves credential
   FrontendAdoptionStatsService           -> Statistics for backend admin dashboard
+  FrontendUserLookupService              -> fe_users table lookup (extracted from credential repo)
 ```
 
 ## PHP Conventions
@@ -74,6 +75,16 @@ $event = $this->eventDispatcher->dispatch(
     new AfterPasskeyEnrollmentEvent($feUserUid, $credential, $siteIdentifier)
 );
 ```
+
+### Token-based auth flow (eID → felogin)
+The eID endpoint (LoginController/RecoveryController) verifies passkey/recovery credentials
+and stores a short-lived token in the TYPO3 cache. JavaScript submits this token via the
+standard felogin form as `_token_authenticated` payload. The auth service reads the token
+from cache during `getUser()` / `authUser()`.
+
+**Critical:** `getUser()` and `authUser()` run on **DIFFERENT** service instances.
+Do not rely on instance properties set in `getUser()` during `authUser()`. Both methods
+must independently parse the passkey payload from `uident`.
 
 ### Recovery code verification (constant-time)
 ```php

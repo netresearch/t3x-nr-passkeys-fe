@@ -1,4 +1,4 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-15 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-23 -->
 
 # AGENTS.md — .ddev
 
@@ -22,6 +22,7 @@ mounted as a path repository. Uses **PHP 8.3**, **MariaDB 10.11**, and **NodeJS 
 | `commands/web/install-v14` | Container command: install TYPO3 14.x with both extensions |
 | `commands/web/install-all` | Container command: install v13 + v14 in sequence |
 | `data/demo-pages.sql` | SQL fixture: demo pages, FE user (demo/demo), FE group |
+| `data/fix-felogin-flexform.php` | PHP script: fixes felogin FlexForm data after import |
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START commands -->

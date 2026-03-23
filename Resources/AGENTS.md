@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Resources/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # Resources/ AGENTS.md
 
@@ -40,6 +40,7 @@ Resources/
       PasskeyManagement.js     -> Self-service management panel
       PasskeyRecovery.js       -> Recovery code login form
       PasskeyRecoveryCodes.js  -> Recovery code generation display
+      PasskeyUtils.js          -> Shared utilities (base64url, DOM helpers, buildEidUrl)
 ```
 
 ## Template Conventions
@@ -63,6 +64,12 @@ All JavaScript modules follow these rules:
 - Loaded by TYPO3's `AssetCollector` or `PageRenderer::loadJavaScriptModule()`
 - All WebAuthn calls wrapped in try/catch with user-friendly error display
 - No global variable pollution (IIFEs or ES modules only)
+
+### URL construction
+All eID URL construction uses the shared `buildEidUrl()` helper from `PasskeyUtils.js`:
+```js
+var url = NrPasskeysFe.buildEidUrl(eidUrl, {action: 'options'});
+```
 
 ### WebAuthn API usage pattern
 ```js

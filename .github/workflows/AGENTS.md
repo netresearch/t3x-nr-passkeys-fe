@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to .github/workflows/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # .github/workflows/ AGENTS.md
 
@@ -36,7 +36,7 @@ Steps in order:
 9. Architecture tests (part of unit suite)
 
 ### ter-publish.yml
-Triggered on push of tags matching `v*`.
+Triggered on `release: published` (not tag push).
 
 Steps:
 1. Validate tag matches `ext_emconf.php` version

@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Configuration/ -->
-<!-- Last updated: 2026-03-15 -->
+<!-- Last updated: 2026-03-23 -->
 
 # Configuration/ AGENTS.md
 
@@ -15,7 +15,7 @@ Configuration/
     LoginPlugin.xml            -> FlexForm for NrPasskeysFe:Login plugin
     ManagementPlugin.xml       -> FlexForm for NrPasskeysFe:Management plugin
   Icons.php                    -> Icon registry (SVG icons)
-  JavaScriptModules.php        -> ES module import map (7 modules)
+  JavaScriptModules.php        -> ES module import map (8 modules)
   RequestMiddlewares.php       -> PSR-15 middleware registration
   Services.yaml                -> Symfony DI wiring
   TCA/
