@@ -85,7 +85,11 @@ or ``enforced``):
 Grace period tracking
 ---------------------
 
-Grace periods are stored per user in the
-``tx_nrpasskeysfe_credential`` table (first login timestamp). The
-enforcement middleware computes the expiry from
-``firstLoginWithoutPasskey + gracePeriodDays``.
+Grace periods are tracked per user in the ``fe_users`` table via the
+``passkey_grace_period_start`` column (unix timestamp of the first login
+without a passkey after enforcement was enabled). The enforcement
+middleware computes the expiry from
+``passkey_grace_period_start + gracePeriodDays``.
+
+Per-group grace period days are stored in ``fe_groups.passkey_grace_period_days``.
+The shortest grace period across all applicable groups wins.

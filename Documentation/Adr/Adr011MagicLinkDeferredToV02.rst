@@ -42,8 +42,8 @@ v0.2 scope:
 - ``MagicLinkRequestedEvent`` for custom email rendering
 - Site configuration for enabling/disabling magic link
 
-The service interface and event class will be defined in v0.1 (as part of the
-architecture), but the implementation will be stubbed / throw ``NotImplementedException``.
+The event class (``MagicLinkRequestedEvent``) and service are deferred entirely to
+v0.2. They are **not** shipped in v0.1 to avoid shipping dead code.
 
 Consequences
 ============

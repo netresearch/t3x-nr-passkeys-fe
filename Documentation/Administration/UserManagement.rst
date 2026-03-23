@@ -56,16 +56,16 @@ In an emergency, you can revoke all passkeys for a user directly:
 
     -- View credentials
     SELECT * FROM tx_nrpasskeysfe_credential
-    WHERE fe_user_uid = <uid>;
+    WHERE fe_user = <uid>;
 
     -- Revoke all credentials for a user
     UPDATE tx_nrpasskeysfe_credential
     SET deleted = 1
-    WHERE fe_user_uid = <uid>;
+    WHERE fe_user = <uid>;
 
     -- Or hard-delete
     DELETE FROM tx_nrpasskeysfe_credential
-    WHERE fe_user_uid = <uid>;
+    WHERE fe_user = <uid>;
 
 ..  warning::
 

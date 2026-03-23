@@ -79,9 +79,9 @@ Features
 
     ..  card:: PSR-14 events
 
-        Eight events for extensibility: before/after authentication,
+        Seven events for extensibility: before/after authentication,
         before/after enrollment, enforcement resolved, passkey removed,
-        recovery codes generated, magic link requested.
+        recovery codes generated.
 
     ..  card:: Security hardened
 

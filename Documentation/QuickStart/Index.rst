@@ -9,8 +9,24 @@ Quick Start
 This guide gets you from installation to your first passkey login in
 five minutes.
 
-Prerequisites
+DDEV demo (fastest option)
+===========================
+
+If you have DDEV installed, get a fully working demo in one command:
+
+..  code-block:: bash
+
+    make up
+
+This starts DDEV, installs TYPO3 v13 and v14, creates demo pages with
+all plugins preconfigured, and renders documentation. Visit
+``https://nr-passkeys-fe.ddev.site/`` when complete.
+
+Manual setup
 =============
+
+Prerequisites
+-------------
 
 - TYPO3 13.4 LTS or 14.1+ with HTTPS
 - Composer-based installation

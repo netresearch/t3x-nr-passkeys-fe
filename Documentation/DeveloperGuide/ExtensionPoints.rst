@@ -96,3 +96,32 @@ import map in ``Configuration/JavaScriptModules.php``.
 
     Overriding JavaScript modules is an advanced technique. Prefer
     CSS overrides and template overrides for UI customization.
+
+PasskeyUtils.js shared module
+-------------------------------
+
+All frontend JavaScript modules share a common utility module,
+``PasskeyUtils.js``, exposed as ``window.NrPasskeysFe``. It provides:
+
+- **base64url encoding/decoding** -- ``base64urlToBuffer()`` and
+  ``bufferToBase64url()`` for converting between WebAuthn binary
+  formats and JSON-safe strings.
+- **DOM helpers** -- ``showError()``, ``showStatus()``,
+  ``showLoading()`` for consistent UI state management across the
+  login, enrollment, management, and recovery modules.
+- **URL validation** -- Shared URL handling utilities.
+
+``PasskeyUtils.js`` is loaded before the module-specific scripts via
+``f:asset.script`` in Fluid templates. If you override templates, ensure
+``PasskeyUtils.js`` is still included before other passkey scripts.
+
+The eight JavaScript modules are:
+
+- ``PasskeyLogin.js`` -- Login form and WebAuthn assertion flow
+- ``PasskeyEnrollment.js`` -- Enrollment ceremony
+- ``PasskeyManagement.js`` -- Credential list, rename, remove
+- ``PasskeyRecovery.js`` -- Recovery code login form
+- ``PasskeyRecoveryCodes.js`` -- Recovery code generation UI
+- ``PasskeyBanner.js`` -- Encourage-level dismissible banner
+- ``PasskeyFeAdmin.js`` -- Backend admin module
+- ``PasskeyUtils.js`` -- Shared utilities (described above)

@@ -5,7 +5,7 @@
 PSR-14 Events
 =============
 
-The extension dispatches eight PSR-14 events that third-party
+The extension dispatches seven PSR-14 events that third-party
 extensions can listen to. All events are in the
 ``Netresearch\NrPasskeysFe\Event`` namespace.
 
@@ -157,27 +157,7 @@ The level is a string (``off``, ``encourage``, ``required``,
 Use cases: custom enforcement overrides (e.g. exempting staff users,
 IP-based enforcement).
 
-MagicLinkRequestedEvent
-------------------------
-
-Dispatched when a user requests a magic-link email. The event does
-**not** include the token value (it is a security secret).
-
-..  code-block:: php
-
-    final readonly class MagicLinkRequestedEvent
-    {
-        public function __construct(
-            public readonly int $feUserUid,
-            public readonly string $email,
-        ) {}
-    }
-
 ..  note::
 
-    Magic link login is deferred to v0.2 (see ADR-011). This event
-    is emitted by the stub handler. Register a listener to implement
-    the actual email sending when v0.2 ships.
-
-Use cases: custom magic link email sending, rate limiting magic link
-requests.
+    Magic link login (including ``MagicLinkRequestedEvent``) is deferred
+    to v0.2. See :ref:`ADR-011 <adr-011>`.

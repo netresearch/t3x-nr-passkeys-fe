@@ -48,9 +48,9 @@ Features
   statistics, manage credentials, and configure enforcement from
   :guilabel:`Admin Tools > Passkey Management FE`.
 
-- **PSR-14 events** -- Eight events for extensibility: before/after
+- **PSR-14 events** -- Seven events for extensibility: before/after
   authentication, before/after enrollment, enforcement level resolved,
-  passkey removed, recovery codes generated, magic link requested.
+  passkey removed, recovery codes generated.
 
 - **Security hardened** -- HMAC-signed challenges, nonce replay
   protection, per-IP rate limiting, and account lockout (shared with
@@ -70,7 +70,6 @@ Requirements
 Known limitations
 -----------------
 
-- Magic link login is deferred to v0.2 (ADR-011). The
-  ``MagicLinkRequestedEvent`` is emitted but no email is sent
-  by default.
+- Magic link login is deferred to v0.2 (ADR-011). The event class
+  and service will be added in v0.2.
 - No admin-initiated passkey registration on behalf of users.

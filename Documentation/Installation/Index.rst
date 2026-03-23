@@ -52,10 +52,14 @@ Or use the CLI:
 Database schema update
 ======================
 
-The extension adds two tables:
+The extension adds two tables and extends two core tables:
 
 - ``tx_nrpasskeysfe_credential`` -- Frontend passkey credentials
 - ``tx_nrpasskeysfe_recovery_code`` -- Bcrypt-hashed recovery codes
+- ``fe_users`` -- Adds ``passkey_grace_period_start`` and
+  ``passkey_nudge_until`` columns for enforcement tracking
+- ``fe_groups`` -- Adds ``passkey_enforcement`` and
+  ``passkey_grace_period_days`` columns for per-group enforcement
 
 After activation, run the database schema update:
 

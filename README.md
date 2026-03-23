@@ -1,4 +1,5 @@
 [![CI](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml)
+[![PHPStan Level 10](https://img.shields.io/badge/PHPStan-Level%2010-brightgreen)](https://phpstan.org/)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)
 [![codecov](https://codecov.io/gh/netresearch/t3x-nr-passkeys-fe/graph/badge.svg)](https://codecov.io/gh/netresearch/t3x-nr-passkeys-fe)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/netresearch/t3x-nr-passkeys-fe/badge)](https://scorecard.dev/viewer/?uri=github.com/netresearch/t3x-nr-passkeys-fe)
@@ -21,7 +22,7 @@ required.
 - **Per-group enforcement** -- Four levels: Off, Encourage, Required, Enforced -- with configurable grace periods
 - **Post-login interstitial** -- Enrollment prompt shown to users without a passkey when enforcement is active
 - **Backend admin module** -- Adoption statistics, credential management, enforcement settings
-- **8 PSR-14 events** -- Before/after authentication, before/after enrollment, enforcement resolved, passkey removed, recovery codes generated, magic link requested
+- **7 PSR-14 events** -- Before/after authentication, before/after enrollment, enforcement resolved, passkey removed, recovery codes generated
 - **Security hardened** -- HMAC-signed challenges, nonce replay protection, per-IP rate limiting, account lockout
 - **Vanilla JavaScript** -- Zero runtime npm dependencies; native WebAuthn browser API only
 
@@ -31,6 +32,16 @@ required.
 - TYPO3 v13.4 LTS or v14.1+
 - `netresearch/nr-passkeys-be` ^0.6 (installed automatically)
 - HTTPS (required by WebAuthn; `localhost` works for development)
+
+### DDEV Quick Start
+
+For a working demo environment with preconfigured pages and users:
+
+```bash
+make up
+```
+
+Visit `https://nr-passkeys-fe.ddev.site/` after setup.
 
 ## Installation
 
