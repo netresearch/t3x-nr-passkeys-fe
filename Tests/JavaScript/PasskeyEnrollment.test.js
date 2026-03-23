@@ -123,18 +123,20 @@ describe('PasskeyEnrollment — registrationOptions URL', () => {
     });
 
     it('builds correct registrationOptions URL from eidUrl', () => {
-        const eidUrl = '/index.php';
-        const optionsUrl = eidUrl + '?eID=nr_passkeys_fe&action=registrationOptions';
-        const verifyUrl = eidUrl + '?eID=nr_passkeys_fe&action=registrationVerify';
+        const U = window.NrPasskeysFe;
+        const eidUrl = '/?eID=nr_passkeys_fe';
+        const optionsUrl = U.buildEidUrl(eidUrl, {action: 'registrationOptions'});
+        const verifyUrl = U.buildEidUrl(eidUrl, {action: 'registrationVerify'});
 
         expect(optionsUrl).toContain('action=registrationOptions');
         expect(verifyUrl).toContain('action=registrationVerify');
     });
 
     it('uses explicit registerOptionsUrl when provided', () => {
+        const U = window.NrPasskeysFe;
         const container = document.createElement('div');
         container.setAttribute('data-nr-passkeys-fe', 'enrollment');
-        container.dataset.eidUrl = '/index.php';
+        container.dataset.eidUrl = '/?eID=nr_passkeys_fe';
         container.dataset.registerOptionsUrl = '/custom/options';
         container.dataset.registerVerifyUrl = '/custom/verify';
         document.body.appendChild(container);
@@ -143,8 +145,8 @@ describe('PasskeyEnrollment — registrationOptions URL', () => {
         const registerOptionsUrl = container.dataset.registerOptionsUrl;
         const registerVerifyUrl = container.dataset.registerVerifyUrl;
 
-        const optionsUrl = registerOptionsUrl || (eidUrl + '?eID=nr_passkeys_fe&action=registrationOptions');
-        const verifyUrl = registerVerifyUrl || (eidUrl + '?eID=nr_passkeys_fe&action=registrationVerify');
+        const optionsUrl = registerOptionsUrl || U.buildEidUrl(eidUrl, {action: 'registrationOptions'});
+        const verifyUrl = registerVerifyUrl || U.buildEidUrl(eidUrl, {action: 'registrationVerify'});
 
         expect(optionsUrl).toBe('/custom/options');
         expect(verifyUrl).toBe('/custom/verify');

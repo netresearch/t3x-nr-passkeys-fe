@@ -197,8 +197,18 @@ final readonly class LoginController
 
             $feUserUid = $result['feUserUid'];
 
-            // Establish FE session via TYPO3 TSFE mechanism
-            $this->triggerFeLogin($request, $feUserUid);
+            // Store verified result in a short-lived cache token.
+            // The JS will submit this token via the felogin form so the auth
+            // service can authenticate without needing site context.
+            $token = \bin2hex(\random_bytes(32));
+            $cache = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+                ->getCache('nr_passkeys_fe_nonce');
+            $cache->set(
+                'passkey_login_' . $token,
+                (string) $feUserUid,
+                [],
+                120, // 2 minutes TTL
+            );
 
             $this->logger->info('FE passkey login successful via eID endpoint', [
                 'fe_user_uid' => $feUserUid,
@@ -207,6 +217,7 @@ final readonly class LoginController
             return new JsonResponse([
                 'status' => 'ok',
                 'feUserUid' => $feUserUid,
+                'loginToken' => $token,
             ]);
         } catch (RuntimeException $e) {
             $this->rateLimiterService->recordFailure('', $ip);
@@ -221,24 +232,49 @@ final readonly class LoginController
     }
 
     /**
-     * Trigger a frontend login session for the given fe_user UID.
+     * Establish a real frontend login session for the given fe_user UID.
      *
-     * Sets the session key that marks the user as passkey-authenticated.
-     * Full session establishment is handled by TYPO3's auth service chain
-     * (PasskeyFrontendAuthenticationService) on the next page request.
-     * This eID endpoint only sets a session flag so the FE JavaScript
-     * can redirect to the post-login page.
+     * Uses FrontendUserAuthentication::createUserSession() to promote the
+     * anonymous session to an authenticated user session. This makes the
+     * login persist across page requests without needing the auth service chain.
      */
     private function triggerFeLogin(ServerRequestInterface $request, int $feUserUid): void
     {
         $feUserAuth = $request->getAttribute('frontend.user');
-        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
-            $feUserAuth->setKey('ses', 'nr_passkeys_fe_passkey_authenticated', true);
-            $feUserAuth->setKey('ses', 'nr_passkeys_fe_pending_uid', $feUserUid);
-            $feUserAuth->storeSessionData();
-        } else {
+        if (!$feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
             $this->logger->warning('FE passkey login: frontend.user not available in request attributes');
+            return;
         }
+
+        // Fetch the full fe_users record (required by createUserSession)
+        $userRecord = $this->userLookupService->findFeUserByUid($feUserUid);
+        if ($userRecord === null) {
+            $this->logger->warning('FE passkey login: fe_user not found', ['uid' => $feUserUid]);
+            return;
+        }
+
+        // Build a full user record array as TYPO3 expects
+        $connection = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
+            \TYPO3\CMS\Core\Database\ConnectionPool::class,
+        )->getConnectionForTable('fe_users');
+        $fullRecord = $connection->select(['*'], 'fe_users', ['uid' => $feUserUid])->fetchAssociative();
+
+        if (!\is_array($fullRecord)) {
+            $this->logger->warning('FE passkey login: could not fetch full fe_user record', ['uid' => $feUserUid]);
+            return;
+        }
+
+        // Establish the session
+        $feUserAuth->createUserSession($fullRecord);
+        $feUserAuth->user = $fullRecord;
+
+        // Set passkey-authenticated flag on the session
+        $feUserAuth->setKey('ses', 'nr_passkeys_fe_passkey_authenticated', true);
+        $feUserAuth->storeSessionData();
+
+        // Update the Context aspect so downstream code sees the logged-in user
+        $context = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Context\Context::class);
+        $context->setAspect('frontend.user', $feUserAuth->createUserAspect());
     }
 
     private function findFeUserUid(string $username): ?int

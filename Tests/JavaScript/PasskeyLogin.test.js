@@ -163,6 +163,25 @@ describe('NrPasskeysFe — DOM helpers', () => {
         expect(window.NrPasskeysFe.isSameOrigin('https://evil.example.com/redirect')).toBe(false);
     });
 
+    it('buildEidUrl appends action parameter to eID URL', () => {
+        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'loginOptions'});
+        expect(result).toContain('eID=nr_passkeys_fe');
+        expect(result).toContain('action=loginOptions');
+    });
+
+    it('buildEidUrl does not duplicate query string', () => {
+        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'test'});
+        // Should only have one '?' in the URL
+        const questionMarks = (result.match(/\?/g) || []).length;
+        expect(questionMarks).toBe(1);
+    });
+
+    it('buildEidUrl handles multiple parameters', () => {
+        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'test', foo: 'bar'});
+        expect(result).toContain('action=test');
+        expect(result).toContain('foo=bar');
+    });
+
     it('showError handles null element gracefully', () => {
         // Should not throw
         window.NrPasskeysFe.showError(null, 'msg');
@@ -227,10 +246,11 @@ describe('PasskeyLogin — fetch URL construction', () => {
     });
 
     it('loginOptions URL contains eID and action parameters', () => {
-        // Verify the URL patterns the module would use
-        const eidUrl = '/index.php';
-        const optionsUrl = eidUrl + '?eID=nr_passkeys_fe&action=loginOptions';
-        const verifyUrl = eidUrl + '?eID=nr_passkeys_fe&action=loginVerify';
+        // Verify the URL patterns the module would use via buildEidUrl
+        const U = window.NrPasskeysFe;
+        const eidUrl = '/?eID=nr_passkeys_fe';
+        const optionsUrl = U.buildEidUrl(eidUrl, {action: 'loginOptions'});
+        const verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
 
         expect(optionsUrl).toContain('eID=nr_passkeys_fe');
         expect(optionsUrl).toContain('action=loginOptions');

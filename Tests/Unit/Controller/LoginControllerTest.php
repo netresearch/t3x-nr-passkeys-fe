@@ -24,6 +24,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[CoversClass(LoginController::class)]
 final class LoginControllerTest extends TestCase
@@ -54,6 +55,12 @@ final class LoginControllerTest extends TestCase
 
         $this->challengeService->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeService->method('createChallengeToken')->willReturn('test-challenge-token');
+
+        // Register a cache stub for the login token
+        $cacheStub = $this->createStub(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheManagerStub->method('getCache')->willReturn($cacheStub);
+        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManagerStub);
 
         $this->subject = new LoginController(
             $this->webAuthnService,

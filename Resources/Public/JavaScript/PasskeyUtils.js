@@ -131,4 +131,18 @@
     try { return new URL(url, window.location.origin).origin === window.location.origin; }
     catch (e) { return false; }
   };
+
+  /**
+   * Build an eID URL with additional query parameters.
+   * @param {string} eidUrl - Base eID URL (e.g. "/?eID=nr_passkeys_fe")
+   * @param {Object} params - Additional parameters (e.g. {action: 'loginOptions'})
+   * @returns {string}
+   */
+  window.NrPasskeysFe.buildEidUrl = function(eidUrl, params) {
+    var url = new URL(eidUrl, window.location.origin);
+    Object.keys(params).forEach(function(key) {
+      url.searchParams.set(key, params[key]);
+    });
+    return url.toString();
+  };
 })();

@@ -104,7 +104,7 @@
     U.setLoading(true, submitBtn, btnText, btnLoading);
 
     try {
-      var verifyUrl = eidUrl + '?eID=nr_passkeys_fe&action=recoveryVerify';
+      var verifyUrl = U.buildEidUrl(eidUrl, {action: 'recoveryVerify'});
       var response = await fetch(verifyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,14 +114,27 @@
 
       var data = await response.json().catch(function () { return {}; });
 
-      if (response.ok && data.status === 'ok') {
-        U.showStatus(statusEl, 'Recovery code accepted. Redirecting...');
-        var redirect = data.redirectUrl;
-        if (redirect && U.isSameOrigin(redirect)) {
-          window.location.href = redirect;
-        } else {
-          window.location.reload();
+      if (response.ok && data.status === 'ok' && data.loginToken) {
+        // Submit token via felogin form to establish FE session
+        var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
+        if (feloginForm) {
+          var passField = feloginForm.querySelector('input[name="pass"]');
+          if (!passField) {
+            passField = document.createElement('input');
+            passField.type = 'hidden';
+            passField.name = 'pass';
+            feloginForm.appendChild(passField);
+          }
+          passField.value = JSON.stringify({ _type: 'passkey_token', token: data.loginToken });
+          var userField = feloginForm.querySelector('input[name="user"]');
+          if (userField) { userField.value = '__passkey__'; }
+          var logintypeField = feloginForm.querySelector('input[name="logintype"]');
+          if (logintypeField) { logintypeField.value = 'login'; }
+          HTMLFormElement.prototype.submit.call(feloginForm);
+          return;
         }
+        // Fallback: reload
+        window.location.reload();
         return;
       }
 

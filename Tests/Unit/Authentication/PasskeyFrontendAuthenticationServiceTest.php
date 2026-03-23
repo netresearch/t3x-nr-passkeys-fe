@@ -88,8 +88,13 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->method('verifyChallengeToken')
             ->willReturnArgument(0);
 
-        // Set up TYPO3_REQUEST so resolveSite() works
+        // Set up TYPO3_REQUEST with a site attribute so resolveSite() works
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\SiteInterface::class);
         $request = $this->createStub(ServerRequestInterface::class);
+        $request->method('getAttribute')->willReturnCallback(static function (string $name) use ($site) {
+            return $name === 'site' ? $site : null;
+        });
+        $request->method('getUri')->willReturn(new \TYPO3\CMS\Core\Http\Uri('https://example.com/'));
         $GLOBALS['TYPO3_REQUEST'] = $request;
 
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);

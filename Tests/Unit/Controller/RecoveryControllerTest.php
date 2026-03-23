@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(RecoveryController::class)]
@@ -37,6 +38,12 @@ final class RecoveryControllerTest extends TestCase
         $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
         $this->rateLimiterService = $this->createStub(RateLimiterService::class);
         $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
+
+        // Register a cache stub for the login token
+        $cacheStub = $this->createStub(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheManagerStub->method('getCache')->willReturn($cacheStub);
+        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManagerStub);
 
         $this->subject = new RecoveryController(
             $this->recoveryCodeService,

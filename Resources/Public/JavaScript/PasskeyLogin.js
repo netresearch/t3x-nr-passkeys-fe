@@ -246,7 +246,7 @@
 
     try {
       // Step 1: Fetch assertion options from eID
-      var optionsUrl = eidUrl + '&action=loginOptions';
+      var optionsUrl = U.buildEidUrl(eidUrl, {action: 'loginOptions'});
       var optionsResponse = await fetch(optionsUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -305,46 +305,12 @@
         },
       };
 
-      // Step 5: Submit via felogin form so TYPO3's auth chain establishes the session.
-      // Pack the assertion + challengeToken into the `pass` (uident) field as JSON.
-      // PasskeyFrontendAuthenticationService picks this up and verifies server-side.
+      // Step 5: Verify the assertion via eID endpoint (server-side WebAuthn verification).
+      // The eID has full site context and establishes the FE session.
+      // On success, redirect to the post-login page or reload.
       U.showStatus(statusEl, 'Verifying...');
       try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
-
-      var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
-      if (feloginForm) {
-        var passkeyPayload = JSON.stringify({
-          _type: 'passkey',
-          assertion: credentialResponse,
-          challengeToken: challengeToken,
-        });
-        // Set the pass (uident) field to the passkey payload
-        var passField = feloginForm.querySelector('input[name="pass"]');
-        if (!passField) {
-          passField = document.createElement('input');
-          passField.type = 'hidden';
-          passField.name = 'pass';
-          feloginForm.appendChild(passField);
-        }
-        passField.value = passkeyPayload;
-        // Set logintype
-        var logintypeField = feloginForm.querySelector('input[name="logintype"]');
-        if (logintypeField) {
-          logintypeField.value = 'login';
-        }
-        // Set a placeholder username — TYPO3 requires non-empty uname to enter
-        // the auth chain. The auth service resolves the actual user from the assertion.
-        var userField = feloginForm.querySelector('input[name="user"]');
-        if (userField) {
-          userField.value = '__passkey__';
-        }
-        // Use HTMLFormElement.prototype.submit to avoid shadowing by elements named "submit"
-        HTMLFormElement.prototype.submit.call(feloginForm);
-        return;
-      }
-
-      // Fallback: no felogin form available — use eID verify + reload
-      var verifyUrl = eidUrl + '&action=loginVerify';
+      var verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
       var verifyResponse = await fetch(verifyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -358,15 +324,32 @@
 
       var verifyData = await verifyResponse.json().catch(function () { return {}; });
 
-      if (verifyResponse.ok && verifyData.status === 'ok') {
+      if (verifyResponse.ok && verifyData.status === 'ok' && verifyData.loginToken) {
+        // Submit the login token via felogin form to establish a real FE session.
+        // The eID verified the assertion; the token proves it to the auth service.
+        var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
+        if (feloginForm) {
+          var passField = feloginForm.querySelector('input[name="pass"]');
+          if (!passField) {
+            passField = document.createElement('input');
+            passField.type = 'hidden';
+            passField.name = 'pass';
+            feloginForm.appendChild(passField);
+          }
+          passField.value = JSON.stringify({ _type: 'passkey_token', token: verifyData.loginToken });
+          var userField = feloginForm.querySelector('input[name="user"]');
+          if (userField) { userField.value = '__passkey__'; }
+          var logintypeField = feloginForm.querySelector('input[name="logintype"]');
+          if (logintypeField) { logintypeField.value = 'login'; }
+          try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
+          HTMLFormElement.prototype.submit.call(feloginForm);
+          return;
+        }
+
+        // No felogin form (standalone plugin) — just reload
         try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
         U.showStatus(statusEl, 'Authenticated! Redirecting...');
-        var redirect = verifyData.redirectUrl;
-        if (redirect && U.isSameOrigin(redirect)) {
-          window.location.href = redirect;
-        } else {
-          window.location.reload();
-        }
+        window.location.reload();
         return;
       }
 

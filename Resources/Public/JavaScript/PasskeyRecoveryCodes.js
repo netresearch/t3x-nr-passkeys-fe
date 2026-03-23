@@ -23,7 +23,7 @@
 
   function initContainer(container) {
     var eidUrl = container.dataset.eidUrl;
-    var generateUrl = container.dataset.generateUrl || (eidUrl + '?eID=nr_passkeys_fe&action=recoveryGenerate');
+    var generateUrl = container.dataset.generateUrl || U.buildEidUrl(eidUrl, {action: 'recoveryGenerate'});
 
     var downloadBtn = container.querySelector('[data-action="download-codes"]');
     var generateBtn = container.querySelector('[data-action="generate-codes"]');

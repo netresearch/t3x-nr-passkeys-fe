@@ -140,28 +140,22 @@ final readonly class RecoveryController
             'fe_user_uid' => $feUserUid,
         ]);
 
-        // Set session flag so the JS can redirect to post-login page
-        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_recovery_authenticated', true);
-        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_pending_uid', $feUserUid);
+        // Create a one-time login token (same mechanism as passkey login)
+        $token = \bin2hex(\random_bytes(32));
+        $cache = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+            ->getCache('nr_passkeys_fe_nonce');
+        $cache->set(
+            'passkey_login_' . $token,
+            (string) $feUserUid,
+            [],
+            120,
+        );
 
         return new JsonResponse([
             'status' => 'ok',
             'feUserUid' => $feUserUid,
+            'loginToken' => $token,
         ]);
-    }
-
-    /**
-     * Set a session key on the frontend user session.
-     */
-    private function setFeUserSessionKey(ServerRequestInterface $request, string $key, mixed $value): void
-    {
-        $feUserAuth = $request->getAttribute('frontend.user');
-        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
-            $feUserAuth->setKey('ses', $key, $value);
-            $feUserAuth->storeSessionData();
-        } else {
-            $this->logger->warning('FE recovery: frontend.user not available in request attributes');
-        }
     }
 
     private function findFeUserUid(string $username): ?int

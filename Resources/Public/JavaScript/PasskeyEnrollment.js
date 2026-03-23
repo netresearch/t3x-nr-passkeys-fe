@@ -36,8 +36,8 @@
       return;
     }
 
-    var optionsUrl = registerOptionsUrl || (eidUrl + '?eID=nr_passkeys_fe&action=registrationOptions');
-    var verifyUrl = registerVerifyUrl || (eidUrl + '?eID=nr_passkeys_fe&action=registrationVerify');
+    var optionsUrl = registerOptionsUrl || U.buildEidUrl(eidUrl, {action: 'registrationOptions'});
+    var verifyUrl = registerVerifyUrl || U.buildEidUrl(eidUrl, {action: 'registrationVerify'});
 
     var registerBtn = container.querySelector('[data-action="register-passkey"]');
     var labelInput = container.querySelector('[id*="enrollment"][id*="label"], [id*="enrollment-device-label"], [id*="new-label"]');

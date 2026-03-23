@@ -23,9 +23,9 @@
 
   function initContainer(container) {
     var eidUrl = container.dataset.eidUrl;
-    var listUrl = container.dataset.listUrl || (eidUrl + '?eID=nr_passkeys_fe&action=manageList');
-    var renameUrl = container.dataset.renameUrl || (eidUrl + '?eID=nr_passkeys_fe&action=manageRename');
-    var removeUrl = container.dataset.removeUrl || (eidUrl + '?eID=nr_passkeys_fe&action=manageRemove');
+    var listUrl = container.dataset.listUrl || U.buildEidUrl(eidUrl, {action: 'manageList'});
+    var renameUrl = container.dataset.renameUrl || U.buildEidUrl(eidUrl, {action: 'manageRename'});
+    var removeUrl = container.dataset.removeUrl || U.buildEidUrl(eidUrl, {action: 'manageRemove'});
 
     var listBody = container.querySelector('#nr-passkeys-fe-credential-body');
     var emptyEl = container.querySelector('.nr-passkeys-fe-management__empty');
