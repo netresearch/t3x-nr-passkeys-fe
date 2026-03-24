@@ -281,15 +281,26 @@ parse_args() {
                 EXTRA_TEST_OPTIONS="$2"
                 shift 2
                 ;;
+            --)
+                shift
+                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
+                break
+                ;;
             unit)
+                shift
+                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
                 run_unit_tests
                 exit 0
                 ;;
             functional)
+                shift
+                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
                 run_functional_tests
                 exit 0
                 ;;
             fuzz)
+                shift
+                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
                 info "Running fuzz tests..."
                 check_dependencies
                 "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.xml" --testsuite fuzz ${EXTRA_TEST_OPTIONS}
