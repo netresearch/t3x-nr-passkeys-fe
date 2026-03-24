@@ -81,6 +81,12 @@ parameters:
         -
             message: '#Call to deprecated method#'
             reportUnmatched: false
+        -
+            message: '#no request attribute .* configured#'
+            reportUnmatched: false
+        -
+            message: '#Short ternary operator is not allowed#'
+            reportUnmatched: false
 
 services:
     -
