@@ -823,6 +823,12 @@ parameters:
 			path: ../Classes/Service/FrontendEnforcementService.php
 
 		-
+			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus is invoked with named argument for parameter \$graceDays\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Service/FrontendEnforcementService.php
+
+		-
 			message: '#^Constructor of Netresearch\\NrPasskeysFe\\Domain\\Model\\FrontendCredential is invoked with named argument for parameter \$aaguid\.$#'
 			identifier: ergebnis.noNamedArgument
 			count: 1
