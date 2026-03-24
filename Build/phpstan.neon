@@ -18,9 +18,27 @@ parameters:
             identifier: method.notFound
             message: '#SiteInterface::getSettings#'
             reportUnmatched: false
-        # TYPO3 v13.4.0 AfterCacheableContentIsGeneratedEvent has different API than v13.4.27+
+        # TYPO3 v13 vs v14 compatibility: AfterCacheableContentIsGeneratedEvent has
+        # getContent()/setContent() only in v14+; v13 uses getController()->content.
+        # The method_exists() check is a runtime version gate, not a dead-code path.
         -
             message: '#Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent::(getContent|setContent)\(\)#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        -
+            identifier: function.impossibleType
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        -
+            identifier: function.alreadyNarrowedType
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        -
+            message: '#Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent::getController\(\)#'
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        -
+            identifier: property.nonObject
             path: ../Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
         -

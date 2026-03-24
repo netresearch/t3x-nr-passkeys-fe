@@ -95,9 +95,16 @@ final readonly class InjectPasskeyBanner
         }
 
         // Inject banner before </body> and disable caching (user-specific content)
-        $content = $event->getContent();
-        $content = \str_ireplace('</body>', $banner . '</body>', $content);
-        $event->setContent($content);
+        // TYPO3 v14+ exposes getContent()/setContent() on the event directly;
+        // TYPO3 v13 stores content on the TypoScriptFrontendController.
+        if (\method_exists($event, 'getContent')) {
+            $content = $event->getContent();
+            $content = \str_ireplace('</body>', $banner . '</body>', $content);
+            $event->setContent($content);
+        } else {
+            $controller = $event->getController();
+            $controller->content = \str_ireplace('</body>', $banner . '</body>', $controller->content);
+        }
         $event->disableCaching();
     }
 

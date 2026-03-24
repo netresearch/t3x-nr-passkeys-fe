@@ -19,6 +19,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
@@ -37,6 +39,11 @@ final class InjectPasskeyBannerTest extends TestCase
     private SiteConfigurationService&Stub $siteConfigService;
     private InjectPasskeyBanner $subject;
 
+    /**
+     * Whether the event class exposes getContent()/setContent() (TYPO3 v14+).
+     */
+    private bool $eventHasContentAccessors;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +56,11 @@ final class InjectPasskeyBannerTest extends TestCase
             $this->credentialRepository,
             $this->siteConfigService,
             new FrontendConfiguration(enrollmentBannerEnabled: true),
+        );
+
+        $this->eventHasContentAccessors = \method_exists(
+            AfterCacheableContentIsGeneratedEvent::class,
+            'getContent',
         );
     }
 
@@ -68,14 +80,15 @@ final class InjectPasskeyBannerTest extends TestCase
             new FrontendConfiguration(enrollmentBannerEnabled: false),
         );
 
-        $event = $this->createStub(AfterCacheableContentIsGeneratedEvent::class);
-        // getRequest should never be called if banner is disabled
-        $event->method('getContent')->willReturn('<html><body></body></html>');
+        $event = $this->buildEvent(
+            new ServerRequest('https://example.com/', 'GET'),
+            '<html><body></body></html>',
+        );
 
         $subject->__invoke($event);
 
-        // No assertion needed beyond no exception; event content unchanged
-        self::assertTrue(true);
+        // Banner disabled → content unchanged
+        self::assertSame('<html><body></body></html>', $this->getEventContent($event));
     }
 
     #[Test]
@@ -84,13 +97,11 @@ final class InjectPasskeyBannerTest extends TestCase
         $request = new ServerRequest('https://example.com/', 'GET');
         // No frontend.user attribute
 
-        $event = $this->createStub(AfterCacheableContentIsGeneratedEvent::class);
-        $event->method('getRequest')->willReturn($request);
-        $event->method('getContent')->willReturn('<html><body></body></html>');
+        $event = $this->buildEvent($request, '<html><body></body></html>');
 
         $this->subject->__invoke($event);
 
-        self::assertTrue(true);
+        self::assertSame('<html><body></body></html>', $this->getEventContent($event));
     }
 
     #[Test]
@@ -119,25 +130,41 @@ final class InjectPasskeyBannerTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $event = $this->createMock(AfterCacheableContentIsGeneratedEvent::class);
-        $event->method('getRequest')->willReturn($request);
-        $event->method('getContent')->willReturn('<html><body></body></html>');
-        $event->expects(self::never())->method('setContent');
+        $event = $this->buildEvent($request, '<html><body></body></html>');
 
         $this->subject->__invoke($event);
+
+        // Enforcement off → content unchanged
+        self::assertSame('<html><body></body></html>', $this->getEventContent($event));
     }
 
     #[Test]
     public function injectsBannerWhenEnforcementIsEncourage(): void
     {
         // Set up localization stubs needed by LocalizationUtility::translate().
-        // Reset GeneralUtility state to ensure addInstance keys match makeInstance lookups.
         GeneralUtility::purgeInstances();
 
+        // Build a functional in-memory cache for v13's CacheManager->getCache('runtime').
+        $cacheStore = [];
         $runtimeCache = $this->createStub(FrontendInterface::class);
+        $runtimeCache->method('get')->willReturnCallback(
+            static function (string $key) use (&$cacheStore): mixed {
+                return $cacheStore[$key] ?? false;
+            },
+        );
+        $runtimeCache->method('set')->willReturnCallback(
+            static function (string $key, mixed $value) use (&$cacheStore): void {
+                $cacheStore[$key] = $value;
+            },
+        );
+
+        $cacheManager = $this->createStub(CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($runtimeCache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
+
         $locales = new Locales();
         $localizationFactory = $this->createStub(LocalizationFactory::class);
-        $localizationFactory->method('getParsedData')->willReturn([]);
+        $localizationFactory->method('getParsedData')->willReturn(['default' => []]);
         $langFactory = new LanguageServiceFactory($locales, $localizationFactory, $runtimeCache);
         // Register multiple instances since translate() is called multiple times
         for ($i = 0; $i < 10; $i++) {
@@ -168,22 +195,15 @@ final class InjectPasskeyBannerTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $capturedContent = '';
-        $event = $this->createMock(AfterCacheableContentIsGeneratedEvent::class);
-        $event->method('getRequest')->willReturn($request);
-        $event->method('getContent')->willReturn('<html><body></body></html>');
-        $event->expects(self::once())->method('setContent')->willReturnCallback(
-            static function (string $content) use (&$capturedContent): void {
-                $capturedContent = $content;
-            },
-        );
-        $event->expects(self::once())->method('disableCaching');
+        $event = $this->buildEvent($request, '<html><body></body></html>');
 
         $this->subject->__invoke($event);
 
-        self::assertStringContainsString('nr-passkeys-banner', $capturedContent);
-        self::assertStringContainsString('data-enforcement="encourage"', $capturedContent);
-        self::assertStringContainsString('dismiss-banner', $capturedContent);
+        $content = $this->getEventContent($event);
+        self::assertStringContainsString('nr-passkeys-banner', $content);
+        self::assertStringContainsString('data-enforcement="encourage"', $content);
+        self::assertStringContainsString('dismiss-banner', $content);
+        self::assertFalse($event->isCachingEnabled());
     }
 
     #[Test]
@@ -197,11 +217,49 @@ final class InjectPasskeyBannerTest extends TestCase
 
         $this->credentialRepository->method('countByFeUser')->willReturn(2);
 
-        $event = $this->createMock(AfterCacheableContentIsGeneratedEvent::class);
-        $event->method('getRequest')->willReturn($request);
-        $event->method('getContent')->willReturn('<html><body></body></html>');
-        $event->expects(self::never())->method('setContent');
+        $event = $this->buildEvent($request, '<html><body></body></html>');
 
         $this->subject->__invoke($event);
+
+        // User already has passkeys → content unchanged
+        self::assertSame('<html><body></body></html>', $this->getEventContent($event));
+    }
+
+    /**
+     * Build a real AfterCacheableContentIsGeneratedEvent, compatible with both v13 and v14.
+     *
+     * In v13 the constructor takes (Request, TypoScriptFrontendController, cacheId, bool)
+     * and content lives on the TSFE controller's public $content property.
+     * In v14 the constructor takes (Request, content, cacheId, bool) and the TSFE is gone.
+     */
+    private function buildEvent(
+        ServerRequestInterface $request,
+        string $content,
+    ): AfterCacheableContentIsGeneratedEvent {
+        if ($this->eventHasContentAccessors) {
+            // v14+: constructor accepts content string directly
+            return new AfterCacheableContentIsGeneratedEvent($request, $content, 'test-cache-id', true);
+        }
+
+        // v13: constructor requires TypoScriptFrontendController as 2nd argument.
+        // Use a stub to avoid TSFE constructor side-effects ($EXEC_TIME, PageRepository).
+        // The class only exists in v13, so we reference it by FQCN string.
+        $tsfeClass = 'TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController';
+        $controller = $this->createStub($tsfeClass);
+        $controller->content = $content;
+
+        return new AfterCacheableContentIsGeneratedEvent($request, $controller, 'test-cache-id', true);
+    }
+
+    /**
+     * Read content from the event in a version-agnostic way.
+     */
+    private function getEventContent(AfterCacheableContentIsGeneratedEvent $event): string
+    {
+        if ($this->eventHasContentAccessors) {
+            return $event->getContent();
+        }
+
+        return $event->getController()->content;
     }
 }
