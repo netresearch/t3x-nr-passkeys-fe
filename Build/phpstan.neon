@@ -45,34 +45,41 @@ parameters:
             message: '#Parameter \#3 \$subject of function str_ireplace expects#'
             path: ../Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
-        # Suppress ALL ergebnis/phpstan-rules violations globally.
-        # CI resolves different ergebnis versions than local, producing
-        # unpredictable sets of violations. Individual baseline entries fail
-        # because message formats change between ergebnis versions.
-        # The ergebnis rules are advisory (stricter than PHPStan level 10),
-        # not blocking errors. Violations are reviewed during code review.
+        # ergebnis/phpstan-rules produces version-dependent violations that
+        # differ between local and CI. Suppress all known ergebnis patterns
+        # by matching the MESSAGE TEXT (identifiers are not reliable across versions).
         -
-            message: '#ergebnis#'
+            message: '#named argument for parameter#'
             reportUnmatched: false
-        # TYPO3 v14 deprecations (v13/v14 dual compatibility)
         -
-            message: '#^Call to deprecated method#'
+            message: '#has a nullable return type declaration#'
             reportUnmatched: false
-        # PHPDoc @var type narrowing
         -
-            message: '#^PHPDoc tag .* is not subtype#'
+            message: '#has parameter .* with a nullable type declaration#'
             reportUnmatched: false
-        # Redundant casts (version-dependent)
         -
-            message: '#^Casting to .* something that.s already#'
+            message: '#has parameter .* with default value#'
             reportUnmatched: false
-        # FormEngine contravariance
+        -
+            message: '#is not allowed to extend#'
+            reportUnmatched: false
+        -
+            message: '#Language construct isset#'
+            reportUnmatched: false
+        -
+            message: '#Construct empty\(\) is not allowed#'
+            reportUnmatched: false
+        -
+            message: '#Casting to .* something that.s already#'
+            reportUnmatched: false
         -
             message: '#should be contravariant#'
             reportUnmatched: false
-        # empty() construct
         -
-            message: '#^Construct empty\(\) is not allowed#'
+            message: '#PHPDoc tag .* is not subtype#'
+            reportUnmatched: false
+        -
+            message: '#Call to deprecated method#'
             reportUnmatched: false
 
 services:
