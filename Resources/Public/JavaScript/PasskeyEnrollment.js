@@ -49,7 +49,7 @@
 
     // Feature detection
     if (!window.PublicKeyCredential) {
-      U.showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
+      U.showError(errorEl, U.t('js.error.unsupported', 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.'));
       if (registerBtn) {
         registerBtn.disabled = true;
       }
@@ -57,7 +57,7 @@
     }
 
     if (!window.isSecureContext) {
-      U.showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
+      U.showError(errorEl, U.t('js.error.insecure', 'Passkeys require a secure connection (HTTPS).'));
       if (registerBtn) {
         registerBtn.disabled = true;
       }
@@ -97,7 +97,7 @@
 
       if (!optionsResponse.ok) {
         var errData = await optionsResponse.json().catch(function () { return {}; });
-        U.showError(errorEl, errData.error || 'Failed to start registration. Please try again.');
+        U.showError(errorEl, errData.error || U.t('js.enrollment.error.startFailed', 'Failed to start registration. Please try again.'));
         U.setLoading(false, registerBtn, btnText, btnLoading);
         return;
       }
@@ -155,7 +155,7 @@
       }
 
       // Step 5: Verify with eID
-      U.showStatus(statusEl, 'Registering passkey...');
+      U.showStatus(statusEl, U.t('js.enrollment.status.registering', 'Registering passkey...'));
 
       var verifyResponse = await fetch(verifyUrl, {
         method: 'POST',
@@ -191,16 +191,16 @@
           detail: { credentialUid: verifyData.uid },
         }));
       } else {
-        U.showError(errorEl, verifyData.error || 'Registration failed. Please try again.');
+        U.showError(errorEl, verifyData.error || U.t('js.enrollment.error.generic', 'Registration failed. Please try again.'));
         U.hideStatus(statusEl);
       }
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
-        U.showError(errorEl, 'Registration was cancelled.');
+        U.showError(errorEl, U.t('js.enrollment.error.cancelled', 'Registration was cancelled.'));
       } else if (err.name === 'InvalidStateError') {
-        U.showError(errorEl, 'This passkey is already registered.');
+        U.showError(errorEl, U.t('js.enrollment.error.alreadyRegistered', 'This passkey is already registered.'));
       } else {
-        U.showError(errorEl, 'Registration failed: ' + (err.message || 'Please try again.'));
+        U.showError(errorEl, (err.message || U.t('js.enrollment.error.generic', 'Registration failed. Please try again.')));
         console.error('[nr_passkeys_fe] PasskeyEnrollment error:', err);
       }
       U.hideStatus(statusEl);

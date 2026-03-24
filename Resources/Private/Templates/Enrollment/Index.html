@@ -5,6 +5,20 @@
 <f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
 <f:asset.script identifier="nr-passkeys-fe-utils" priority="true" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" />
 <f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" />
+
+<f:format.raw><script data-nr-passkeys-fe-translations type="application/json">
+{
+    "js.error.unsupported": "<f:translate key='js.error.unsupported' extensionName='NrPasskeysFe' />",
+    "js.error.insecure": "<f:translate key='js.error.insecure' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.startFailed": "<f:translate key='js.enrollment.error.startFailed' extensionName='NrPasskeysFe' />",
+    "js.enrollment.status.registering": "<f:translate key='js.enrollment.status.registering' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.generic": "<f:translate key='js.enrollment.error.generic' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.cancelled": "<f:translate key='js.enrollment.error.cancelled' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.alreadyRegistered": "<f:translate key='js.enrollment.error.alreadyRegistered' extensionName='NrPasskeysFe' />",
+    "js.error.network": "<f:translate key='js.error.network' extensionName='NrPasskeysFe' />"
+}
+</script></f:format.raw>
+
 <div class="nr-passkeys-fe-enrollment{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
      data-nr-passkeys-fe="enrollment"
      data-eid-url="{eidUrl}"

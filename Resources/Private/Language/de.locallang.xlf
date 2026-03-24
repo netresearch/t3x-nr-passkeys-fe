@@ -1,60 +1,77 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
-    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_fe/Resources/Private/Language/locallang.xlf">
+    <file source-language="en" target-language="de" datatype="plaintext" original="EXT:nr_passkeys_fe/Resources/Private/Language/locallang.xlf">
         <body>
             <!-- ============================================================
                  Plugin: Login
                  ============================================================ -->
             <trans-unit id="login.button.passkey" resname="login.button.passkey">
                 <source>Sign in with a passkey</source>
+                <target>Mit Passkey anmelden</target>
             </trans-unit>
             <trans-unit id="login.button.passkey.loading" resname="login.button.passkey.loading">
                 <source>Authenticating...</source>
+                <target>Authentifizierung...</target>
             </trans-unit>
             <trans-unit id="login.username.label" resname="login.username.label">
                 <source>Username</source>
+                <target>Benutzername</target>
             </trans-unit>
             <trans-unit id="login.link.usePassword" resname="login.link.usePassword">
                 <source>Use password instead</source>
+                <target>Stattdessen Passwort verwenden</target>
             </trans-unit>
             <trans-unit id="login.link.useRecoveryCode" resname="login.link.useRecoveryCode">
                 <source>Use a recovery code</source>
+                <target>Wiederherstellungscode verwenden</target>
             </trans-unit>
             <trans-unit id="login.heading" resname="login.heading">
                 <source>Sign in</source>
+                <target>Anmelden</target>
             </trans-unit>
             <trans-unit id="login.tab.passkey" resname="login.tab.passkey">
                 <source>Passkey</source>
+                <target>Passkey</target>
             </trans-unit>
             <trans-unit id="login.tab.password" resname="login.tab.password">
                 <source>Password</source>
+                <target>Passwort</target>
             </trans-unit>
             <trans-unit id="login.link.whatIsPasskey" resname="login.link.whatIsPasskey">
                 <source>What is a passkey?</source>
+                <target>Was ist ein Passkey?</target>
             </trans-unit>
             <trans-unit id="login.link.forgotPassword" resname="login.link.forgotPassword">
                 <source>Forgot password?</source>
+                <target>Passwort vergessen?</target>
             </trans-unit>
             <trans-unit id="login.error.unsupported" resname="login.error.unsupported">
                 <source>Your browser does not support Passkeys (WebAuthn). Please use a modern browser.</source>
+                <target>Ihr Browser unterstützt keine Passkeys (WebAuthn). Bitte verwenden Sie einen modernen Browser.</target>
             </trans-unit>
             <trans-unit id="login.error.insecure" resname="login.error.insecure">
                 <source>Passkeys require a secure connection (HTTPS).</source>
+                <target>Passkeys erfordern eine sichere Verbindung (HTTPS).</target>
             </trans-unit>
             <trans-unit id="login.error.cancelled" resname="login.error.cancelled">
                 <source>Authentication was cancelled.</source>
+                <target>Authentifizierung wurde abgebrochen.</target>
             </trans-unit>
             <trans-unit id="login.error.notAllowed" resname="login.error.notAllowed">
                 <source>Authentication was cancelled or no passkey found for this site. Have you registered a passkey?</source>
+                <target>Authentifizierung wurde abgebrochen oder es wurde kein Passkey für diese Website gefunden. Haben Sie einen Passkey registriert?</target>
             </trans-unit>
             <trans-unit id="login.error.generic" resname="login.error.generic">
                 <source>Authentication failed. Please try again.</source>
+                <target>Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
             <trans-unit id="login.error.rateLimit" resname="login.error.rateLimit">
                 <source>Too many attempts. Please try again later.</source>
+                <target>Zu viele Versuche. Bitte versuchen Sie es später erneut.</target>
             </trans-unit>
             <trans-unit id="login.error.failed" resname="login.error.failed">
                 <source>Passkey authentication failed. Please try again or use a recovery code.</source>
+                <target>Passkey-Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut oder verwenden Sie einen Wiederherstellungscode.</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -62,33 +79,43 @@
                  ============================================================ -->
             <trans-unit id="recovery.title" resname="recovery.title">
                 <source>Sign in with recovery code</source>
+                <target>Mit Wiederherstellungscode anmelden</target>
             </trans-unit>
             <trans-unit id="recovery.description" resname="recovery.description">
                 <source>Enter one of your saved recovery codes to sign in. Each code can only be used once.</source>
+                <target>Geben Sie einen Ihrer gespeicherten Wiederherstellungscodes ein, um sich anzumelden. Jeder Code kann nur einmal verwendet werden.</target>
             </trans-unit>
             <trans-unit id="recovery.code.label" resname="recovery.code.label">
                 <source>Recovery code</source>
+                <target>Wiederherstellungscode</target>
             </trans-unit>
             <trans-unit id="recovery.code.hint" resname="recovery.code.hint">
                 <source>Format: XXXX-XXXX</source>
+                <target>Format: XXXX-XXXX</target>
             </trans-unit>
             <trans-unit id="recovery.button.verify" resname="recovery.button.verify">
                 <source>Verify code</source>
+                <target>Code überprüfen</target>
             </trans-unit>
             <trans-unit id="recovery.button.verifying" resname="recovery.button.verifying">
                 <source>Verifying...</source>
+                <target>Überprüfung...</target>
             </trans-unit>
             <trans-unit id="recovery.link.backToLogin" resname="recovery.link.backToLogin">
                 <source>Back to login</source>
+                <target>Zurück zur Anmeldung</target>
             </trans-unit>
             <trans-unit id="recovery.error.invalid" resname="recovery.error.invalid">
                 <source>Invalid recovery code. Please check and try again.</source>
+                <target>Ungültiger Wiederherstellungscode. Bitte überprüfen und erneut versuchen.</target>
             </trans-unit>
             <trans-unit id="recovery.error.used" resname="recovery.error.used">
                 <source>This recovery code has already been used.</source>
+                <target>Dieser Wiederherstellungscode wurde bereits verwendet.</target>
             </trans-unit>
             <trans-unit id="recovery.error.rateLimit" resname="recovery.error.rateLimit">
                 <source>Too many attempts. Please try again later.</source>
+                <target>Zu viele Versuche. Bitte versuchen Sie es später erneut.</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -96,144 +123,189 @@
                  ============================================================ -->
             <trans-unit id="management.passkeys.title" resname="management.passkeys.title">
                 <source>Your passkeys</source>
+                <target>Ihre Passkeys</target>
             </trans-unit>
             <trans-unit id="management.passkeys.description" resname="management.passkeys.description">
                 <source>Manage your registered passkeys. We recommend registering at least two passkeys (e.g. laptop and phone) as backup.</source>
+                <target>Verwalten Sie Ihre registrierten Passkeys. Wir empfehlen, mindestens zwei Passkeys (z.B. Laptop und Smartphone) als Backup zu registrieren.</target>
             </trans-unit>
             <trans-unit id="management.passkeys.empty" resname="management.passkeys.empty">
                 <source>No passkeys registered yet.</source>
+                <target>Noch keine Passkeys registriert.</target>
             </trans-unit>
             <trans-unit id="management.warning.singleKey" resname="management.warning.singleKey">
                 <source>You only have one passkey registered. Consider adding a backup passkey on another device.</source>
+                <target>Sie haben nur einen Passkey registriert. Erwägen Sie, einen Backup-Passkey auf einem anderen Gerät hinzuzufügen.</target>
             </trans-unit>
             <trans-unit id="management.column.label" resname="management.column.label">
                 <source>Name</source>
+                <target>Name</target>
             </trans-unit>
             <trans-unit id="management.column.created" resname="management.column.created">
                 <source>Created</source>
+                <target>Erstellt</target>
             </trans-unit>
             <trans-unit id="management.column.lastUsed" resname="management.column.lastUsed">
                 <source>Last used</source>
+                <target>Zuletzt verwendet</target>
             </trans-unit>
             <trans-unit id="management.column.type" resname="management.column.type">
                 <source>Type</source>
+                <target>Typ</target>
             </trans-unit>
             <trans-unit id="management.column.actions" resname="management.column.actions">
                 <source>Actions</source>
+                <target>Aktionen</target>
             </trans-unit>
             <trans-unit id="management.lastUsed.never" resname="management.lastUsed.never">
                 <source>Never</source>
+                <target>Nie</target>
             </trans-unit>
             <trans-unit id="management.action.rename" resname="management.action.rename">
                 <source>Rename</source>
+                <target>Umbenennen</target>
             </trans-unit>
             <trans-unit id="management.action.remove" resname="management.action.remove">
                 <source>Remove</source>
+                <target>Entfernen</target>
             </trans-unit>
             <trans-unit id="management.action.remove.confirm" resname="management.action.remove.confirm">
                 <source>Remove passkey "%s"? This cannot be undone.</source>
+                <target>Passkey "%s" entfernen? Dies kann nicht rückgängig gemacht werden.</target>
             </trans-unit>
             <trans-unit id="management.action.remove.lastKey" resname="management.action.remove.lastKey">
                 <source>Cannot remove your last passkey. Register another passkey first.</source>
+                <target>Ihr letzter Passkey kann nicht entfernt werden. Registrieren Sie zuerst einen weiteren Passkey.</target>
             </trans-unit>
             <trans-unit id="management.rename.success" resname="management.rename.success">
                 <source>Passkey renamed successfully.</source>
+                <target>Passkey erfolgreich umbenannt.</target>
             </trans-unit>
             <trans-unit id="management.rename.error" resname="management.rename.error">
                 <source>Failed to rename passkey. Please try again.</source>
+                <target>Passkey konnte nicht umbenannt werden. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
             <trans-unit id="management.remove.success" resname="management.remove.success">
                 <source>Passkey removed successfully.</source>
+                <target>Passkey erfolgreich entfernt.</target>
             </trans-unit>
             <trans-unit id="management.remove.error" resname="management.remove.error">
                 <source>Failed to remove passkey. Please try again.</source>
+                <target>Passkey konnte nicht entfernt werden. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
 
             <!-- Management — register new passkey -->
             <trans-unit id="management.register.title" resname="management.register.title">
                 <source>Register a new passkey</source>
+                <target>Neuen Passkey registrieren</target>
             </trans-unit>
             <trans-unit id="management.register.label" resname="management.register.label">
                 <source>Name for new passkey</source>
+                <target>Name für neuen Passkey</target>
             </trans-unit>
             <trans-unit id="management.register.placeholder" resname="management.register.placeholder">
                 <source>e.g. "Work Laptop", "iPhone"</source>
+                <target>z.B. "Arbeits-Laptop", "iPhone"</target>
             </trans-unit>
             <trans-unit id="management.register.button" resname="management.register.button">
                 <source>Register passkey</source>
+                <target>Passkey registrieren</target>
             </trans-unit>
             <trans-unit id="management.register.registering" resname="management.register.registering">
                 <source>Registering...</source>
+                <target>Registrierung...</target>
             </trans-unit>
             <trans-unit id="management.register.success" resname="management.register.success">
                 <source>Passkey registered successfully.</source>
+                <target>Passkey erfolgreich registriert.</target>
             </trans-unit>
             <trans-unit id="management.register.error" resname="management.register.error">
                 <source>Failed to register passkey. Please try again.</source>
+                <target>Passkey konnte nicht registriert werden. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
 
             <!-- Management — enrollment form (inline) -->
             <trans-unit id="management.enrollment.title" resname="management.enrollment.title">
                 <source>Register passkey</source>
+                <target>Passkey registrieren</target>
             </trans-unit>
             <trans-unit id="management.enrollment.label" resname="management.enrollment.label">
                 <source>Device name</source>
+                <target>Gerätename</target>
             </trans-unit>
             <trans-unit id="management.enrollment.placeholder" resname="management.enrollment.placeholder">
                 <source>e.g. "MacBook", "Android Phone"</source>
+                <target>z.B. "MacBook", "Android-Smartphone"</target>
             </trans-unit>
             <trans-unit id="management.enrollment.register" resname="management.enrollment.register">
                 <source>Register passkey</source>
+                <target>Passkey registrieren</target>
             </trans-unit>
             <trans-unit id="management.enrollment.registering" resname="management.enrollment.registering">
                 <source>Registering...</source>
+                <target>Registrierung...</target>
             </trans-unit>
             <trans-unit id="management.enrollment.success" resname="management.enrollment.success">
                 <source>Passkey registered successfully.</source>
+                <target>Passkey erfolgreich registriert.</target>
             </trans-unit>
 
             <!-- Management — recovery codes -->
             <trans-unit id="management.recovery.title" resname="management.recovery.title">
                 <source>Recovery codes</source>
+                <target>Wiederherstellungscodes</target>
             </trans-unit>
             <trans-unit id="management.recovery.description" resname="management.recovery.description">
                 <source>Recovery codes let you regain access if you lose all your passkeys. Each code can only be used once.</source>
+                <target>Wiederherstellungscodes ermöglichen Ihnen den Zugriff, falls Sie alle Ihre Passkeys verlieren. Jeder Code kann nur einmal verwendet werden.</target>
             </trans-unit>
             <trans-unit id="management.recovery.remaining" resname="management.recovery.remaining">
                 <source>Remaining codes</source>
+                <target>Verbleibende Codes</target>
             </trans-unit>
             <trans-unit id="management.recovery.manage" resname="management.recovery.manage">
                 <source>Manage recovery codes</source>
+                <target>Wiederherstellungscodes verwalten</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.title" resname="management.recovery.codes.title">
                 <source>Recovery codes</source>
+                <target>Wiederherstellungscodes</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.warning.title" resname="management.recovery.codes.warning.title">
                 <source>Save these codes now!</source>
+                <target>Speichern Sie diese Codes jetzt!</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.warning.text" resname="management.recovery.codes.warning.text">
                 <source>These codes will not be shown again. Store them in a safe place (password manager, printed copy). Each code can be used once to regain access.</source>
+                <target>Diese Codes werden nicht erneut angezeigt. Bewahren Sie sie an einem sicheren Ort auf (Passwort-Manager, ausgedruckte Kopie). Jeder Code kann einmal verwendet werden, um den Zugriff wiederherzustellen.</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.remaining" resname="management.recovery.codes.remaining">
                 <source>Remaining codes</source>
+                <target>Verbleibende Codes</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.download" resname="management.recovery.codes.download">
                 <source>Download codes as text file</source>
+                <target>Codes als Textdatei herunterladen</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.generate.title" resname="management.recovery.codes.generate.title">
                 <source>Generate new recovery codes</source>
+                <target>Neue Wiederherstellungscodes generieren</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.generate.hint" resname="management.recovery.codes.generate.hint">
                 <source>Generating new codes will invalidate all existing recovery codes.</source>
+                <target>Das Generieren neuer Codes macht alle vorhandenen Wiederherstellungscodes ungültig.</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.generate.button" resname="management.recovery.codes.generate.button">
                 <source>Generate new codes</source>
+                <target>Neue Codes generieren</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.generate.generating" resname="management.recovery.codes.generate.generating">
                 <source>Generating...</source>
+                <target>Generierung...</target>
             </trans-unit>
             <trans-unit id="management.recovery.codes.back" resname="management.recovery.codes.back">
                 <source>Back to passkey management</source>
+                <target>Zurück zur Passkey-Verwaltung</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -241,62 +313,81 @@
                  ============================================================ -->
             <trans-unit id="enrollment.title" resname="enrollment.title">
                 <source>Set up your passkey</source>
+                <target>Richten Sie Ihren Passkey ein</target>
             </trans-unit>
             <trans-unit id="enrollment.description" resname="enrollment.description">
                 <source>Passkeys let you sign in without a password using your device's fingerprint, face recognition, or PIN.</source>
+                <target>Mit Passkeys können Sie sich ohne Passwort anmelden, indem Sie den Fingerabdruck, die Gesichtserkennung oder die PIN Ihres Geräts verwenden.</target>
             </trans-unit>
             <trans-unit id="enrollment.benefit.noPassword" resname="enrollment.benefit.noPassword">
                 <source>No password to remember or type</source>
+                <target>Kein Passwort zum Merken oder Eintippen</target>
             </trans-unit>
             <trans-unit id="enrollment.benefit.phishingResistant" resname="enrollment.benefit.phishingResistant">
                 <source>Resistant to phishing and credential theft</source>
+                <target>Resistent gegen Phishing und Diebstahl von Zugangsdaten</target>
             </trans-unit>
             <trans-unit id="enrollment.benefit.biometric" resname="enrollment.benefit.biometric">
                 <source>Uses biometrics or device PIN you already know</source>
+                <target>Verwendet Biometrie oder Geräte-PIN, die Sie bereits kennen</target>
             </trans-unit>
             <trans-unit id="enrollment.gracePeriod.remaining" resname="enrollment.gracePeriod.remaining">
                 <source>You have %d days remaining to set up your passkey.</source>
+                <target>Sie haben noch %d Tage Zeit, um Ihren Passkey einzurichten.</target>
             </trans-unit>
             <trans-unit id="enrollment.label.device" resname="enrollment.label.device">
                 <source>Name this passkey</source>
+                <target>Benennen Sie diesen Passkey</target>
             </trans-unit>
             <trans-unit id="enrollment.label.placeholder" resname="enrollment.label.placeholder">
                 <source>e.g. "Work Laptop", "iPhone"</source>
+                <target>z.B. "Arbeits-Laptop", "iPhone"</target>
             </trans-unit>
             <trans-unit id="enrollment.button.register" resname="enrollment.button.register">
                 <source>Register passkey</source>
+                <target>Passkey registrieren</target>
             </trans-unit>
             <trans-unit id="enrollment.button.registering" resname="enrollment.button.registering">
                 <source>Registering...</source>
+                <target>Registrierung...</target>
             </trans-unit>
             <trans-unit id="enrollment.button.skip" resname="enrollment.button.skip">
                 <source>Skip for now</source>
+                <target>Vorerst überspringen</target>
             </trans-unit>
             <trans-unit id="enrollment.link.noSupport" resname="enrollment.link.noSupport">
                 <source>My device doesn't support passkeys</source>
+                <target>Mein Gerät unterstützt keine Passkeys</target>
             </trans-unit>
             <trans-unit id="enrollment.error.unsupported" resname="enrollment.error.unsupported">
                 <source>Your browser does not support Passkeys (WebAuthn). Please update your browser or use a different device.</source>
+                <target>Ihr Browser unterstützt keine Passkeys (WebAuthn). Bitte aktualisieren Sie Ihren Browser oder verwenden Sie ein anderes Gerät.</target>
             </trans-unit>
             <trans-unit id="enrollment.error.cancelled" resname="enrollment.error.cancelled">
                 <source>Registration was cancelled.</source>
+                <target>Registrierung wurde abgebrochen.</target>
             </trans-unit>
             <trans-unit id="enrollment.error.alreadyRegistered" resname="enrollment.error.alreadyRegistered">
                 <source>This passkey is already registered.</source>
+                <target>Dieser Passkey ist bereits registriert.</target>
             </trans-unit>
             <trans-unit id="enrollment.error.generic" resname="enrollment.error.generic">
                 <source>Registration failed. Please try again.</source>
+                <target>Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
 
             <!-- Enrollment success -->
             <trans-unit id="enrollment.success.title" resname="enrollment.success.title">
                 <source>Passkey set up successfully!</source>
+                <target>Passkey erfolgreich eingerichtet!</target>
             </trans-unit>
             <trans-unit id="enrollment.success.message" resname="enrollment.success.message">
                 <source>You can now sign in with your passkey. You can manage your passkeys in your account settings.</source>
+                <target>Sie können sich jetzt mit Ihrem Passkey anmelden. Verwalten Sie Ihre Passkeys in Ihren Kontoeinstellungen.</target>
             </trans-unit>
             <trans-unit id="enrollment.success.continue" resname="enrollment.success.continue">
                 <source>Continue</source>
+                <target>Weiter</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -304,30 +395,39 @@
                  ============================================================ -->
             <trans-unit id="banner.encourage.title" resname="banner.encourage.title">
                 <source>Passkeys available for your account</source>
+                <target>Passkeys für Ihr Konto verfügbar</target>
             </trans-unit>
             <trans-unit id="banner.encourage.description" resname="banner.encourage.description">
                 <source>Set up passwordless login with a passkey. Sign in faster using your fingerprint, face, or device PIN.</source>
+                <target>Richten Sie passwortlose Anmeldung mit einem Passkey ein. Melden Sie sich schneller mit Ihrem Fingerabdruck, Gesicht oder Geräte-PIN an.</target>
             </trans-unit>
             <trans-unit id="banner.required.title" resname="banner.required.title">
                 <source>Passkey setup required</source>
+                <target>Passkey-Einrichtung erforderlich</target>
             </trans-unit>
             <trans-unit id="banner.required.description" resname="banner.required.description">
                 <source>Your account requires a passkey. Please set one up to continue using this site.</source>
+                <target>Ihr Konto erfordert einen Passkey. Bitte richten Sie einen ein, um diese Website weiter nutzen zu können.</target>
             </trans-unit>
             <trans-unit id="banner.required.grace_description" resname="banner.required.grace_description">
                 <source>You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.</source>
+                <target>Sie haben noch %d Tag(e) Zeit, einen Passkey zu registrieren. Ihr Kontozugriff wird nach Ablauf der Übergangsfrist eingeschränkt.</target>
             </trans-unit>
             <trans-unit id="banner.enforced.description" resname="banner.enforced.description">
                 <source>Passkey enrollment is required to continue accessing your account.</source>
+                <target>Die Passkey-Registrierung ist erforderlich, um weiterhin auf Ihr Konto zugreifen zu können.</target>
             </trans-unit>
             <trans-unit id="banner.button.setup" resname="banner.button.setup">
                 <source>Set up now</source>
+                <target>Jetzt einrichten</target>
             </trans-unit>
             <trans-unit id="banner.button.dismiss" resname="banner.button.dismiss">
                 <source>Dismiss</source>
+                <target>Schließen</target>
             </trans-unit>
             <trans-unit id="banner.link.learnMore" resname="banner.link.learnMore">
                 <source>Learn more about passkeys</source>
+                <target>Mehr über Passkeys erfahren</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -335,470 +435,617 @@
                  ============================================================ -->
             <trans-unit id="module.title" resname="module.title">
                 <source>FE Passkey Management</source>
+                <target>FE-Passkey-Verwaltung</target>
             </trans-unit>
             <trans-unit id="module.dashboard" resname="module.dashboard">
                 <source>Dashboard</source>
+                <target>Dashboard</target>
             </trans-unit>
             <trans-unit id="module.help" resname="module.help">
                 <source>Help</source>
+                <target>Hilfe</target>
             </trans-unit>
             <trans-unit id="dashboard.title" resname="dashboard.title">
                 <source>FE Passkey Adoption Dashboard</source>
+                <target>FE-Passkey-Nutzungsübersicht</target>
             </trans-unit>
             <trans-unit id="dashboard.description" resname="dashboard.description">
                 <source>Overview of passkey adoption across frontend user groups.</source>
+                <target>Übersicht der Passkey-Nutzung über alle Frontend-Benutzergruppen.</target>
             </trans-unit>
             <trans-unit id="dashboard.totalUsers" resname="dashboard.totalUsers">
                 <source>Total FE Users</source>
+                <target>FE-Benutzer gesamt</target>
             </trans-unit>
             <trans-unit id="dashboard.usersWithPasskeys" resname="dashboard.usersWithPasskeys">
                 <source>With Passkeys</source>
+                <target>Mit Passkeys</target>
             </trans-unit>
             <trans-unit id="dashboard.adoptionRate" resname="dashboard.adoptionRate">
                 <source>Adoption Rate</source>
+                <target>Nutzungsrate</target>
             </trans-unit>
             <trans-unit id="dashboard.adoption.title" resname="dashboard.adoption.title">
                 <source>Adoption Statistics</source>
+                <target>Nutzungsstatistiken</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.title" resname="dashboard.groups.title">
                 <source>Frontend User Groups</source>
+                <target>Frontend-Benutzergruppen</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.group" resname="dashboard.groups.group">
                 <source>Group</source>
+                <target>Gruppe</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.enforcement" resname="dashboard.groups.enforcement">
                 <source>Enforcement</source>
+                <target>Durchsetzung</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.users" resname="dashboard.groups.users">
                 <source>Total Users</source>
+                <target>Benutzer gesamt</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.withPasskeys" resname="dashboard.groups.withPasskeys">
                 <source>With Passkeys</source>
+                <target>Mit Passkeys</target>
             </trans-unit>
             <trans-unit id="dashboard.groups.adoption" resname="dashboard.groups.adoption">
                 <source>Adoption</source>
+                <target>Nutzung</target>
             </trans-unit>
             <trans-unit id="dashboard.allAdopted.title" resname="dashboard.allAdopted.title">
                 <source>All users have passkeys</source>
+                <target>Alle Benutzer haben Passkeys</target>
             </trans-unit>
             <trans-unit id="dashboard.allAdopted.body" resname="dashboard.allAdopted.body">
                 <source>All active frontend users have registered passkeys.</source>
+                <target>Alle aktiven Frontend-Benutzer haben Passkeys registriert.</target>
             </trans-unit>
             <trans-unit id="enforcement.level.off" resname="enforcement.level.off">
                 <source>Off</source>
+                <target>Aus</target>
             </trans-unit>
             <trans-unit id="enforcement.level.encourage" resname="enforcement.level.encourage">
                 <source>Encourage</source>
+                <target>Empfehlen</target>
             </trans-unit>
             <trans-unit id="enforcement.level.required" resname="enforcement.level.required">
                 <source>Required</source>
+                <target>Erforderlich</target>
             </trans-unit>
             <trans-unit id="enforcement.level.enforced" resname="enforcement.level.enforced">
                 <source>Enforced</source>
+                <target>Erzwungen</target>
             </trans-unit>
 
             <!-- Dashboard: FE User Passkey Lookup -->
             <trans-unit id="dashboard.lookup.title" resname="dashboard.lookup.title">
                 <source>Frontend User Passkey Lookup</source>
+                <target>Frontend-Benutzer Passkey-Abfrage</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.uid_label" resname="dashboard.lookup.uid_label">
                 <source>FE User UID</source>
+                <target>FE-Benutzer-UID</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.placeholder" resname="dashboard.lookup.placeholder">
                 <source>e.g. 42</source>
+                <target>z.B. 42</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.load_button" resname="dashboard.lookup.load_button">
                 <source>Load passkeys</source>
+                <target>Passkeys laden</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.label" resname="dashboard.lookup.column.label">
                 <source>Label</source>
+                <target>Bezeichnung</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.site" resname="dashboard.lookup.column.site">
                 <source>Site</source>
+                <target>Seite</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.created" resname="dashboard.lookup.column.created">
                 <source>Created</source>
+                <target>Erstellt</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.last_used" resname="dashboard.lookup.column.last_used">
                 <source>Last used</source>
+                <target>Zuletzt verwendet</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.status" resname="dashboard.lookup.column.status">
                 <source>Status</source>
+                <target>Status</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.column.actions" resname="dashboard.lookup.column.actions">
                 <source>Actions</source>
+                <target>Aktionen</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.revoke_all" resname="dashboard.lookup.revoke_all">
                 <source>Revoke all passkeys</source>
+                <target>Alle Passkeys widerrufen</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.revoke_all_tooltip" resname="dashboard.lookup.revoke_all_tooltip">
                 <source>Revoke all active passkeys for this user</source>
+                <target>Alle aktiven Passkeys für diesen Benutzer widerrufen</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.unlock_user" resname="dashboard.lookup.unlock_user">
                 <source>Unlock user</source>
+                <target>Benutzer entsperren</target>
             </trans-unit>
             <trans-unit id="dashboard.lookup.unlock_user_tooltip" resname="dashboard.lookup.unlock_user_tooltip">
                 <source>Clear rate-limiter lockout for this user</source>
+                <target>Anmeldesperre für diesen Benutzer zurücksetzen</target>
             </trans-unit>
 
             <!-- Help page -->
             <trans-unit id="help.title" resname="help.title">
                 <source>FE Passkey Management Help</source>
+                <target>Hilfe zur FE-Passkey-Verwaltung</target>
             </trans-unit>
             <trans-unit id="help.description" resname="help.description">
                 <source>This guide explains how to roll out passkeys to your frontend users, handle recovery scenarios, and understand enforcement levels.</source>
+                <target>Diese Anleitung erklärt, wie Sie Passkeys für Ihre Frontend-Benutzer einführen, Wiederherstellungsszenarien behandeln und die Durchsetzungsstufen verstehen.</target>
             </trans-unit>
 
             <!-- Help: Rolling out passkeys -->
             <trans-unit id="help.rollout.title" resname="help.rollout.title">
                 <source>Rolling out frontend passkeys</source>
+                <target>Einführung von Frontend-Passkeys</target>
             </trans-unit>
             <trans-unit id="help.rollout.description" resname="help.rollout.description">
                 <source>A phased rollout lets you introduce passkeys gradually, giving users time to register their devices before enforcement becomes mandatory.</source>
+                <target>Eine schrittweise Einführung ermöglicht es Ihnen, Passkeys nach und nach einzuführen und den Benutzern Zeit zu geben, ihre Geräte zu registrieren, bevor die Durchsetzung verpflichtend wird.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.1.title" resname="help.rollout.step.1.title">
                 <source>Step 1 — Install the extension</source>
+                <target>Schritt 1 — Extension installieren</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.1.description" resname="help.rollout.step.1.description">
                 <source>Install netresearch/nr-passkeys-fe via Composer and activate it in the Extension Manager. Run the database analyser to create the tx_nrpasskeysfe_credential table.</source>
+                <target>Installieren Sie netresearch/nr-passkeys-fe über Composer und aktivieren Sie die Extension im Extension Manager. Führen Sie den Datenbankanalysator aus, um die Tabelle tx_nrpasskeysfe_credential zu erstellen.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.2.title" resname="help.rollout.step.2.title">
                 <source>Step 2 — Add the plugins to your site</source>
+                <target>Schritt 2 — Plugins zur Website hinzufügen</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.2.description" resname="help.rollout.step.2.description">
                 <source>Add the FE Passkey Login, FE Passkey Management, and (optionally) FE Passkey Enrollment plugins to the appropriate pages of your site. Configure TypoScript to point the plugins at the correct frontend user storage folder.</source>
+                <target>Fügen Sie die Plugins FE Passkey Login, FE Passkey-Verwaltung und (optional) FE Passkey-Registrierung zu den entsprechenden Seiten Ihrer Website hinzu. Konfigurieren Sie TypoScript, um die Plugins auf den korrekten Frontend-Benutzer-Speicherordner zu verweisen.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.3.title" resname="help.rollout.step.3.title">
                 <source>Step 3 — Set groups to Encourage</source>
+                <target>Schritt 3 — Gruppen auf Empfehlen setzen</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.3.description" resname="help.rollout.step.3.description">
                 <source>On the Dashboard tab, change a frontend user group's enforcement level to Encourage. Users in that group will see a non-blocking banner on the site prompting them to register a passkey.</source>
+                <target>Ändern Sie auf dem Dashboard-Tab die Durchsetzungsstufe einer Frontend-Benutzergruppe auf Empfehlen. Benutzer in dieser Gruppe sehen ein nicht-blockierendes Banner auf der Website, das sie auffordert, einen Passkey zu registrieren.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.3.tip" resname="help.rollout.step.3.tip">
                 <source>Start with a pilot group to validate the workflow before widening the rollout to all frontend users.</source>
+                <target>Beginnen Sie mit einer Pilotgruppe, um den Ablauf zu validieren, bevor Sie die Einführung auf alle Frontend-Benutzer ausweiten.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.3.tip.title" resname="help.rollout.step.3.tip.title">
                 <source>Tip</source>
+                <target>Tipp</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.4.title" resname="help.rollout.step.4.title">
                 <source>Step 4 — Set groups to Required</source>
+                <target>Schritt 4 — Gruppen auf Erforderlich setzen</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.4.description" resname="help.rollout.step.4.description">
                 <source>When you are confident the process works, change the group to Required. Users who have not yet registered a passkey will be directed to the enrollment page after password login. A configurable grace period gives them time to register before the requirement becomes strict.</source>
+                <target>Wenn Sie sicher sind, dass der Prozess funktioniert, ändern Sie die Gruppe auf Erforderlich. Benutzer, die noch keinen Passkey registriert haben, werden nach der Passwort-Anmeldung zur Registrierungsseite weitergeleitet. Eine konfigurierbare Übergangsfrist gibt ihnen Zeit, sich zu registrieren, bevor die Anforderung verbindlich wird.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.5.title" resname="help.rollout.step.5.title">
                 <source>Step 5 — After the grace period expires</source>
+                <target>Schritt 5 — Nach Ablauf der Übergangsfrist</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.5.description" resname="help.rollout.step.5.description">
                 <source>Once the grace period ends, users in Required groups must register a passkey before they can access the site. Users in Enforced groups have no grace period at all.</source>
+                <target>Nach Ablauf der Übergangsfrist müssen Benutzer in Erforderlich-Gruppen einen Passkey registrieren, bevor sie auf die Website zugreifen können. Benutzer in Erzwungen-Gruppen haben keine Übergangsfrist.</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.6.title" resname="help.rollout.step.6.title">
                 <source>Step 6 — Monitor adoption</source>
+                <target>Schritt 6 — Nutzung überwachen</target>
             </trans-unit>
             <trans-unit id="help.rollout.step.6.description" resname="help.rollout.step.6.description">
                 <source>Use the Dashboard tab to track overall adoption rates and per-group statistics. Use the Passkey Lookup panel to inspect an individual user's registered credentials.</source>
+                <target>Verwenden Sie den Dashboard-Tab, um die Gesamtnutzungsraten und gruppenspezifische Statistiken zu verfolgen. Verwenden Sie das Passkey-Abfrage-Panel, um die registrierten Anmeldedaten eines einzelnen Benutzers zu prüfen.</target>
             </trans-unit>
 
             <!-- Help: Recovery procedures -->
             <trans-unit id="help.recovery.title" resname="help.recovery.title">
                 <source>Recovery procedures</source>
+                <target>Wiederherstellungsverfahren</target>
             </trans-unit>
             <trans-unit id="help.recovery.description" resname="help.recovery.description">
                 <source>When a frontend user loses access to their authenticator device, follow these steps:</source>
+                <target>Wenn ein Frontend-Benutzer den Zugriff auf sein Authentifizierungsgerät verliert, folgen Sie diesen Schritten:</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.1.title" resname="help.recovery.step.1.title">
                 <source>1. User reports lost device</source>
+                <target>1. Benutzer meldet verlorenes Gerät</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.1.description" resname="help.recovery.step.1.description">
                 <source>The user contacts you (or a site admin) and reports which device or authenticator is no longer available.</source>
+                <target>Der Benutzer kontaktiert Sie (oder einen Website-Administrator) und meldet, welches Gerät oder welcher Authentifikator nicht mehr verfügbar ist.</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.2.title" resname="help.recovery.step.2.title">
                 <source>2. Admin revokes affected passkey(s)</source>
+                <target>2. Administrator widerruft betroffene Passkey(s)</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.2.description.1" resname="help.recovery.step.2.description.1">
                 <source>In Web > FE Passkeys > Dashboard, enter the user's UID in the Passkey Lookup panel and revoke the affected credential(s). If you're unsure which credential matches the lost device, look at the creation date and label.</source>
+                <target>Geben Sie unter Web > FE Passkeys > Dashboard die UID des Benutzers im Passkey-Abfrage-Panel ein und widerrufen Sie die betroffenen Anmeldedaten. Wenn Sie unsicher sind, welche Anmeldedaten zum verlorenen Gerät gehören, prüfen Sie das Erstellungsdatum und die Bezeichnung.</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.2.description.2" resname="help.recovery.step.2.description.2">
                 <source>Alternatively, open the user's fe_users record in the backend list module. The Passkeys inline element in the record shows all registered credentials and allows deletion.</source>
+                <target>Alternativ öffnen Sie den fe_users-Datensatz des Benutzers im Backend-Listenmodul. Das Passkeys-Inline-Element im Datensatz zeigt alle registrierten Anmeldedaten und ermöglicht deren Löschung.</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.3.title" resname="help.recovery.step.3.title">
                 <source>3. User has zero passkeys and enforcement is active</source>
+                <target>3. Benutzer hat keine Passkeys und Durchsetzung ist aktiv</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.3.description" resname="help.recovery.step.3.description">
                 <source>If the user's group is set to Required or Enforced and the user now has zero registered passkeys, the next password-based login will direct them to the enrollment page. They must register a new passkey on their replacement device before they can continue.</source>
+                <target>Wenn die Gruppe des Benutzers auf Erforderlich oder Erzwungen gesetzt ist und der Benutzer jetzt keine registrierten Passkeys mehr hat, wird die nächste passwortbasierte Anmeldung ihn zur Registrierungsseite weiterleiten. Er muss einen neuen Passkey auf seinem Ersatzgerät registrieren, bevor er fortfahren kann.</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.4.title" resname="help.recovery.step.4.title">
                 <source>4. User cannot log in at all</source>
+                <target>4. Benutzer kann sich gar nicht anmelden</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.4.description.1" resname="help.recovery.step.4.description.1">
                 <source>If the user has no working authenticator and is rate-limited (too many failed attempts), use the Unlock user button in the Passkey Lookup panel to reset the lockout.</source>
+                <target>Wenn der Benutzer keinen funktionierenden Authentifikator hat und durch zu viele fehlgeschlagene Versuche gesperrt ist, verwenden Sie die Schaltfläche "Benutzer entsperren" im Passkey-Abfrage-Panel, um die Sperre zurückzusetzen.</target>
             </trans-unit>
             <trans-unit id="help.recovery.step.4.description.2" resname="help.recovery.step.4.description.2">
                 <source>If they also cannot complete password-based login, the administrator can temporarily lower the group enforcement level to Encourage or Off so the user can log in with a password and re-register a passkey.</source>
+                <target>Wenn auch die passwortbasierte Anmeldung nicht möglich ist, kann der Administrator die Durchsetzungsstufe der Gruppe vorübergehend auf Empfehlen oder Aus senken, damit sich der Benutzer mit einem Passwort anmelden und einen Passkey erneut registrieren kann.</target>
             </trans-unit>
             <trans-unit id="help.recovery.warning.title" resname="help.recovery.warning.title">
                 <source>Important</source>
+                <target>Wichtig</target>
             </trans-unit>
             <trans-unit id="help.recovery.warning.description" resname="help.recovery.warning.description">
                 <source>Remember to restore the group's enforcement level after the user has re-registered a passkey. Leaving enforcement lowered indefinitely weakens your site's security.</source>
+                <target>Denken Sie daran, die Durchsetzungsstufe der Gruppe wiederherzustellen, nachdem der Benutzer einen Passkey erneut registriert hat. Eine dauerhaft gesenkte Durchsetzung schwächt die Sicherheit Ihrer Website.</target>
             </trans-unit>
 
             <!-- Help: Enforcement levels -->
             <trans-unit id="help.enforcement.title" resname="help.enforcement.title">
                 <source>Enforcement levels</source>
+                <target>Durchsetzungsstufen</target>
             </trans-unit>
             <trans-unit id="help.enforcement.column.level" resname="help.enforcement.column.level">
                 <source>Level</source>
+                <target>Stufe</target>
             </trans-unit>
             <trans-unit id="help.enforcement.column.behaviour" resname="help.enforcement.column.behaviour">
                 <source>Behaviour</source>
+                <target>Verhalten</target>
             </trans-unit>
             <trans-unit id="help.enforcement.level.off" resname="help.enforcement.level.off">
                 <source>Passkeys are available but not promoted. No banner or redirect.</source>
+                <target>Passkeys sind verfügbar, werden aber nicht beworben. Kein Banner oder Weiterleitung.</target>
             </trans-unit>
             <trans-unit id="help.enforcement.level.encourage" resname="help.enforcement.level.encourage">
                 <source>A dismissible banner prompts users without passkeys to register one. They can continue using the site with a password.</source>
+                <target>Ein schließbares Banner fordert Benutzer ohne Passkeys auf, einen zu registrieren. Sie können die Website weiterhin mit einem Passwort nutzen.</target>
             </trans-unit>
             <trans-unit id="help.enforcement.level.required" resname="help.enforcement.level.required">
                 <source>Users without a passkey are redirected to the enrollment page after password login. They may skip during the grace period; after it expires they must register.</source>
+                <target>Benutzer ohne Passkey werden nach der Passwort-Anmeldung zur Registrierungsseite weitergeleitet. Während der Übergangsfrist können sie überspringen; danach müssen sie sich registrieren.</target>
             </trans-unit>
             <trans-unit id="help.enforcement.level.enforced" resname="help.enforcement.level.enforced">
                 <source>Same as Required but without any grace period. Users must register a passkey immediately.</source>
+                <target>Wie Erforderlich, aber ohne Übergangsfrist. Benutzer müssen sofort einen Passkey registrieren.</target>
             </trans-unit>
             <trans-unit id="help.enforcement.strictest_wins.title" resname="help.enforcement.strictest_wins.title">
                 <source>Strictest wins</source>
+                <target>Die strengste Stufe gilt</target>
             </trans-unit>
             <trans-unit id="help.enforcement.strictest_wins.description" resname="help.enforcement.strictest_wins.description">
                 <source>When a user belongs to multiple groups, the strictest enforcement level takes effect. For example, if one group is Off and another is Required, the user sees Required.</source>
+                <target>Wenn ein Benutzer mehreren Gruppen angehört, gilt die strengste Durchsetzungsstufe. Beispiel: Wenn eine Gruppe auf Aus und eine andere auf Erforderlich gesetzt ist, sieht der Benutzer Erforderlich.</target>
             </trans-unit>
 
             <!-- Help: FAQ -->
             <trans-unit id="help.faq.title" resname="help.faq.title">
                 <source>Frequently asked questions</source>
+                <target>Häufig gestellte Fragen</target>
             </trans-unit>
             <trans-unit id="help.faq.question.1" resname="help.faq.question.1">
                 <source>What happens if I set enforcement to "Required" and users have not set up passkeys?</source>
+                <target>Was passiert, wenn ich die Durchsetzung auf "Erforderlich" setze und Benutzer noch keine Passkeys eingerichtet haben?</target>
             </trans-unit>
             <trans-unit id="help.faq.answer.1" resname="help.faq.answer.1">
                 <source>A grace period begins. Users who log in with a password are redirected to the enrollment page which explains passkey registration and shows how many days remain. During the grace period they can skip. Once the grace period expires, the enrollment page becomes blocking.</source>
+                <target>Eine Übergangsfrist beginnt. Benutzer, die sich mit einem Passwort anmelden, werden zur Registrierungsseite weitergeleitet, die die Passkey-Registrierung erklärt und anzeigt, wie viele Tage verbleiben. Während der Übergangsfrist können sie überspringen. Nach Ablauf der Übergangsfrist wird die Registrierungsseite blockierend.</target>
             </trans-unit>
             <trans-unit id="help.faq.question.2" resname="help.faq.question.2">
                 <source>Can I enforce passkeys for some groups but not others?</source>
+                <target>Kann ich Passkeys für einige Gruppen erzwingen, für andere aber nicht?</target>
             </trans-unit>
             <trans-unit id="help.faq.answer.2" resname="help.faq.answer.2">
                 <source>Yes. Enforcement is configured per frontend user group. You can set different levels for different groups: for example, Enforced for premium members, Required for registered users, and Off for guest/anonymous groups.</source>
+                <target>Ja. Die Durchsetzung wird pro Frontend-Benutzergruppe konfiguriert. Sie können verschiedene Stufen für verschiedene Gruppen festlegen: z.B. Erzwungen für Premium-Mitglieder, Erforderlich für registrierte Benutzer und Aus für Gast-/Anonyme-Gruppen.</target>
             </trans-unit>
             <trans-unit id="help.faq.question.3" resname="help.faq.question.3">
                 <source>What if a user belongs to multiple groups with different enforcement levels?</source>
+                <target>Was passiert, wenn ein Benutzer mehreren Gruppen mit unterschiedlichen Durchsetzungsstufen angehört?</target>
             </trans-unit>
             <trans-unit id="help.faq.answer.3" resname="help.faq.answer.3">
                 <source>The strictest level wins. If a user belongs to one group with Encourage and another with Required, the effective enforcement level is Required.</source>
+                <target>Die strengste Stufe gilt. Wenn ein Benutzer einer Gruppe mit Empfehlen und einer anderen mit Erforderlich angehört, ist die wirksame Durchsetzungsstufe Erforderlich.</target>
             </trans-unit>
             <trans-unit id="help.faq.question.4" resname="help.faq.question.4">
                 <source>How does passkey login interact with site-level authentication?</source>
+                <target>Wie interagiert die Passkey-Anmeldung mit der seitenweiten Authentifizierung?</target>
             </trans-unit>
             <trans-unit id="help.faq.answer.4" resname="help.faq.answer.4">
                 <source>The passkey login replaces the password. Once a user has authenticated with their passkey, they are treated as a fully authenticated frontend user. The enforcement middleware runs on subsequent requests to check whether the user needs to enroll or is already compliant.</source>
+                <target>Die Passkey-Anmeldung ersetzt das Passwort. Sobald ein Benutzer sich mit seinem Passkey authentifiziert hat, wird er als vollständig authentifizierter Frontend-Benutzer behandelt. Die Durchsetzungs-Middleware prüft bei nachfolgenden Anfragen, ob der Benutzer sich registrieren muss oder bereits konform ist.</target>
             </trans-unit>
             <trans-unit id="help.faq.question.5" resname="help.faq.question.5">
                 <source>Where are passkeys stored?</source>
+                <target>Wo werden Passkeys gespeichert?</target>
             </trans-unit>
             <trans-unit id="help.faq.answer.5" resname="help.faq.answer.5">
                 <source>Passkey credentials (the public key and metadata) are stored in the tx_nrpasskeysfe_credential database table. The private key never leaves the user's device. Each credential is scoped to a site identifier and a frontend user storage PID, preventing cross-site credential confusion.</source>
-            </trans-unit>
-
-            <!-- Frontend JS labels (prefixed js.) -->
-            <trans-unit id="js.error.unsupported" resname="js.error.unsupported">
-                <source>Your browser does not support Passkeys (WebAuthn). Please use a modern browser.</source>
-            </trans-unit>
-            <trans-unit id="js.error.insecure" resname="js.error.insecure">
-                <source>Passkeys require a secure connection (HTTPS).</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.noUsername" resname="js.login.error.noUsername">
-                <source>Please enter your username.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.rateLimit" resname="js.login.error.rateLimit">
-                <source>Too many attempts. Please try again later.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.generic" resname="js.login.error.generic">
-                <source>Authentication failed. Please try again.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.failed" resname="js.login.error.failed">
-                <source>Passkey authentication failed. Please try again or use a recovery code.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.notAllowed" resname="js.login.error.notAllowed">
-                <source>Authentication was cancelled or no passkey found for this site.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.security" resname="js.login.error.security">
-                <source>Security error. Please check your connection and try again.</source>
-            </trans-unit>
-            <trans-unit id="js.login.error.cancelled" resname="js.login.error.cancelled">
-                <source>Authentication was cancelled.</source>
-            </trans-unit>
-            <trans-unit id="js.login.status.verifying" resname="js.login.status.verifying">
-                <source>Verifying...</source>
-            </trans-unit>
-            <trans-unit id="js.login.status.authenticated" resname="js.login.status.authenticated">
-                <source>Authenticated! Redirecting...</source>
-            </trans-unit>
-            <trans-unit id="js.recovery.error.invalidCode" resname="js.recovery.error.invalidCode">
-                <source>Please enter a valid recovery code (format: XXXX-XXXX).</source>
-            </trans-unit>
-            <trans-unit id="js.recovery.error.noUsername" resname="js.recovery.error.noUsername">
-                <source>Please enter your username.</source>
-            </trans-unit>
-            <trans-unit id="js.recovery.error.rateLimit" resname="js.recovery.error.rateLimit">
-                <source>Too many attempts. Please try again later.</source>
-            </trans-unit>
-            <trans-unit id="js.recovery.error.invalid" resname="js.recovery.error.invalid">
-                <source>Invalid recovery code. Please check and try again.</source>
-            </trans-unit>
-            <trans-unit id="js.enrollment.error.startFailed" resname="js.enrollment.error.startFailed">
-                <source>Failed to start registration. Please try again.</source>
-            </trans-unit>
-            <trans-unit id="js.enrollment.status.registering" resname="js.enrollment.status.registering">
-                <source>Registering passkey...</source>
-            </trans-unit>
-            <trans-unit id="js.enrollment.error.generic" resname="js.enrollment.error.generic">
-                <source>Registration failed. Please try again.</source>
-            </trans-unit>
-            <trans-unit id="js.enrollment.error.cancelled" resname="js.enrollment.error.cancelled">
-                <source>Registration was cancelled.</source>
-            </trans-unit>
-            <trans-unit id="js.enrollment.error.alreadyRegistered" resname="js.enrollment.error.alreadyRegistered">
-                <source>This passkey is already registered.</source>
-            </trans-unit>
-            <trans-unit id="js.management.label.unnamed" resname="js.management.label.unnamed">
-                <source>Unnamed</source>
-            </trans-unit>
-            <trans-unit id="js.management.lastUsed.never" resname="js.management.lastUsed.never">
-                <source>Never</source>
-            </trans-unit>
-            <trans-unit id="js.management.action.rename" resname="js.management.action.rename">
-                <source>Rename</source>
-            </trans-unit>
-            <trans-unit id="js.management.action.remove" resname="js.management.action.remove">
-                <source>Remove</source>
-            </trans-unit>
-            <trans-unit id="js.management.remove.confirm" resname="js.management.remove.confirm">
-                <source>Remove passkey "%s"? This cannot be undone.</source>
-            </trans-unit>
-            <trans-unit id="js.management.rename.success" resname="js.management.rename.success">
-                <source>Passkey renamed successfully.</source>
-            </trans-unit>
-            <trans-unit id="js.management.rename.error" resname="js.management.rename.error">
-                <source>Failed to rename passkey.</source>
-            </trans-unit>
-            <trans-unit id="js.management.remove.success" resname="js.management.remove.success">
-                <source>Passkey removed successfully.</source>
-            </trans-unit>
-            <trans-unit id="js.management.remove.error" resname="js.management.remove.error">
-                <source>Failed to remove passkey.</source>
-            </trans-unit>
-            <trans-unit id="js.management.unsupported.title" resname="js.management.unsupported.title">
-                <source>Your browser does not support Passkeys (WebAuthn).</source>
-            </trans-unit>
-            <trans-unit id="js.recoveryCodes.generate.confirm" resname="js.recoveryCodes.generate.confirm">
-                <source>Generate new recovery codes? This will invalidate all existing codes.</source>
-            </trans-unit>
-            <trans-unit id="js.recoveryCodes.generate.success" resname="js.recoveryCodes.generate.success">
-                <source>New recovery codes generated. Save them now!</source>
-            </trans-unit>
-            <trans-unit id="js.recoveryCodes.generate.error" resname="js.recoveryCodes.generate.error">
-                <source>Failed to generate recovery codes. Please try again.</source>
-            </trans-unit>
-
-            <trans-unit id="js.admin.lookup.invalidUid" resname="js.admin.lookup.invalidUid">
-                <source>Please enter a valid frontend user UID.</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.noCredentials" resname="js.admin.lookup.noCredentials">
-                <source>No credentials found.</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.unlabelled" resname="js.admin.lookup.unlabelled">
-                <source>(unlabelled)</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.status.revoked" resname="js.admin.lookup.status.revoked">
-                <source>Revoked</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.status.active" resname="js.admin.lookup.status.active">
-                <source>Active</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.action.revoke" resname="js.admin.lookup.action.revoke">
-                <source>Revoke</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.action.revokeTitle" resname="js.admin.lookup.action.revokeTitle">
-                <source>Revoke this passkey</source>
-            </trans-unit>
-            <trans-unit id="js.admin.lookup.loadFailed" resname="js.admin.lookup.loadFailed">
-                <source>Load failed</source>
-            </trans-unit>
-            <trans-unit id="js.admin.revoke.title" resname="js.admin.revoke.title">
-                <source>Revoke passkey</source>
-            </trans-unit>
-            <trans-unit id="js.admin.revokeAll.title" resname="js.admin.revokeAll.title">
-                <source>Revoke all passkeys</source>
+                <target>Passkey-Anmeldedaten (der öffentliche Schlüssel und Metadaten) werden in der Datenbanktabelle tx_nrpasskeysfe_credential gespeichert. Der private Schlüssel verlässt niemals das Gerät des Benutzers. Jede Anmeldedaten sind auf eine Site-Kennung und eine Frontend-Benutzer-Speicher-PID beschränkt, um Verwechslungen zwischen Websites zu verhindern.</target>
             </trans-unit>
 
             <!-- Admin module JS labels (prefixed js.) -->
             <trans-unit id="js.error.unknown" resname="js.error.unknown">
                 <source>Unknown error.</source>
+                <target>Unbekannter Fehler.</target>
             </trans-unit>
             <trans-unit id="js.error.server" resname="js.error.server">
                 <source>Server returned an error. Please try again.</source>
+                <target>Der Server hat einen Fehler zurückgegeben. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
             <trans-unit id="js.error.network" resname="js.error.network">
                 <source>Network error. Please check your connection.</source>
+                <target>Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.</target>
             </trans-unit>
             <trans-unit id="js.enforcement.updated" resname="js.enforcement.updated">
                 <source>Enforcement updated</source>
+                <target>Durchsetzung aktualisiert</target>
             </trans-unit>
             <trans-unit id="js.enforcement.setTo" resname="js.enforcement.setTo">
                 <source>Group enforcement set to "%s".</source>
+                <target>Gruppen-Durchsetzung auf "%s" gesetzt.</target>
             </trans-unit>
             <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
                 <source>Update failed</source>
+                <target>Aktualisierung fehlgeschlagen</target>
             </trans-unit>
             <trans-unit id="js.revoke.confirm" resname="js.revoke.confirm">
                 <source>Revoke this passkey? This cannot be undone.</source>
+                <target>Diesen Passkey widerrufen? Dies kann nicht rückgängig gemacht werden.</target>
             </trans-unit>
             <trans-unit id="js.revoke.success" resname="js.revoke.success">
                 <source>Passkey revoked</source>
+                <target>Passkey widerrufen</target>
             </trans-unit>
             <trans-unit id="js.revoke.message" resname="js.revoke.message">
                 <source>The passkey has been revoked successfully.</source>
+                <target>Der Passkey wurde erfolgreich widerrufen.</target>
             </trans-unit>
             <trans-unit id="js.revoke.failed" resname="js.revoke.failed">
                 <source>Revoke failed</source>
+                <target>Widerruf fehlgeschlagen</target>
             </trans-unit>
             <trans-unit id="js.revokeAll.confirm" resname="js.revokeAll.confirm">
                 <source>Revoke ALL passkeys for this user? This cannot be undone.</source>
+                <target>ALLE Passkeys für diesen Benutzer widerrufen? Dies kann nicht rückgängig gemacht werden.</target>
             </trans-unit>
             <trans-unit id="js.revokeAll.success" resname="js.revokeAll.success">
                 <source>All passkeys revoked</source>
+                <target>Alle Passkeys widerrufen</target>
             </trans-unit>
             <trans-unit id="js.revokeAll.message" resname="js.revokeAll.message">
                 <source>All passkeys have been revoked for this user.</source>
+                <target>Alle Passkeys für diesen Benutzer wurden widerrufen.</target>
             </trans-unit>
             <trans-unit id="js.revokeAll.failed" resname="js.revokeAll.failed">
                 <source>Revoke all failed</source>
+                <target>Widerruf aller Passkeys fehlgeschlagen</target>
             </trans-unit>
             <trans-unit id="js.unlock.confirm" resname="js.unlock.confirm">
                 <source>Reset the login lock for user "%s"?</source>
+                <target>Anmeldesperre für Benutzer "%s" zurücksetzen?</target>
             </trans-unit>
             <trans-unit id="js.unlock.success" resname="js.unlock.success">
                 <source>Login lock reset</source>
+                <target>Anmeldesperre zurückgesetzt</target>
             </trans-unit>
             <trans-unit id="js.unlock.message" resname="js.unlock.message">
                 <source>Failed login attempt counter reset for "%s".</source>
+                <target>Zähler fehlgeschlagener Anmeldeversuche für "%s" zurückgesetzt.</target>
             </trans-unit>
             <trans-unit id="js.unlock.failed" resname="js.unlock.failed">
                 <source>Reset failed</source>
+                <target>Zurücksetzen fehlgeschlagen</target>
             </trans-unit>
             <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
                 <source>Resetting...</source>
+                <target>Zurücksetzen...</target>
             </trans-unit>
             <trans-unit id="js.unlock.done" resname="js.unlock.done">
                 <source>Reset</source>
+                <target>Zurückgesetzt</target>
+            </trans-unit>
+
+            <!-- JS: Login module -->
+            <trans-unit id="js.login.error.cancelled" resname="js.login.error.cancelled">
+                <source>Authentication was cancelled.</source>
+                <target>Authentifizierung wurde abgebrochen.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.failed" resname="js.login.error.failed">
+                <source>Passkey authentication failed. Please try again or use a recovery code.</source>
+                <target>Passkey-Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut oder verwenden Sie einen Wiederherstellungscode.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.generic" resname="js.login.error.generic">
+                <source>Authentication failed. Please try again.</source>
+                <target>Authentifizierung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.noUsername" resname="js.login.error.noUsername">
+                <source>Please enter your username.</source>
+                <target>Bitte geben Sie Ihren Benutzernamen ein.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.notAllowed" resname="js.login.error.notAllowed">
+                <source>Authentication was cancelled or no passkey found for this site.</source>
+                <target>Authentifizierung wurde abgebrochen oder es wurde kein Passkey für diese Website gefunden.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.rateLimit" resname="js.login.error.rateLimit">
+                <source>Too many attempts. Please try again later.</source>
+                <target>Zu viele Versuche. Bitte versuchen Sie es später erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.security" resname="js.login.error.security">
+                <source>Security error. Please check your connection and try again.</source>
+                <target>Sicherheitsfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.login.status.authenticated" resname="js.login.status.authenticated">
+                <source>Authenticated! Redirecting...</source>
+                <target>Authentifiziert! Weiterleitung...</target>
+            </trans-unit>
+            <trans-unit id="js.login.status.verifying" resname="js.login.status.verifying">
+                <source>Verifying...</source>
+                <target>Überprüfung...</target>
+            </trans-unit>
+
+            <!-- JS: Enrollment module -->
+            <trans-unit id="js.enrollment.error.alreadyRegistered" resname="js.enrollment.error.alreadyRegistered">
+                <source>This passkey is already registered.</source>
+                <target>Dieser Passkey ist bereits registriert.</target>
+            </trans-unit>
+            <trans-unit id="js.enrollment.error.cancelled" resname="js.enrollment.error.cancelled">
+                <source>Registration was cancelled.</source>
+                <target>Registrierung wurde abgebrochen.</target>
+            </trans-unit>
+            <trans-unit id="js.enrollment.error.generic" resname="js.enrollment.error.generic">
+                <source>Registration failed. Please try again.</source>
+                <target>Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.enrollment.error.startFailed" resname="js.enrollment.error.startFailed">
+                <source>Failed to start registration. Please try again.</source>
+                <target>Registrierung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.enrollment.status.registering" resname="js.enrollment.status.registering">
+                <source>Registering passkey...</source>
+                <target>Passkey wird registriert...</target>
+            </trans-unit>
+
+            <!-- JS: Management module -->
+            <trans-unit id="js.management.action.remove" resname="js.management.action.remove">
+                <source>Remove</source>
+                <target>Entfernen</target>
+            </trans-unit>
+            <trans-unit id="js.management.action.rename" resname="js.management.action.rename">
+                <source>Rename</source>
+                <target>Umbenennen</target>
+            </trans-unit>
+            <trans-unit id="js.management.label.unnamed" resname="js.management.label.unnamed">
+                <source>Unnamed</source>
+                <target>Unbenannt</target>
+            </trans-unit>
+            <trans-unit id="js.management.lastUsed.never" resname="js.management.lastUsed.never">
+                <source>Never</source>
+                <target>Nie</target>
+            </trans-unit>
+            <trans-unit id="js.management.remove.confirm" resname="js.management.remove.confirm">
+                <source>Remove passkey "%s"? This cannot be undone.</source>
+                <target>Passkey "%s" entfernen? Dies kann nicht rückgängig gemacht werden.</target>
+            </trans-unit>
+            <trans-unit id="js.management.remove.error" resname="js.management.remove.error">
+                <source>Failed to remove passkey.</source>
+                <target>Passkey konnte nicht entfernt werden.</target>
+            </trans-unit>
+            <trans-unit id="js.management.remove.success" resname="js.management.remove.success">
+                <source>Passkey removed successfully.</source>
+                <target>Passkey erfolgreich entfernt.</target>
+            </trans-unit>
+            <trans-unit id="js.management.rename.error" resname="js.management.rename.error">
+                <source>Failed to rename passkey.</source>
+                <target>Passkey konnte nicht umbenannt werden.</target>
+            </trans-unit>
+            <trans-unit id="js.management.rename.success" resname="js.management.rename.success">
+                <source>Passkey renamed successfully.</source>
+                <target>Passkey erfolgreich umbenannt.</target>
+            </trans-unit>
+            <trans-unit id="js.management.unsupported.title" resname="js.management.unsupported.title">
+                <source>Your browser does not support Passkeys (WebAuthn).</source>
+                <target>Ihr Browser unterstützt keine Passkeys (WebAuthn).</target>
+            </trans-unit>
+
+            <!-- JS: Recovery module -->
+            <trans-unit id="js.recovery.error.invalid" resname="js.recovery.error.invalid">
+                <source>Invalid recovery code. Please check and try again.</source>
+                <target>Ungültiger Wiederherstellungscode. Bitte überprüfen und erneut versuchen.</target>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.invalidCode" resname="js.recovery.error.invalidCode">
+                <source>Please enter a valid recovery code (format: XXXX-XXXX).</source>
+                <target>Bitte geben Sie einen gültigen Wiederherstellungscode ein (Format: XXXX-XXXX).</target>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.noUsername" resname="js.recovery.error.noUsername">
+                <source>Please enter your username.</source>
+                <target>Bitte geben Sie Ihren Benutzernamen ein.</target>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.rateLimit" resname="js.recovery.error.rateLimit">
+                <source>Too many attempts. Please try again later.</source>
+                <target>Zu viele Versuche. Bitte versuchen Sie es später erneut.</target>
+            </trans-unit>
+
+            <!-- JS: Shared -->
+            <trans-unit id="js.error.insecure" resname="js.error.insecure">
+                <source>Passkeys require a secure connection (HTTPS).</source>
+                <target>Passkeys erfordern eine sichere Verbindung (HTTPS).</target>
+            </trans-unit>
+            <trans-unit id="js.error.unsupported" resname="js.error.unsupported">
+                <source>Your browser does not support Passkeys (WebAuthn). Please use a modern browser.</source>
+                <target>Ihr Browser unterstützt keine Passkeys (WebAuthn). Bitte verwenden Sie einen modernen Browser.</target>
+            </trans-unit>
+
+            <!-- JS: Admin lookup -->
+            <trans-unit id="js.admin.lookup.action.revoke" resname="js.admin.lookup.action.revoke">
+                <source>Revoke</source>
+                <target>Widerrufen</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.action.revokeTitle" resname="js.admin.lookup.action.revokeTitle">
+                <source>Revoke this passkey</source>
+                <target>Diesen Passkey widerrufen</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.invalidUid" resname="js.admin.lookup.invalidUid">
+                <source>Please enter a valid frontend user UID.</source>
+                <target>Bitte geben Sie eine gültige Frontend-Benutzer-UID ein.</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.loadFailed" resname="js.admin.lookup.loadFailed">
+                <source>Load failed</source>
+                <target>Laden fehlgeschlagen</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.noCredentials" resname="js.admin.lookup.noCredentials">
+                <source>No credentials found.</source>
+                <target>Keine Anmeldedaten gefunden.</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.status.active" resname="js.admin.lookup.status.active">
+                <source>Active</source>
+                <target>Aktiv</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.status.revoked" resname="js.admin.lookup.status.revoked">
+                <source>Revoked</source>
+                <target>Widerrufen</target>
+            </trans-unit>
+            <trans-unit id="js.admin.lookup.unlabelled" resname="js.admin.lookup.unlabelled">
+                <source>(unlabelled)</source>
+                <target>(ohne Bezeichnung)</target>
+            </trans-unit>
+            <trans-unit id="js.admin.revoke.title" resname="js.admin.revoke.title">
+                <source>Revoke passkey</source>
+                <target>Passkey widerrufen</target>
+            </trans-unit>
+            <trans-unit id="js.admin.revokeAll.title" resname="js.admin.revokeAll.title">
+                <source>Revoke all passkeys</source>
+                <target>Alle Passkeys widerrufen</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -806,15 +1053,19 @@
                  ============================================================ -->
             <trans-unit id="error.network" resname="error.network">
                 <source>Network error. Please check your connection and try again.</source>
+                <target>Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.</target>
             </trans-unit>
             <trans-unit id="error.server" resname="error.server">
                 <source>Server error. Please try again later.</source>
+                <target>Serverfehler. Bitte versuchen Sie es später erneut.</target>
             </trans-unit>
             <trans-unit id="error.unknown" resname="error.unknown">
                 <source>An unknown error occurred. Please try again.</source>
+                <target>Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
             <trans-unit id="never" resname="never">
                 <source>Never</source>
+                <target>Nie</target>
             </trans-unit>
         </body>
     </file>

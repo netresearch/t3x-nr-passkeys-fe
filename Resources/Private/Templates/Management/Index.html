@@ -7,6 +7,33 @@
 <f:asset.script identifier="nr-passkeys-fe-management" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyManagement.js" />
 <f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" />
 <f:asset.script identifier="nr-passkeys-fe-recovery-codes" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecoveryCodes.js" />
+
+<f:format.raw><script data-nr-passkeys-fe-translations type="application/json">
+{
+    "js.error.unsupported": "<f:translate key='js.error.unsupported' extensionName='NrPasskeysFe' />",
+    "js.error.insecure": "<f:translate key='js.error.insecure' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.startFailed": "<f:translate key='js.enrollment.error.startFailed' extensionName='NrPasskeysFe' />",
+    "js.enrollment.status.registering": "<f:translate key='js.enrollment.status.registering' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.generic": "<f:translate key='js.enrollment.error.generic' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.cancelled": "<f:translate key='js.enrollment.error.cancelled' extensionName='NrPasskeysFe' />",
+    "js.enrollment.error.alreadyRegistered": "<f:translate key='js.enrollment.error.alreadyRegistered' extensionName='NrPasskeysFe' />",
+    "js.management.label.unnamed": "<f:translate key='js.management.label.unnamed' extensionName='NrPasskeysFe' />",
+    "js.management.lastUsed.never": "<f:translate key='js.management.lastUsed.never' extensionName='NrPasskeysFe' />",
+    "js.management.action.rename": "<f:translate key='js.management.action.rename' extensionName='NrPasskeysFe' />",
+    "js.management.action.remove": "<f:translate key='js.management.action.remove' extensionName='NrPasskeysFe' />",
+    "js.management.remove.confirm": "<f:translate key='js.management.remove.confirm' extensionName='NrPasskeysFe' />",
+    "js.management.rename.success": "<f:translate key='js.management.rename.success' extensionName='NrPasskeysFe' />",
+    "js.management.rename.error": "<f:translate key='js.management.rename.error' extensionName='NrPasskeysFe' />",
+    "js.management.remove.success": "<f:translate key='js.management.remove.success' extensionName='NrPasskeysFe' />",
+    "js.management.remove.error": "<f:translate key='js.management.remove.error' extensionName='NrPasskeysFe' />",
+    "js.management.unsupported.title": "<f:translate key='js.management.unsupported.title' extensionName='NrPasskeysFe' />",
+    "js.recoveryCodes.generate.confirm": "<f:translate key='js.recoveryCodes.generate.confirm' extensionName='NrPasskeysFe' />",
+    "js.recoveryCodes.generate.success": "<f:translate key='js.recoveryCodes.generate.success' extensionName='NrPasskeysFe' />",
+    "js.recoveryCodes.generate.error": "<f:translate key='js.recoveryCodes.generate.error' extensionName='NrPasskeysFe' />",
+    "js.error.network": "<f:translate key='js.error.network' extensionName='NrPasskeysFe' />"
+}
+</script></f:format.raw>
+
 <div class="nr-passkeys-fe-management{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}"
      id="nr-passkeys-fe-management"
      data-nr-passkeys-fe="management"

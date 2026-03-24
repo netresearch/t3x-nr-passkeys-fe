@@ -37,7 +37,7 @@
       var registerBtn = container.querySelector('[data-action="register-passkey"]');
       if (registerBtn) {
         registerBtn.disabled = true;
-        registerBtn.title = 'Your browser does not support Passkeys (WebAuthn).';
+        registerBtn.title = U.t('js.management.unsupported.title', 'Your browser does not support Passkeys (WebAuthn).');
       }
     }
 
@@ -145,7 +145,7 @@
       var labelSpan = document.createElement('span');
       labelSpan.className = 'nr-passkeys-fe-management__label';
       labelSpan.dataset.uid = cred.uid;
-      labelSpan.textContent = cred.label || 'Unnamed';
+      labelSpan.textContent = cred.label || U.t('js.management.label.unnamed', 'Unnamed');
       labelCell.appendChild(labelSpan);
       row.appendChild(labelCell);
 
@@ -158,7 +158,7 @@
       // Last used cell
       var lastUsedCell = document.createElement('td');
       lastUsedCell.className = 'nr-passkeys-fe-management__td';
-      lastUsedCell.textContent = cred.lastUsedAt ? formatTimestamp(cred.lastUsedAt) : 'Never';
+      lastUsedCell.textContent = cred.lastUsedAt ? formatTimestamp(cred.lastUsedAt) : U.t('js.management.lastUsed.never', 'Never');
       row.appendChild(lastUsedCell);
 
 
@@ -172,7 +172,7 @@
       renameBtn.className = 'nr-passkeys-fe-btn nr-passkeys-fe-btn--secondary nr-passkeys-fe-btn--sm';
       renameBtn.dataset.action = 'rename-credential';
       renameBtn.dataset.uid = cred.uid;
-      renameBtn.textContent = 'Rename';
+      renameBtn.textContent = U.t('js.management.action.rename', 'Rename');
       actionsCell.appendChild(renameBtn);
 
       actionsCell.appendChild(document.createTextNode('\u00a0'));
@@ -182,8 +182,8 @@
       removeBtn.className = 'nr-passkeys-fe-btn nr-passkeys-fe-btn--danger nr-passkeys-fe-btn--sm';
       removeBtn.dataset.action = 'remove-credential';
       removeBtn.dataset.uid = cred.uid;
-      removeBtn.dataset.label = escapeAttr(cred.label || 'Unnamed');
-      removeBtn.textContent = 'Remove';
+      removeBtn.dataset.label = escapeAttr(cred.label || U.t('js.management.label.unnamed', 'Unnamed'));
+      removeBtn.textContent = U.t('js.management.action.remove', 'Remove');
       actionsCell.appendChild(removeBtn);
 
       row.appendChild(actionsCell);
@@ -231,15 +231,15 @@
 
         if (response.ok && data.status === 'ok') {
           labelSpan.textContent = newLabel;
-          U.showStatus(statusEl, 'Passkey renamed successfully.');
+          U.showStatus(statusEl, U.t('js.management.rename.success', 'Passkey renamed successfully.'));
           setTimeout(function () { U.hideStatus(statusEl); }, 3000);
         } else {
           labelSpan.textContent = currentLabel;
-          U.showError(errorEl, data.error || 'Failed to rename passkey.');
+          U.showError(errorEl, data.error || U.t('js.management.rename.error', 'Failed to rename passkey.'));
         }
       } catch (e) {
         labelSpan.textContent = currentLabel;
-        U.showError(errorEl, 'Failed to rename passkey.');
+        U.showError(errorEl, U.t('js.management.rename.error', 'Failed to rename passkey.'));
         console.error('[nr_passkeys_fe] Rename error:', e);
       }
     };
@@ -258,7 +258,7 @@
   }
 
   function handleRemove(uid, label, removeUrl, listBody, emptyEl, errorEl, statusEl, container, listUrl) {
-    var confirmed = window.confirm('Remove passkey "' + sanitizeForDialog(label) + '"? This cannot be undone.');
+    var confirmed = window.confirm(U.t('js.management.remove.confirm', 'Remove passkey "%s"? This cannot be undone.').replace('%s', sanitizeForDialog(label)));
     if (!confirmed) {
       return;
     }
@@ -279,16 +279,16 @@
         if (row && row.parentNode) {
           row.parentNode.removeChild(row);
         }
-        U.showStatus(statusEl, 'Passkey removed successfully.');
+        U.showStatus(statusEl, U.t('js.management.remove.success', 'Passkey removed successfully.'));
         setTimeout(function () { U.hideStatus(statusEl); }, 3000);
 
         // Refresh list to update single-key warning
         refreshList(listUrl, listBody, emptyEl, errorEl, container);
       } else {
-        U.showError(errorEl, (result.data && result.data.error) || 'Failed to remove passkey.');
+        U.showError(errorEl, (result.data && result.data.error) || U.t('js.management.remove.error', 'Failed to remove passkey.'));
       }
     }).catch(function (e) {
-      U.showError(errorEl, 'Failed to remove passkey.');
+      U.showError(errorEl, U.t('js.management.remove.error', 'Failed to remove passkey.'));
       console.error('[nr_passkeys_fe] Remove error:', e);
     });
   }

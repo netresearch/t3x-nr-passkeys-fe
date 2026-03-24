@@ -83,7 +83,7 @@
 
     var code = codeInput ? codeInput.value.trim() : '';
     if (!code || code.length !== 9) {
-      U.showError(errorEl, 'Please enter a valid recovery code (format: XXXX-XXXX).');
+      U.showError(errorEl, U.t('js.recovery.error.invalidCode', 'Please enter a valid recovery code (format: XXXX-XXXX).'));
       if (codeInput) {
         codeInput.focus();
       }
@@ -94,7 +94,7 @@
     var usernameInput = form ? form.querySelector('[name="recovery_username"]') : null;
     var username = usernameInput ? usernameInput.value.trim() : '';
     if (!username) {
-      U.showError(errorEl, 'Please enter your username.');
+      U.showError(errorEl, U.t('js.recovery.error.noUsername', 'Please enter your username.'));
       if (usernameInput) {
         usernameInput.focus();
       }
@@ -116,21 +116,7 @@
 
       if (response.ok && data.status === 'ok' && data.loginToken) {
         // Submit token via felogin form to establish FE session
-        var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
-        if (feloginForm) {
-          var passField = feloginForm.querySelector('input[name="pass"]');
-          if (!passField) {
-            passField = document.createElement('input');
-            passField.type = 'hidden';
-            passField.name = 'pass';
-            feloginForm.appendChild(passField);
-          }
-          passField.value = JSON.stringify({ _type: 'passkey_token', token: data.loginToken });
-          var userField = feloginForm.querySelector('input[name="user"]');
-          if (userField) { userField.value = '__passkey__'; }
-          var logintypeField = feloginForm.querySelector('input[name="logintype"]');
-          if (logintypeField) { logintypeField.value = 'login'; }
-          HTMLFormElement.prototype.submit.call(feloginForm);
+        if (U.submitLoginToken(data.loginToken)) {
           return;
         }
         // Fallback: reload
@@ -139,16 +125,16 @@
       }
 
       if (response.status === 429) {
-        U.showError(errorEl, 'Too many attempts. Please try again later.');
+        U.showError(errorEl, U.t('js.recovery.error.rateLimit', 'Too many attempts. Please try again later.'));
       } else {
-        U.showError(errorEl, data.error || 'Invalid recovery code. Please check and try again.');
+        U.showError(errorEl, data.error || U.t('js.recovery.error.invalid', 'Invalid recovery code. Please check and try again.'));
         if (codeInput) {
           codeInput.value = '';
           codeInput.focus();
         }
       }
     } catch (e) {
-      U.showError(errorEl, 'Network error. Please check your connection and try again.');
+      U.showError(errorEl, U.t('js.error.network', 'Network error. Please check your connection and try again.'));
       console.error('[nr_passkeys_fe] RecoveryVerify error:', e);
     }
 

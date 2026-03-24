@@ -92,7 +92,7 @@
 
   async function handleGenerateCodes(generateUrl, codesGrid, generateBtn, btnText, btnLoading, statusEl, errorEl, downloadBtn, countEl) {
     var confirmed = window.confirm(
-      'Generate new recovery codes? This will invalidate all existing codes.'
+      U.t('js.recoveryCodes.generate.confirm', 'Generate new recovery codes? This will invalidate all existing codes.')
     );
     if (!confirmed) {
       return;
@@ -113,7 +113,7 @@
 
       if (response.ok && data.codes) {
         renderCodes(codesGrid, data.codes);
-        U.showStatus(statusEl, 'New recovery codes generated. Save them now!');
+        U.showStatus(statusEl, U.t('js.recoveryCodes.generate.success', 'New recovery codes generated. Save them now!'));
         // Show download button
         if (downloadBtn) {
           downloadBtn.style.display = '';
@@ -123,10 +123,10 @@
           countEl.textContent = String(data.count);
         }
       } else {
-        U.showError(errorEl, data.error || 'Failed to generate recovery codes. Please try again.');
+        U.showError(errorEl, data.error || U.t('js.recoveryCodes.generate.error', 'Failed to generate recovery codes. Please try again.'));
       }
     } catch (e) {
-      U.showError(errorEl, 'Network error. Please check your connection and try again.');
+      U.showError(errorEl, U.t('js.error.network', 'Network error. Please check your connection and try again.'));
       console.error('[nr_passkeys_fe] GenerateCodes error:', e);
     }
 

@@ -13,6 +13,70 @@
 
   window.NrPasskeysFe = window.NrPasskeysFe || {};
 
+  // Auto-load translations from <script data-nr-passkeys-fe-translations> JSON block
+  (function () {
+    var el = document.querySelector('script[data-nr-passkeys-fe-translations]');
+    if (el) {
+      try {
+        window.NrPasskeysFe.lang = JSON.parse(el.textContent);
+      } catch (e) {
+        // Invalid JSON — ignore, fallbacks will be used
+      }
+    }
+  })();
+
+  /**
+   * Look up a translated string by key, returning the fallback if not found.
+   *
+   * Translations are loaded from NrPasskeysFe.lang (populated by the
+   * data-nr-passkeys-fe-translations JSON script block in Fluid templates).
+   *
+   * @param {string} key
+   * @param {string} fallback
+   * @returns {string}
+   */
+  window.NrPasskeysFe.t = function (key, fallback) {
+    return (window.NrPasskeysFe.lang && window.NrPasskeysFe.lang[key]) || fallback;
+  };
+
+  /**
+   * Submit a passkey login token via the felogin form to establish an FE session.
+   *
+   * Finds the felogin form in the password panel, sets the login fields, and
+   * submits it. Returns true if the form was found and submitted, false otherwise.
+   *
+   * @param {string} token - The login token returned by the eID verify endpoint
+   * @returns {boolean} Whether the form was found and submitted
+   */
+  window.NrPasskeysFe.submitLoginToken = function (token) {
+    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
+    if (!form) {
+      return false;
+    }
+
+    var passField = form.querySelector('input[name="pass"]');
+    if (!passField) {
+      passField = document.createElement('input');
+      passField.type = 'hidden';
+      passField.name = 'pass';
+      form.appendChild(passField);
+    }
+    passField.value = JSON.stringify({ _type: 'passkey_token', token: token });
+
+    var userField = form.querySelector('input[name="user"]');
+    if (userField) {
+      userField.value = '__passkey__';
+    }
+
+    var logintypeField = form.querySelector('input[name="logintype"]');
+    if (logintypeField) {
+      logintypeField.value = 'login';
+    }
+
+    HTMLFormElement.prototype.submit.call(form);
+    return true;
+  };
+
   /**
    * Decode a base64url-encoded string to an ArrayBuffer.
    *

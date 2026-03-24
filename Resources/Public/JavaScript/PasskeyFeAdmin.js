@@ -138,7 +138,10 @@ class PasskeyFeAdmin {
 
     const feUserUid = parseInt(input.value, 10);
     if (!feUserUid || feUserUid <= 0) {
-      Notification.warning('Invalid UID', 'Please enter a valid frontend user UID.');
+      Notification.warning(
+        this.translate('js.admin.lookup.invalidUid', 'Invalid UID'),
+        this.translate('js.admin.lookup.invalidUid', 'Please enter a valid frontend user UID.'),
+      );
       return;
     }
 
@@ -162,7 +165,7 @@ class PasskeyFeAdmin {
       }
     } catch (error) {
       const message = await this.extractErrorMessage(error);
-      Notification.error('Load failed', message);
+      Notification.error(this.translate('js.admin.lookup.loadFailed', 'Load failed'), message);
     } finally {
       if (loadBtn) {
         loadBtn.disabled = false;
@@ -189,7 +192,7 @@ class PasskeyFeAdmin {
       const cell = row.insertCell();
       cell.colSpan = 6;
       cell.className = 'text-body-secondary text-center';
-      cell.textContent = 'No credentials found.';
+      cell.textContent = this.translate('js.admin.lookup.noCredentials', 'No credentials found.');
       return;
     }
 
@@ -204,7 +207,7 @@ class PasskeyFeAdmin {
         : '—';
 
       // Label
-      row.insertCell().textContent = cred.label || '(unlabelled)';
+      row.insertCell().textContent = cred.label || this.translate('js.admin.lookup.unlabelled', '(unlabelled)');
 
       // Site
       row.insertCell().textContent = cred.siteIdentifier;
@@ -219,7 +222,9 @@ class PasskeyFeAdmin {
       const statusCell = row.insertCell();
       const badge = document.createElement('span');
       badge.className = cred.isRevoked ? 'badge text-bg-secondary' : 'badge text-bg-success';
-      badge.textContent = cred.isRevoked ? 'Revoked' : 'Active';
+      badge.textContent = cred.isRevoked
+        ? this.translate('js.admin.lookup.status.revoked', 'Revoked')
+        : this.translate('js.admin.lookup.status.active', 'Active');
       statusCell.appendChild(badge);
 
       // Actions
@@ -231,8 +236,8 @@ class PasskeyFeAdmin {
         revokeBtn.type = 'button';
         revokeBtn.className = 'btn btn-default btn-sm passkey-fe-revoke-single';
         revokeBtn.dataset.credentialUid = String(cred.uid);
-        revokeBtn.title = 'Revoke this passkey';
-        revokeBtn.textContent = 'Revoke';
+        revokeBtn.title = this.translate('js.admin.lookup.action.revokeTitle', 'Revoke this passkey');
+        revokeBtn.textContent = this.translate('js.admin.lookup.action.revoke', 'Revoke');
         revokeBtn.addEventListener('click', (event) => this.handleRevokeSingle(event));
         actionsCell.appendChild(revokeBtn);
       }
@@ -248,7 +253,7 @@ class PasskeyFeAdmin {
     const credentialUid = parseInt(button.dataset.credentialUid, 10);
 
     const confirmed = await this.confirm(
-      'Revoke passkey',
+      this.translate('js.admin.revoke.title', 'Revoke passkey'),
       this.translate('js.revoke.confirm', 'Revoke this passkey? This cannot be undone.'),
     );
 
@@ -305,7 +310,7 @@ class PasskeyFeAdmin {
     }
 
     const confirmed = await this.confirm(
-      'Revoke all passkeys',
+      this.translate('js.admin.revokeAll.title', 'Revoke all passkeys'),
       this.translate(
         'js.revokeAll.confirm',
         'Revoke ALL passkeys for this user? This cannot be undone.',

@@ -25,15 +25,6 @@
 
   var U = window.NrPasskeysFe;
 
-  // Material Symbols "passkey" icon (Apache 2.0, google/material-design-icons)
-  // Kept as constant to avoid innerHTML with dynamic content
-  var PASSKEY_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor" aria-hidden="true">' +
-    '<path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120Z' +
-    'M760-40l-60-60v-186q-44-13-72-49.5T600-420q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T790-290l50 50-60 60 60 60-80 80Z' +
-    'M440-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Z' +
-    'mm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/>' +
-    '</svg>';
-
   function init() {
     var containers = document.querySelectorAll('[data-nr-passkeys-fe="login"]');
     for (var i = 0; i < containers.length; i++) {
@@ -67,7 +58,7 @@
 
     // Feature detection
     if (!window.PublicKeyCredential) {
-      U.showError(errorEl, 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.');
+      U.showError(errorEl, U.t('js.error.unsupported', 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.'));
       if (btnEl) {
         btnEl.disabled = true;
       }
@@ -75,7 +66,7 @@
     }
 
     if (!window.isSecureContext) {
-      U.showError(errorEl, 'Passkeys require a secure connection (HTTPS).');
+      U.showError(errorEl, U.t('js.error.insecure', 'Passkeys require a secure connection (HTTPS).'));
       if (btnEl) {
         btnEl.disabled = true;
       }
@@ -222,7 +213,7 @@
     try {
       if (sessionStorage.getItem('nr_passkeys_fe_attempt')) {
         sessionStorage.removeItem('nr_passkeys_fe_attempt');
-        U.showError(errorEl, 'Passkey authentication failed. Please try again or use a recovery code.');
+        U.showError(errorEl, U.t('js.login.error.failed', 'Passkey authentication failed. Please try again or use a recovery code.'));
       }
     } catch (e) {
       // sessionStorage may be unavailable
@@ -235,7 +226,7 @@
 
     // Only require username for non-discoverable (username-first) flow
     if (!discoverable && !username) {
-      U.showError(errorEl, 'Please enter your username.');
+      U.showError(errorEl, U.t('js.login.error.noUsername', 'Please enter your username.'));
       if (usernameInput) {
         usernameInput.focus();
       }
@@ -257,9 +248,9 @@
       if (!optionsResponse.ok) {
         var errData = await optionsResponse.json().catch(function () { return {}; });
         if (optionsResponse.status === 429) {
-          U.showError(errorEl, 'Too many attempts. Please try again later.');
+          U.showError(errorEl, U.t('js.login.error.rateLimit', 'Too many attempts. Please try again later.'));
         } else {
-          U.showError(errorEl, errData.error || 'Authentication failed. Please try again.');
+          U.showError(errorEl, errData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
         }
         U.setLoading(false, btnEl, btnText, btnLoading);
         return;
@@ -308,7 +299,7 @@
       // Step 5: Verify the assertion via eID endpoint (server-side WebAuthn verification).
       // The eID has full site context and establishes the FE session.
       // On success, redirect to the post-login page or reload.
-      U.showStatus(statusEl, 'Verifying...');
+      U.showStatus(statusEl, U.t('js.login.status.verifying', 'Verifying...'));
       try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
       var verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
       var verifyResponse = await fetch(verifyUrl, {
@@ -325,46 +316,32 @@
       var verifyData = await verifyResponse.json().catch(function () { return {}; });
 
       if (verifyResponse.ok && verifyData.status === 'ok' && verifyData.loginToken) {
+        try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
+
         // Submit the login token via felogin form to establish a real FE session.
         // The eID verified the assertion; the token proves it to the auth service.
-        var feloginForm = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
-        if (feloginForm) {
-          var passField = feloginForm.querySelector('input[name="pass"]');
-          if (!passField) {
-            passField = document.createElement('input');
-            passField.type = 'hidden';
-            passField.name = 'pass';
-            feloginForm.appendChild(passField);
-          }
-          passField.value = JSON.stringify({ _type: 'passkey_token', token: verifyData.loginToken });
-          var userField = feloginForm.querySelector('input[name="user"]');
-          if (userField) { userField.value = '__passkey__'; }
-          var logintypeField = feloginForm.querySelector('input[name="logintype"]');
-          if (logintypeField) { logintypeField.value = 'login'; }
-          try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-          HTMLFormElement.prototype.submit.call(feloginForm);
+        if (U.submitLoginToken(verifyData.loginToken)) {
           return;
         }
 
         // No felogin form (standalone plugin) — just reload
-        try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-        U.showStatus(statusEl, 'Authenticated! Redirecting...');
+        U.showStatus(statusEl, U.t('js.login.status.authenticated', 'Authenticated! Redirecting...'));
         window.location.reload();
         return;
       }
 
       try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-      U.showError(errorEl, verifyData.error || 'Authentication failed. Please try again.');
+      U.showError(errorEl, verifyData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
       U.hideStatus(statusEl);
     } catch (err) {
       if (err.name === 'NotAllowedError') {
-        U.showError(errorEl, 'Authentication was cancelled or no passkey found for this site.');
+        U.showError(errorEl, U.t('js.login.error.notAllowed', 'Authentication was cancelled or no passkey found for this site.'));
       } else if (err.name === 'SecurityError') {
-        U.showError(errorEl, 'Security error. Please check your connection and try again.');
+        U.showError(errorEl, U.t('js.login.error.security', 'Security error. Please check your connection and try again.'));
       } else if (err.name === 'AbortError') {
-        U.showError(errorEl, 'Authentication was cancelled.');
+        U.showError(errorEl, U.t('js.login.error.cancelled', 'Authentication was cancelled.'));
       } else {
-        U.showError(errorEl, 'Authentication failed: ' + (err.message || 'Please try again.'));
+        U.showError(errorEl, (err.message || U.t('js.login.error.generic', 'Authentication failed. Please try again.')));
         console.error('[nr_passkeys_fe] PasskeyLogin error:', err);
       }
     }

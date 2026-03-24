@@ -11,6 +11,27 @@
 <f:asset.script identifier="nr-passkeys-fe-login" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js" />
 <f:asset.script identifier="nr-passkeys-fe-recovery" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyRecovery.js" />
 
+<f:format.raw><script data-nr-passkeys-fe-translations type="application/json">
+{
+    "js.error.unsupported": "<f:translate key='js.error.unsupported' extensionName='NrPasskeysFe' />",
+    "js.error.insecure": "<f:translate key='js.error.insecure' extensionName='NrPasskeysFe' />",
+    "js.login.error.noUsername": "<f:translate key='js.login.error.noUsername' extensionName='NrPasskeysFe' />",
+    "js.login.error.rateLimit": "<f:translate key='js.login.error.rateLimit' extensionName='NrPasskeysFe' />",
+    "js.login.error.generic": "<f:translate key='js.login.error.generic' extensionName='NrPasskeysFe' />",
+    "js.login.error.failed": "<f:translate key='js.login.error.failed' extensionName='NrPasskeysFe' />",
+    "js.login.error.notAllowed": "<f:translate key='js.login.error.notAllowed' extensionName='NrPasskeysFe' />",
+    "js.login.error.security": "<f:translate key='js.login.error.security' extensionName='NrPasskeysFe' />",
+    "js.login.error.cancelled": "<f:translate key='js.login.error.cancelled' extensionName='NrPasskeysFe' />",
+    "js.login.status.verifying": "<f:translate key='js.login.status.verifying' extensionName='NrPasskeysFe' />",
+    "js.login.status.authenticated": "<f:translate key='js.login.status.authenticated' extensionName='NrPasskeysFe' />",
+    "js.recovery.error.invalidCode": "<f:translate key='js.recovery.error.invalidCode' extensionName='NrPasskeysFe' />",
+    "js.recovery.error.noUsername": "<f:translate key='js.recovery.error.noUsername' extensionName='NrPasskeysFe' />",
+    "js.recovery.error.rateLimit": "<f:translate key='js.recovery.error.rateLimit' extensionName='NrPasskeysFe' />",
+    "js.recovery.error.invalid": "<f:translate key='js.recovery.error.invalid' extensionName='NrPasskeysFe' />",
+    "js.error.network": "<f:translate key='js.error.network' extensionName='NrPasskeysFe' />"
+}
+</script></f:format.raw>
+
 <f:flashMessages/>
 
 <f:if condition="{messageKey}">
