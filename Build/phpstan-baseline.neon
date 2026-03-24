@@ -275,12 +275,6 @@ parameters:
 			path: ../Classes/Configuration/FrontendConfiguration.php
 			count: 8
 			reportUnmatched: false
-		# Catch-all for CI ergebnis isset violations
-		-
-			message: '#^Language construct isset\(\) should not be used\.$#'
-			identifier: ergebnis.noIsset
-			count: 5
-			reportUnmatched: false
 		# Deprecated menu methods in TYPO3 v14
 		-
 			message: '#^Call to deprecated method makeMenuItem\(\)#'
@@ -291,4 +285,18 @@ parameters:
 			message: '#^Call to deprecated method makeMenu\(\)#'
 			path: ../Classes/Controller/AdminModuleController.php
 			count: 3
+			reportUnmatched: false
+
+		# CI isset violations with specific paths
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 2
+			path: ../Classes/Service/FrontendEnforcementService.php
+			reportUnmatched: false
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 1
+			path: ../Classes/Controller/AdminModuleController.php
 			reportUnmatched: false
