@@ -168,3 +168,65 @@ parameters:
 			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 			reportUnmatched: false
+
+		# CI-only: ergebnis/phpstan-rules violations not reproduced locally
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$magicLinkEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enrollmentBannerEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enableFePasskeys with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$defaultEnforcementLevel with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:resolveSite\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:getPasskeyPayload\(\) has a nullable return type declaration\.$#'
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$site\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$challenge\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
+		-
+			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$assertionJson\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
+		-
+			message: '#^Class "Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService" is not allowed to extend "TYPO3\\CMS\\Core\\Authentication\\AbstractAuthenticationService"\.$#'
+			identifier: ergebnis.noExtends
+			count: 1
+			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
+			reportUnmatched: false
