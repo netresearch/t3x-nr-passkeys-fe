@@ -230,3 +230,41 @@ parameters:
 			count: 1
 			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
 			reportUnmatched: false
+
+		# CI ergebnis uses "Constructor of self" not the FQCN
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$postLoginEnrollmentEnabled\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor of self is invoked with named argument for parameter \$maxPasskeysPerUser\.$#'
+			identifier: ergebnis.noNamedArgument
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodesEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodeCount with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$postLoginEnrollmentEnabled with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$maxPasskeysPerUser with default value\.$#'
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
+			count: 1
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			reportUnmatched: false
