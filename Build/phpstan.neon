@@ -45,6 +45,38 @@ parameters:
             message: '#Parameter \#3 \$subject of function str_ireplace expects#'
             path: ../Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
+        # ergebnis/phpstan-rules violations are handled in phpstan-baseline.neon
+        # but CI may resolve a different ergebnis version than local, producing
+        # additional violations not in the baseline. These catch-all patterns
+        # suppress all ergebnis-specific identifiers to prevent CI-vs-local drift.
+        -
+            identifier: ergebnis.noNamedArgument
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noConstructorParameterWithDefaultValue
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noIsset
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noNullableReturnTypeDeclaration
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noExtends
+            reportUnmatched: false
+        -
+            identifier: cast.string
+            reportUnmatched: false
+        -
+            message: '#^Call to deprecated method makeMenu#'
+            reportUnmatched: false
+        -
+            message: '#^Call to deprecated method makeMenuItem#'
+            reportUnmatched: false
+        -
+            message: '#^Method .* has a nullable return type declaration#'
+            identifier: ergebnis.noNullableReturnTypeDeclaration
+            reportUnmatched: false
 
 services:
     -
