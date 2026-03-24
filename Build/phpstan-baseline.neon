@@ -392,7 +392,7 @@ parameters:
 
 		-
 			message: '#^Method Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus\:\:__construct\(\) has parameter \$graceDeadline with a nullable type declaration\.$#'
-			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
 			count: 1
 			path: ../Classes/Domain/Dto/FrontendEnforcementStatus.php
 
@@ -632,7 +632,7 @@ parameters:
 
 		-
 			message: '#^Method Netresearch\\NrPasskeysFe\\Event\\BeforePasskeyAuthenticationEvent\:\:__construct\(\) has parameter \$feUserUid with a nullable type declaration\.$#'
-			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
 			count: 1
 			path: ../Classes/Event/BeforePasskeyAuthenticationEvent.php
 
@@ -650,7 +650,7 @@ parameters:
 
 		-
 			message: '#^Method Netresearch\\NrPasskeysFe\\EventListener\\InjectPasskeyBanner\:\:renderBanner\(\) has parameter \$graceDeadline with a nullable type declaration\.$#'
-			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
 			count: 1
 			path: ../Classes/EventListener/InjectPasskeyBanner.php
 
@@ -1227,7 +1227,7 @@ parameters:
 
 		-
 			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus has parameter \$graceDays with default value\.$#'
-			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			identifier: ergebnis.noConstructorParameterWithDefaultValue
 			count: 1
 			path: ../Classes/Domain/Dto/FrontendEnforcementStatus.php
 
