@@ -132,6 +132,7 @@ final class FrontendEnforcementService
             inGracePeriod: $inGracePeriod,
             graceDeadline: $graceDeadline,
             recoveryCodesRemaining: $recoveryCodesRemaining,
+            graceDays: $effectiveGraceDays,
         );
 
         $this->statusCache[$cacheKey] = $status;
@@ -150,6 +151,13 @@ final class FrontendEnforcementService
             ['passkey_grace_period_start' => \time()],
             ['uid' => $feUserUid],
         );
+
+        // Invalidate cached status for this user across all sites
+        foreach (\array_keys($this->statusCache) as $key) {
+            if (\str_starts_with($key, $feUserUid . '|')) {
+                unset($this->statusCache[$key]);
+            }
+        }
     }
 
     /**

@@ -37,5 +37,7 @@ final readonly class FrontendEnforcementStatus
         public ?DateTimeImmutable $graceDeadline,
         /** Number of unused recovery codes remaining */
         public int $recoveryCodesRemaining,
+        /** Configured grace period in days (0 means no grace period configured) */
+        public int $graceDays = 0,
     ) {}
 }

@@ -206,8 +206,8 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
      */
     private function hasGracePeriodConfigured(\Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus $status): bool
     {
-        // Grace is configured if the site/group has grace days > 0
-        // We detect this by absence of graceDeadline but effectiveLevel = required
-        return !$status->inGracePeriod && $status->graceDeadline === null;
+        return !$status->inGracePeriod
+            && $status->graceDeadline === null
+            && $status->graceDays > 0;
     }
 }

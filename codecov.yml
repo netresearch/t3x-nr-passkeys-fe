@@ -9,6 +9,41 @@ coverage:
         target: auto
         threshold: 5%
 
+flags:
+  unit:
+    paths:
+      - Classes/
+    carryforward: true
+  functional:
+    paths:
+      - Classes/
+    carryforward: true
+  fuzz:
+    paths:
+      - Classes/
+    carryforward: true
+  js:
+    paths:
+      - Resources/Public/JavaScript/
+    carryforward: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 5%
+
+  individual_components:
+    - component_id: php-classes
+      name: PHP Classes
+      paths:
+        - Classes/**
+    - component_id: javascript
+      name: JavaScript Modules
+      paths:
+        - Resources/Public/JavaScript/**
+
 comment:
-  layout: "reach,diff,flags,files"
+  layout: "reach,diff,flags,files,components"
   behavior: default
