@@ -79,7 +79,7 @@ parameters:
             message: '#PHPDoc tag .* is not subtype#'
             reportUnmatched: false
         -
-            message: '#Call to deprecated method#'
+            message: '#deprecated#'
             reportUnmatched: false
         -
             message: '#no request attribute .* configured#'
