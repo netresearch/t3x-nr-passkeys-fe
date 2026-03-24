@@ -1224,3 +1224,15 @@ parameters:
 			identifier: ergebnis.noIsset
 			count: 1
 			path: ../Classes/Service/FrontendUserLookupService.php
+
+		-
+			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Domain\\Dto\\FrontendEnforcementStatus has parameter \$graceDays with default value\.$#'
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			count: 1
+			path: ../Classes/Domain/Dto/FrontendEnforcementStatus.php
+
+		-
+			message: '#^Access to property \$content of deprecated class TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController#'
+			path: ../Classes/EventListener/InjectPasskeyBanner.php
+			count: 2
+			reportUnmatched: false
