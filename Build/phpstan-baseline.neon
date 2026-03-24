@@ -268,3 +268,27 @@ parameters:
 			count: 1
 			path: ../Classes/Configuration/FrontendConfiguration.php
 			reportUnmatched: false
+
+		# Catch-all for CI ergebnis named argument violations on FrontendConfiguration
+		-
+			message: '#^Constructor of self is invoked with named argument#'
+			path: ../Classes/Configuration/FrontendConfiguration.php
+			count: 8
+			reportUnmatched: false
+		# Catch-all for CI ergebnis isset violations
+		-
+			message: '#^Language construct isset\(\) should not be used\.$#'
+			identifier: ergebnis.noIsset
+			count: 5
+			reportUnmatched: false
+		# Deprecated menu methods in TYPO3 v14
+		-
+			message: '#^Call to deprecated method makeMenuItem\(\)#'
+			path: ../Classes/Controller/AdminModuleController.php
+			count: 5
+			reportUnmatched: false
+		-
+			message: '#^Call to deprecated method makeMenu\(\)#'
+			path: ../Classes/Controller/AdminModuleController.php
+			count: 3
+			reportUnmatched: false
