@@ -26,7 +26,7 @@
     },
     "require": {
         "php": "^8.2",
-        "netresearch/nr-passkeys-be": "^0.6 || ^0.7",
+        "netresearch/nr-passkeys-be": "^0.6 || ^0.7 || ^0.8",
         "typo3/cms-core": "^13.4 || ^14.1",
         "typo3/cms-frontend": "^13.4 || ^14.1",
         "typo3/cms-backend": "^13.4 || ^14.1",
