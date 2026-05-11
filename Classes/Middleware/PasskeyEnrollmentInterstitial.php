@@ -136,11 +136,13 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
                     return $handler->handle($request);
                 }
 
-                // Redirect with skip option
-                return new RedirectResponse(
-                    $this->appendQueryParam($enrollmentUrl, 'canSkip', '1'),
-                    303,
-                );
+                // Redirect to enrollment page. The skip signal previously
+                // appended as ?canSkip=1 is intentionally omitted: no
+                // template or JS module currently consumes it, so emitting
+                // it would only add a dead query parameter to the URL.
+                // Re-introduce a documented signal when the JS-driven skip
+                // flow (POST to enrollmentSkip) is actually wired up.
+                return new RedirectResponse($enrollmentUrl, 303);
             }
 
             // Grace period expired or not started → start grace period if not started
@@ -192,12 +194,6 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     private function resolveEnrollmentUrl(ServerRequestInterface $request, SiteInterface $site): string
     {
         return $this->siteConfigurationService->getEnrollmentPageUrl($site);
-    }
-
-    private function appendQueryParam(string $url, string $key, string $value): string
-    {
-        $separator = \str_contains($url, '?') ? '&' : '?';
-        return $url . $separator . \urlencode($key) . '=' . \urlencode($value);
     }
 
     /**
