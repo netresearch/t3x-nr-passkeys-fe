@@ -78,17 +78,6 @@
             </span>
         </button>
 
-        <f:if condition="{canSkip}">
-            <f:form actionUri="{skipUrl}" method="post" requestToken="true">
-                <f:form.hidden name="__hmac" value="{hmac}" />
-                <f:form.hidden name="nr_passkeys_skip_nonce" value="{skipNonce}" />
-                <button type="submit"
-                        class="nr-passkeys-fe-btn nr-passkeys-fe-btn--ghost"
-                        data-action="skip-enrollment">
-                    <f:translate key="enrollment.button.skip" extensionName="nr_passkeys_fe" />
-                </button>
-            </f:form>
-        </f:if>
     </div>
 
     <div class="nr-passkeys-fe-enrollment__unsupported">
