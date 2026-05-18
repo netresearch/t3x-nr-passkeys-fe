@@ -6,7 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{page.title} - EXT:nr_passkeys_fe Demo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!--
+        Google Fonts CSS endpoints serve User-Agent-dependent content (the
+        same URL returns different @font-face rules for different browsers,
+        Unicode subsets, and woff2 fallbacks), which makes static SRI hashes
+        impossible — Google explicitly does not publish them for fonts.googleapis.com.
+        crossorigin on the preconnect bounds the fetch to CORS-aware credentials handling.
+        Suppress Web:S5725 (integrity-check) for this CDN reference only.
+    -->
+    <!-- nosemgrep: Web:S5725 -->
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" crossorigin="anonymous" referrerpolicy="no-referrer">
     <f:asset.css identifier="nr-passkeys-fe-page-css">
         :root {
             --nr-primary: #2F99A4;

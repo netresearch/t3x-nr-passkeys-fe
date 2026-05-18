@@ -35,9 +35,17 @@ final readonly class RecoveryCodeService
     private const MAX_CODES = 10;
 
     /**
-     * Pre-computed bcrypt hash used for constant-time padding.
-     * The actual plaintext is irrelevant; it just needs to be a valid bcrypt hash.
+     * Pre-computed bcrypt hash used for constant-time padding. When no matching
+     * code exists for a user, we still run `password_verify()` against this
+     * dummy hash so the verification path takes the same wall-clock time as a
+     * real lookup — defeating timing-based user/code enumeration.
+     *
+     * The plaintext that produced this hash is irrelevant and unknown; the
+     * value is not associated with any user account or password and exposes
+     * no credential. SAST tooling flagging this as "password hash disclosure"
+     * is a false positive on the constant-time-padding pattern.
      */
+    // nosemgrep: secrets:S8215
     private const DUMMY_HASH = '$2y$12$000000000000000000000uGBbLJHBfROXxjMI.RxFKYbIpkYl/6Gy';
 
     public function __construct(
