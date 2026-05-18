@@ -32,7 +32,6 @@ final class EnrollmentPluginController extends ActionController
             'registerOptionsUrl' => $eidUrl . '&action=registrationOptions',
             'registerVerifyUrl' => $eidUrl . '&action=registrationVerify',
             'enforcementLevel' => 'off',
-            'skipUrl' => $eidUrl . '&action=enrollmentSkip',
         ]);
 
         return $this->htmlResponse();

@@ -29,6 +29,7 @@ use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticatorSelectionCriteria;
 use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
+use Webauthn\CredentialRecord;
 use Webauthn\Denormalizer\WebauthnSerializerFactory;
 use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialCreationOptions;
@@ -36,7 +37,6 @@ use Webauthn\PublicKeyCredentialDescriptor;
 use Webauthn\PublicKeyCredentialParameters;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Webauthn\PublicKeyCredentialRpEntity;
-use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\TrustPath\EmptyTrustPath;
 
@@ -325,7 +325,7 @@ final class FrontendWebAuthnService
 
         try {
             $updatedSource = $validator->check(
-                publicKeyCredentialSource: $storedSource,
+                credentialRecord: $storedSource,
                 authenticatorAssertionResponse: $response,
                 publicKeyCredentialRequestOptions: $requestOptions,
                 host: $rpId,
@@ -491,13 +491,13 @@ final class FrontendWebAuthnService
         return $key;
     }
 
-    private function credentialToSource(FrontendCredential $credential): PublicKeyCredentialSource
+    private function credentialToSource(FrontendCredential $credential): CredentialRecord
     {
         $aaguid = $credential->getAaguid() !== ''
             ? \Symfony\Component\Uid\Uuid::fromString($credential->getAaguid())
             : \Symfony\Component\Uid\Uuid::v4();
 
-        return PublicKeyCredentialSource::create(
+        return CredentialRecord::create(
             publicKeyCredentialId: $credential->getCredentialId(),
             type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
             transports: $credential->getTransportsArray(),
@@ -511,7 +511,7 @@ final class FrontendWebAuthnService
     }
 
     private function sourceToCredential(
-        PublicKeyCredentialSource $source,
+        CredentialRecord $source,
         int $feUserUid,
         string $siteIdentifier,
     ): FrontendCredential {

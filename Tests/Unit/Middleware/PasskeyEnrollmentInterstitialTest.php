@@ -210,7 +210,9 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         self::assertSame(303, $response->getStatusCode());
         $location = $response->getHeaderLine('Location');
         self::assertStringContainsString('/enroll', $location);
-        self::assertStringContainsString('canSkip=1', $location);
+        // No `canSkip=1` query parameter is emitted: no FE template or JS
+        // module consumes it, so it would just be a dead URL fragment.
+        self::assertStringNotContainsString('canSkip', $location);
     }
 
     #[Test]
