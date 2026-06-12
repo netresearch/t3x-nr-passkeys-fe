@@ -17,7 +17,7 @@
                edit-on-github-directory="Documentation"/>
 
     <project title="Passkeys Frontend Authentication"
-             version="0.2.0"
+             version="0.3.0"
              release="0.2.0"
              copyright="since 2025 by Netresearch DTT GmbH"/>
 

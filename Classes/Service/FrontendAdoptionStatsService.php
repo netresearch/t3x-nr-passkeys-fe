@@ -122,7 +122,7 @@ final readonly class FrontendAdoptionStatsService
      * Uses two aggregate queries (GROUP BY) instead of per-group queries
      * to avoid the N+1 query pattern.
      *
-     * @return array<string, array{groupName: string, userCount: int, withPasskeys: int, enforcement: string}>
+     * @return array<int, array{groupName: string, userCount: int, withPasskeys: int, enforcement: string}>
      */
     private function getPerGroupStats(string $siteIdentifier): array
     {
