@@ -10,7 +10,9 @@ return [
         'crdate' => 'crdate',
         'delete' => 'deleted',
         'default_sortby' => 'created_at DESC',
-        'iconfile' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/credential.svg',
+        'typeicon_classes' => [
+            'default' => 'nr-passkeys-fe-credential',
+        ],
         'hideTable' => true,
         'rootLevel' => -1,
         'security' => [
