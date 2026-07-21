@@ -260,7 +260,23 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         $queryBuilder = $this->createStub(QueryBuilder::class);
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
+        // Guard against the "DISTINCT <col>" regression: QueryBuilder::count()
+        // quotes its whole argument as ONE identifier, so anything containing
+        // whitespace or SQL keywords produces broken SQL like
+        // COUNT(`DISTINCT fe_user`) -> "Unknown column 'DISTINCT fe_user'".
+        // Raw SQL fragments must go through selectLiteral() instead.
+        $queryBuilder->method('count')->willReturnCallback(
+            static function (string $identifier) use ($queryBuilder): QueryBuilder {
+                self::assertMatchesRegularExpression(
+                    '/^[A-Za-z0-9_.]+$/',
+                    $identifier,
+                    'QueryBuilder::count() must receive a plain column identifier; use selectLiteral() for expressions like COUNT(DISTINCT ...)',
+                );
+
+                return $queryBuilder;
+            },
+        );
+        $queryBuilder->method('selectLiteral')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
         $queryBuilder->method('join')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
