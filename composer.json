@@ -37,12 +37,19 @@
         "netresearch/typo3-ci-workflows": "^1.1",
         "ergebnis/phpstan-rules": "^2.6",
         "dg/bypass-finals": "^1.9",
-        "giorgiosironi/eris": "^1.0"
+        "giorgiosironi/eris": "^1.0",
+        "typo3/cms-dashboard": "^13.4 || ^14.1"
+    },
+    "suggest": {
+        "typo3/cms-dashboard": "Adds passkey adoption / credential count widgets to the TYPO3 dashboard"
     },
     "autoload": {
         "psr-4": {
             "Netresearch\\NrPasskeysFe\\": "Classes/"
-        }
+        },
+        "files": [
+            "Resources/Private/Php/AdminOnlyWidgetInterfaceCompat.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
