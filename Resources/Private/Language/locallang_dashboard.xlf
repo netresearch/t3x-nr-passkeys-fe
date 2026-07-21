@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_fe/Resources/Private/Language/locallang_dashboard.xlf">
+        <body>
+            <trans-unit id="widget_group.nrpasskeys" resname="widget_group.nrpasskeys">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.title" resname="widget.adoption.title">
+                <source>Passkey adoption</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.description" resname="widget.adoption.description">
+                <source>Shows how many active frontend users have at least one active passkey compared to those without any.</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.label.with_passkeys" resname="widget.adoption.label.with_passkeys">
+                <source>With passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.label.without_passkeys" resname="widget.adoption.label.without_passkeys">
+                <source>Without passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.title" resname="widget.credentials.title">
+                <source>Active passkey credentials</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.subtitle" resname="widget.credentials.subtitle">
+                <source>Not revoked</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.description" resname="widget.credentials.description">
+                <source>Total number of active (not revoked) passkey credentials of frontend users.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

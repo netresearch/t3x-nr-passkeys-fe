@@ -8,6 +8,10 @@ services:
     resource: '../Classes/*'
     exclude:
       - '../Classes/Domain/Model/*'
+      # Dashboard widget classes reference typo3/cms-dashboard interfaces,
+      # which is only a suggested dependency. They are registered from
+      # Configuration/Services.Dashboard.php, guarded in Services.php.
+      - '../Classes/Widgets/*'
 
   # Event listener for felogin passkey injection.
   # Registered via tag (not attribute) because felogin is optional —
