@@ -14,7 +14,7 @@ declare(strict_types=1);
     'nr_passkeys_fe',
     'PasskeyLogin',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_login',
-    'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-login.svg',
+    'nr-passkeys-fe-plugin-login',
     'forms',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_login.description',
 );
@@ -30,7 +30,7 @@ declare(strict_types=1);
     'nr_passkeys_fe',
     'PasskeyManagement',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_management',
-    'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-management.svg',
+    'nr-passkeys-fe-plugin-management',
     'forms',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_management.description',
 );
@@ -46,7 +46,7 @@ declare(strict_types=1);
     'nr_passkeys_fe',
     'PasskeyEnrollment',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_enrollment',
-    'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-enrollment.svg',
+    'nr-passkeys-fe-plugin-enrollment',
     'forms',
     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tt_content.list_type.passkey_enrollment.description',
 );

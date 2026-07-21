@@ -10,6 +10,9 @@ return [
         'crdate' => 'crdate',
         'delete' => 'deleted',
         'default_sortby' => 'crdate DESC',
+        'typeicon_classes' => [
+            'default' => 'nr-passkeys-fe-recovery-code',
+        ],
         'hideTable' => true,
         'adminOnly' => true,
         'rootLevel' => -1,

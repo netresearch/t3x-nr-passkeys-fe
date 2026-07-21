@@ -59,7 +59,7 @@ final readonly class FrontendAdoptionStatsService
 
         if ($siteIdentifier !== '') {
             $queryBuilder
-                ->count('DISTINCT u.uid')
+                ->selectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('u.uid') . ')')
                 ->from('fe_users', 'u')
                 ->join(
                     'u',
@@ -96,7 +96,7 @@ final readonly class FrontendAdoptionStatsService
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_nrpasskeysfe_credential');
 
         $queryBuilder
-            ->count('DISTINCT fe_user')
+            ->selectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('fe_user') . ')')
             ->from('tx_nrpasskeysfe_credential')
             ->where(
                 $queryBuilder->expr()->eq('revoked_at', 0),
@@ -199,9 +199,11 @@ final readonly class FrontendAdoptionStatsService
                 ->count('uid')
                 ->from('fe_users')
                 ->where(
+                    // inSet() requires a quoted literal: SQLite rejects
+                    // placeholder arguments for this expression.
                     $queryBuilder->expr()->inSet(
                         'usergroup',
-                        $queryBuilder->createNamedParameter((string) $groupUid),
+                        $queryBuilder->quote((string) $groupUid),
                     ),
                 )
                 ->executeQuery()
@@ -234,7 +236,7 @@ final readonly class FrontendAdoptionStatsService
 
             $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
             $queryBuilder
-                ->count('DISTINCT u.uid')
+                ->selectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('u.uid') . ')')
                 ->from('fe_users', 'u')
                 ->join(
                     'u',
@@ -246,9 +248,11 @@ final readonly class FrontendAdoptionStatsService
                     ),
                 )
                 ->where(
+                    // inSet() requires a quoted literal: SQLite rejects
+                    // placeholder arguments for this expression.
                     $queryBuilder->expr()->inSet(
                         'u.usergroup',
-                        $queryBuilder->createNamedParameter((string) $groupUid),
+                        $queryBuilder->quote((string) $groupUid),
                     ),
                 );
 

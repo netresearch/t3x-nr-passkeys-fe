@@ -1,0 +1,5 @@
+fe_groups
+,uid,pid,title,hidden,deleted,passkey_enforcement,passkey_grace_period_days
+,1,1,Members,0,0,required,0
+,2,1,Premium,0,0,off,0
+,3,1,Restricted,0,0,off,0
