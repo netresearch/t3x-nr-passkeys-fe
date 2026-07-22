@@ -11,8 +11,7 @@ use Netresearch\NrPasskeysFe\Controller\AdminModuleController;
 
 return [
     'nr_passkeys_fe' => [
-        'parent' => 'web',
-        'position' => ['after' => 'web_info'],
+        'parent' => 'site',
         'access' => 'admin',
         'iconIdentifier' => 'nr-passkeys-fe-module',
         'labels' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_mod.xlf',
