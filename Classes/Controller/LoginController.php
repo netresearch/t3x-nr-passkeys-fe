@@ -227,7 +227,17 @@ final readonly class LoginController
                 'error_code' => $e->getCode(),
             ]);
 
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+            $payload = ['error' => 'Authentication failed'];
+            // Only the genuine "credential ID not in the store" case is safe to
+            // surface to the client's WebAuthn Signal API (signalUnknownCredential),
+            // so an orphaned passkey can be pruned from the authenticator. Never
+            // expose signature/challenge failures this way — those keep the
+            // generic error to avoid oracles.
+            if ($e->getCode() === FrontendWebAuthnService::CODE_UNKNOWN_CREDENTIAL) {
+                $payload['reason'] = 'unknown_credential';
+            }
+
+            return new JsonResponse($payload, 401);
         }
     }
 
