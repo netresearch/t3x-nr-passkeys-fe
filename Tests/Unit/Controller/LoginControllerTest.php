@@ -233,6 +233,42 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
+    public function verifyActionAddsUnknownCredentialReasonWhenCredentialUnknown(): void
+    {
+        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->webAuthnService->method('verifyAssertionResponse')
+            ->willThrowException(new RuntimeException('Unknown credential', FrontendWebAuthnService::CODE_UNKNOWN_CREDENTIAL));
+
+        $request = $this->buildJsonRequest('POST', [
+            'assertion' => ['id' => 'abc', 'response' => []],
+            'challengeToken' => 'valid-token',
+        ]);
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        $body = $this->decodeBody($response);
+        self::assertSame('unknown_credential', $body['reason']);
+    }
+
+    #[Test]
+    public function verifyActionOmitsReasonForGenericVerificationFailure(): void
+    {
+        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->webAuthnService->method('verifyAssertionResponse')
+            ->willThrowException(new RuntimeException('Signature invalid', 1700200099));
+
+        $request = $this->buildJsonRequest('POST', [
+            'assertion' => ['id' => 'abc', 'response' => []],
+            'challengeToken' => 'valid-token',
+        ]);
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        $body = $this->decodeBody($response);
+        self::assertArrayNotHasKey('reason', $body);
+    }
+
+    #[Test]
     public function verifyActionReturns200OnSuccess(): void
     {
         $credentialMock = $this->createStub(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);

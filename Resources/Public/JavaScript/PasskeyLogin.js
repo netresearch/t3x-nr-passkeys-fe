@@ -331,6 +331,12 @@
       }
 
       try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
+      // The server confirmed this credential ID is not (or no longer) registered.
+      // Tell the platform authenticator / password manager so it can prune the
+      // orphaned passkey instead of offering it again (WebAuthn Signal API).
+      if (verifyData.reason === 'unknown_credential') {
+        signalUnknownCredential(options.rpId, credentialResponse.id);
+      }
       U.showError(errorEl, verifyData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
       U.hideStatus(statusEl);
     } catch (err) {
@@ -348,6 +354,33 @@
 
     U.setLoading(false, btnEl, btnText, btnLoading);
     U.hideStatus(statusEl);
+  }
+
+  /**
+   * Best-effort WebAuthn Signal API call: report a credential ID the server no
+   * longer recognises so supporting authenticators/password managers can remove
+   * the orphaned passkey. Feature-detected and error-swallowing — the API is
+   * new and support varies; a failure here must never affect the login flow.
+   *
+   * @param {string} rpId - Relying Party ID the ceremony ran against
+   * @param {string} credentialId - base64url credential ID from the assertion
+   */
+  function signalUnknownCredential(rpId, credentialId) {
+    try {
+      if (window.PublicKeyCredential
+          && typeof window.PublicKeyCredential.signalUnknownCredential === 'function'
+          && rpId && credentialId) {
+        var result = window.PublicKeyCredential.signalUnknownCredential({
+          rpId: rpId,
+          credentialId: credentialId,
+        });
+        if (result && typeof result.catch === 'function') {
+          result.catch(function () { /* best-effort */ });
+        }
+      }
+    } catch (e) {
+      /* best-effort */
+    }
   }
 
   if (document.readyState === 'loading') {

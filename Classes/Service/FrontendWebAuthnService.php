@@ -51,6 +51,14 @@ use Webauthn\TrustPath\EmptyTrustPath;
  */
 final class FrontendWebAuthnService
 {
+    /**
+     * Exception code thrown when an assertion references a credential ID that is
+     * not (or no longer) in the store. Distinct from signature/challenge failures
+     * so callers can surface it to the WebAuthn Signal API without wrongly
+     * signalling valid credentials as unknown.
+     */
+    public const CODE_UNKNOWN_CREDENTIAL = 1700200032;
+
     private const ALGORITHM_MAP = [
         'ES256' => -7,
         'ES384' => -35,
@@ -304,7 +312,7 @@ final class FrontendWebAuthnService
             $this->logger->warning('FE assertion with unknown credential ID', [
                 'site' => $siteIdentifier,
             ]);
-            throw new RuntimeException('Unknown credential', 1700200032);
+            throw new RuntimeException('Unknown credential', self::CODE_UNKNOWN_CREDENTIAL);
         }
 
         if ($credential->isRevoked()) {
