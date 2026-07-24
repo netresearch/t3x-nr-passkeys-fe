@@ -6,6 +6,40 @@
 Changelog
 =========
 
+Version 0.5.0
+=============
+
+*Unified passkey dashboard widgets*
+
+Breaking / Important
+--------------------
+
+- **Standalone dashboard widgets removed** -- ``nr_passkeys_fe`` no
+  longer registers its own ``Passkey adoption`` and
+  ``Active passkey credentials`` dashboard widgets. When both
+  extensions are installed the dashboard previously showed four
+  near-identical widgets; it now shows the single unified widget set
+  owned by ``nr_passkeys_be``.
+
+- **Frontend adoption is now a segment of the unified widgets** --
+  Frontend statistics appear as the "Frontend users" segment (a second
+  doughnut ring and a summed credential count) of the
+  ``nr_passkeys_be`` widgets, contributed via the new
+  ``nr_passkeys_be.adoption_stats_provider`` service tag
+  (``FrontendPasskeyAdoptionStatsProvider``). Backend and frontend user
+  populations are shown separately, never summed.
+
+- **Requires** ``netresearch/nr-passkeys-be`` **^0.12** -- the
+  extension point (``PasskeyAdoptionStatsProviderInterface`` and the
+  ``PasskeyAudienceStats`` DTO) is provided from ``nr_passkeys_be``
+  0.12.0. The Composer constraint and the ``ext_emconf.php`` dependency
+  were tightened accordingly.
+
+- **TYPO3 v13 compatibility shim removed** -- ``nr_passkeys_fe`` no
+  longer references any ``typo3/cms-dashboard`` symbol, so the
+  ``AdminOnlyWidgetInterface`` compat shim (and its ``autoload.files``
+  entry) has been dropped.
+
 Version 0.1.0
 =============
 

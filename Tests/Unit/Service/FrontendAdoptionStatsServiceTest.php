@@ -180,8 +180,84 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // countTotalActiveUsers()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function countTotalActiveUsersReturnsCount(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool(37));
+
+        self::assertSame(37, $subject->countTotalActiveUsers());
+    }
+
+    #[Test]
+    public function countTotalActiveUsersReturnsZeroForNonNumericResult(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool(false));
+
+        self::assertSame(0, $subject->countTotalActiveUsers());
+    }
+
+    // ---------------------------------------------------------------
+    // countUsersWithActivePasskey()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function countUsersWithActivePasskeyReturnsCount(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool('12'));
+
+        self::assertSame(12, $subject->countUsersWithActivePasskey());
+    }
+
+    #[Test]
+    public function countUsersWithActivePasskeyReturnsZeroForNonNumericResult(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool(null));
+
+        self::assertSame(0, $subject->countUsersWithActivePasskey());
+    }
+
+    // ---------------------------------------------------------------
+    // countActiveCredentials()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function countActiveCredentialsReturnsCount(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool(99));
+
+        self::assertSame(99, $subject->countActiveCredentials());
+    }
+
+    #[Test]
+    public function countActiveCredentialsReturnsZeroForNonNumericResult(): void
+    {
+        $subject = new FrontendAdoptionStatsService($this->singleResultConnectionPool(false));
+
+        self::assertSame(0, $subject->countActiveCredentials());
+    }
+
+    // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    /**
+     * Connection pool whose single QueryBuilder yields the given fetchOne result.
+     */
+    private function singleResultConnectionPool(mixed $fetchOneResult): ConnectionPool&Stub
+    {
+        $result = $this->createStub(Result::class);
+        $result->method('fetchOne')->willReturn($fetchOneResult);
+
+        $queryBuilder = $this->createQueryBuilderMock($result);
+
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getQueryBuilderForTable')->willReturn($queryBuilder);
+
+        return $connectionPool;
+    }
 
     /**
      * @param list<array<string, mixed>>     $groups

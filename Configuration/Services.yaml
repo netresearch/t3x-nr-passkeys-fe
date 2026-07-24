@@ -8,10 +8,6 @@ services:
     resource: '../Classes/*'
     exclude:
       - '../Classes/Domain/Model/*'
-      # Dashboard widget classes reference typo3/cms-dashboard interfaces,
-      # which is only a suggested dependency. They are registered from
-      # Configuration/Services.Dashboard.php, guarded in Services.php.
-      - '../Classes/Widgets/*'
 
   # Event listener for felogin passkey injection.
   # Registered via tag (not attribute) because felogin is optional —
@@ -47,6 +43,13 @@ services:
 
   Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService:
     public: true
+
+  # Contributes the frontend (fe_users) segment to the unified passkey-adoption
+  # dashboard widgets owned by nr_passkeys_be. Tagged explicitly rather than
+  # relying solely on cross-extension autoconfiguration of the BE interface.
+  Netresearch\NrPasskeysFe\Adoption\FrontendPasskeyAdoptionStatsProvider:
+    tags:
+      - name: nr_passkeys_be.adoption_stats_provider
 
   Netresearch\NrPasskeysFe\Controller\LoginController:
     public: true

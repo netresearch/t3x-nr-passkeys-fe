@@ -47,6 +47,76 @@ final readonly class FrontendAdoptionStatsService
     }
 
     /**
+     * Count all active (non-deleted, non-disabled) frontend users.
+     *
+     * Site-agnostic aggregate consumed by the unified passkey-adoption
+     * dashboard widgets (via FrontendPasskeyAdoptionStatsProvider). The
+     * default QueryBuilder restrictions exclude deleted/disabled fe_users.
+     */
+    public function countTotalActiveUsers(): int
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+
+        $result = $queryBuilder
+            ->count('uid')
+            ->from('fe_users')
+            ->executeQuery()
+            ->fetchOne();
+
+        return \is_numeric($result) ? (int) $result : 0;
+    }
+
+    /**
+     * Count distinct fe_users owning at least one active (non-revoked) credential.
+     *
+     * The DISTINCT user count is expressed via selectLiteral() with a quoted
+     * identifier — QueryBuilder::count('DISTINCT x') would quote the whole
+     * expression as one identifier and produce broken SQL.
+     */
+    public function countUsersWithActivePasskey(): int
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
+
+        $result = $queryBuilder
+            ->selectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('u.uid') . ')')
+            ->from('fe_users', 'u')
+            ->join(
+                'u',
+                'tx_nrpasskeysfe_credential',
+                'c',
+                (string) $queryBuilder->expr()->and(
+                    $queryBuilder->expr()->eq('c.fe_user', $queryBuilder->quoteIdentifier('u.uid')),
+                    $queryBuilder->expr()->eq('c.revoked_at', 0),
+                ),
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return \is_numeric($result) ? (int) $result : 0;
+    }
+
+    /**
+     * Count active (non-revoked) frontend passkey credentials.
+     *
+     * The default QueryBuilder restrictions take care of deleted credential rows.
+     */
+    public function countActiveCredentials(): int
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_nrpasskeysfe_credential');
+
+        $result = $queryBuilder
+            ->count('uid')
+            ->from('tx_nrpasskeysfe_credential')
+            ->where(
+                $queryBuilder->expr()->eq('revoked_at', 0),
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return \is_numeric($result) ? (int) $result : 0;
+    }
+
+    /**
      * Count total active fe_users, optionally scoped to a site identifier.
      *
      * When a site identifier is given, only users that have at least one
