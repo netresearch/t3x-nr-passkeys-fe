@@ -5,3 +5,5 @@ fe_users
 ,3,2,testuser3_pid2,password3,"1",0,0,0,0
 ,10,1,userwithnudge,passwordX,"1",0,0,0,1700100000
 ,99,1,testuser99,password99,"3",0,0,0,0
+,20,1,disableduser,passwordD,"1",1,0,0,0
+,21,1,deleteduser,passwordE,"1",0,1,0,0

@@ -94,6 +94,30 @@ final class FrontendAdoptionStatsServiceTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function countTotalActiveUsersExcludesDisabledAndDeletedUsers(): void
+    {
+        // The fixture holds 7 fe_users rows: 5 active plus one disabled
+        // (uid 20) and one deleted (uid 21). Default QueryBuilder
+        // restrictions must exclude the latter two.
+        self::assertSame(5, $this->subject->countTotalActiveUsers());
+    }
+
+    #[Test]
+    public function countUsersWithActivePasskeyCountsDistinctUsersExcludingRevoked(): void
+    {
+        // User 1 has two active credentials plus one revoked credential,
+        // user 2 has one active credential -> 2 distinct users with passkeys.
+        self::assertSame(2, $this->subject->countUsersWithActivePasskey());
+    }
+
+    #[Test]
+    public function countActiveCredentialsExcludesRevokedCredentials(): void
+    {
+        // Five credential rows exist; one (uid 3) is revoked -> 4 active.
+        self::assertSame(4, $this->subject->countActiveCredentials());
+    }
+
+    #[Test]
     public function getStatsProvidesPerGroupBreakdown(): void
     {
         $stats = $this->subject->getStats();
