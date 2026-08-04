@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataPro
 use Netresearch\NrPasskeysFe\Adoption\FrontendPasskeyAdoptionStatsProvider;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -43,7 +44,7 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends Functiona
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

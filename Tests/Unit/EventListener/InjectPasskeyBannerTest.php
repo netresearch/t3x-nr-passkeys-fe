@@ -35,8 +35,11 @@ use TYPO3\CMS\Frontend\Event\AfterCacheableContentIsGeneratedEvent;
 final class InjectPasskeyBannerTest extends TestCase
 {
     private FrontendEnforcementService&Stub $enforcementService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private InjectPasskeyBanner $subject;
 
     /**

@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
+use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
@@ -20,8 +21,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -30,12 +35,19 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 final class LoginControllerTest extends TestCase
 {
     private FrontendWebAuthnService&Stub $webAuthnService;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private FrontendUserLookupService&Stub $userLookupService;
+
     private RateLimiterService&Stub $rateLimiterService;
+
     private ChallengeService&Stub $challengeService;
+
     private SiteInterface&Stub $site;
+
     private LoginController $subject;
 
     protected function setUp(): void
@@ -57,10 +69,10 @@ final class LoginControllerTest extends TestCase
         $this->challengeService->method('createChallengeToken')->willReturn('test-challenge-token');
 
         // Register a cache stub for the login token
-        $cacheStub = $this->createStub(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
-        $cacheManagerStub = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheStub = $this->createStub(FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
-        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManagerStub);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
 
         $this->subject = new LoginController(
             $this->webAuthnService,
@@ -69,7 +81,7 @@ final class LoginControllerTest extends TestCase
             $this->userLookupService,
             $this->rateLimiterService,
             $this->challengeService,
-            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -146,7 +158,7 @@ final class LoginControllerTest extends TestCase
     {
         $this->setupDbUserFound(42);
 
-        $credentialMock = $this->createStub(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
+        $credentialMock = $this->createStub(FrontendCredential::class);
         $this->credentialRepository->method('findByFeUser')->willReturn([$credentialMock]);
 
         $optionsData = ['challenge' => 'abc123', 'rpId' => 'example.com', 'allowCredentials' => []];
@@ -271,7 +283,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns200OnSuccess(): void
     {
-        $credentialMock = $this->createStub(\Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential::class);
+        $credentialMock = $this->createStub(FrontendCredential::class);
         $credentialMock->method('getUid')->willReturn(7);
 
         $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
@@ -316,13 +328,13 @@ final class LoginControllerTest extends TestCase
             ->willReturn(null);
     }
 
-    private function assertJsonKey(string $key, \Psr\Http\Message\ResponseInterface $response): void
+    private function assertJsonKey(string $key, ResponseInterface $response): void
     {
         $body = $this->decodeBody($response);
         self::assertArrayHasKey($key, $body);
     }
 
-    private function decodeBody(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }

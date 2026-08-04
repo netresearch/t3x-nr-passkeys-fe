@@ -23,8 +23,11 @@ use TYPO3\CMS\Core\Page\AssetCollector;
 final class InjectPasskeyLoginFieldsTest extends TestCase
 {
     private SiteConfigurationService&Stub $siteConfigService;
+
     private FrontendConfiguration $frontendConfiguration;
+
     private AssetCollector&Stub $assetCollector;
+
     private InjectPasskeyLoginFields $subject;
 
     protected function setUp(): void

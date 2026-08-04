@@ -194,6 +194,7 @@ final class FrontendCredentialTest extends TestCase
         foreach ($expectedKeys as $key) {
             self::assertArrayHasKey($key, $array, "Expected key '{$key}' missing from toArray()");
         }
+
         self::assertCount(\count($expectedKeys), $array);
     }
 

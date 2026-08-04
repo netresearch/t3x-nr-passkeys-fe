@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 
+use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -85,7 +86,7 @@ final class EnrollmentPluginControllerTest extends TestCase
     {
         $site = $this->createStub(SiteInterface::class);
         $site->method('getIdentifier')->willReturn($siteIdentifier);
-        $site->method('getBase')->willReturn(new \GuzzleHttp\Psr7\Uri($baseUrl));
+        $site->method('getBase')->willReturn(new Uri($baseUrl));
 
         $serverRequest = new ServerRequest($baseUrl . '/page', 'GET');
         $serverRequest = $serverRequest->withAttribute('site', $site);

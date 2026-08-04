@@ -101,7 +101,7 @@ final readonly class AdminController
 
         // Verify the credential belongs to the specified user
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
-        if ($credential === null) {
+        if (!$credential instanceof FrontendCredential) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 

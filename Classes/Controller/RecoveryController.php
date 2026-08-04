@@ -19,8 +19,10 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * Handles recovery code management for frontend users.
@@ -50,7 +52,7 @@ final readonly class RecoveryController
     public function generateAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -142,7 +144,7 @@ final readonly class RecoveryController
 
         // Create a one-time login token (same mechanism as passkey login)
         $token = \bin2hex(\random_bytes(32));
-        $cache = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+        $cache = GeneralUtility::makeInstance(CacheManager::class)
             ->getCache('nr_passkeys_fe_nonce');
         $cache->set(
             'passkey_login_' . $token,

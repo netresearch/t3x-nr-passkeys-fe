@@ -24,7 +24,9 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 final class RecoveryCodeServiceTest extends TestCase
 {
     private ConnectionPool&Stub $connectionPool;
+
     private Connection&Stub $connection;
+
     private RecoveryCodeService $subject;
 
     protected function setUp(): void
@@ -81,8 +83,6 @@ final class RecoveryCodeServiceTest extends TestCase
         $codes = $this->subject->generate(1, 50);
 
         $validChars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-        $invalidChars = '01OILZ'; // Z is valid; 0, 1, O, I, L are excluded
-        $invalidCharsActual = '01OIL';
 
         foreach ($codes as $code) {
             $rawCode = \str_replace('-', '', $code);
@@ -211,9 +211,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
-                self::callback(static function (array $data): bool {
-                    return isset($data['used_at']) && $data['used_at'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
                 ['uid' => 99],
             );
 
@@ -326,7 +324,7 @@ final class RecoveryCodeServiceTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 

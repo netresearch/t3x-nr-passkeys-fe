@@ -23,6 +23,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 final class FrontendUserLookupServiceTest extends TestCase
 {
     private ConnectionPool&Stub $connectionPool;
+
     private FrontendUserLookupService $subject;
 
     protected function setUp(): void
@@ -152,7 +153,7 @@ final class FrontendUserLookupServiceTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 

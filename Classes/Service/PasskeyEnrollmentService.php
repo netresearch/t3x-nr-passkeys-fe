@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysFe\Event\BeforePasskeyEnrollmentEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use Webauthn\PublicKeyCredentialCreationOptions;
 
 /**
  * Orchestrates the passkey enrollment flow for frontend users.
@@ -38,7 +39,7 @@ final readonly class PasskeyEnrollmentService
     /**
      * Start a passkey enrollment by generating registration options.
      *
-     * @return array{options: \Webauthn\PublicKeyCredentialCreationOptions, optionsJson: string}
+     * @return array{options: PublicKeyCredentialCreationOptions, optionsJson: string}
      */
     public function startEnrollment(
         int $feUserUid,
@@ -86,6 +87,7 @@ final readonly class PasskeyEnrollmentService
         );
 
         $credential->setLabel($label);
+
         $this->credentialRepository->save($credential);
 
         // Dispatch after event

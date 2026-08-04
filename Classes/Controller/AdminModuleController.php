@@ -119,6 +119,7 @@ final readonly class AdminModuleController
         if ($activeTab === 'dashboard') {
             $dashboardItem->setActive(true);
         }
+
         $menu->addMenuItem($dashboardItem);
 
         $helpItem = $menu->makeMenuItem()
@@ -127,6 +128,7 @@ final readonly class AdminModuleController
         if ($activeTab === 'help') {
             $helpItem->setActive(true);
         }
+
         $menu->addMenuItem($helpItem);
 
         $menuRegistry->addMenu($menu);

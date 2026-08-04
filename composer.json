@@ -76,7 +76,9 @@
     },
     "scripts": {
         "ci:cgl": "Build/Scripts/runTests.sh cgl:fix",
+        "ci:rector": "Build/Scripts/runTests.sh rector:fix",
         "ci:test:php:cgl": "Build/Scripts/runTests.sh cgl",
+        "ci:test:php:rector": "Build/Scripts/runTests.sh rector",
         "ci:test:php:phpstan": "Build/Scripts/runTests.sh phpstan",
         "ci:test:php:unit": "Build/Scripts/runTests.sh unit",
         "ci:test:php:functional": "Build/Scripts/runTests.sh functional",

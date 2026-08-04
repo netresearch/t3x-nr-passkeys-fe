@@ -123,7 +123,7 @@ final readonly class FrontendCredentialRepository
             ->fetchAllAssociative();
 
         return \array_map(
-            static fn(array $row): FrontendCredential => FrontendCredential::fromArray($row),
+            FrontendCredential::fromArray(...),
             $rows,
         );
     }
@@ -152,7 +152,7 @@ final readonly class FrontendCredentialRepository
             ->fetchAllAssociative();
 
         return \array_map(
-            static fn(array $row): FrontendCredential => FrontendCredential::fromArray($row),
+            FrontendCredential::fromArray(...),
             $rows,
         );
     }

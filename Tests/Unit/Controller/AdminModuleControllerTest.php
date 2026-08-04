@@ -18,18 +18,27 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\Components\DocHeaderComponent;
+use TYPO3\CMS\Backend\Template\Components\Menu\Menu;
+use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
+use TYPO3\CMS\Backend\Template\Components\MenuRegistry;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 #[CoversClass(AdminModuleController::class)]
 final class AdminModuleControllerTest extends TestCase
 {
     private ModuleTemplateFactory&Stub $moduleTemplateFactory;
+
     private FrontendAdoptionStatsService&Stub $adoptionStatsService;
+
     private PageRenderer&Stub $pageRenderer;
+
     private UriBuilder&Stub $uriBuilder;
+
     private AdminModuleController $subject;
 
     protected function setUp(): void
@@ -80,7 +89,7 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate = $this->buildModuleTemplateStub();
         $this->moduleTemplateFactory->method('create')->willReturn($moduleTemplate);
         $this->uriBuilder->method('buildUriFromRoute')->willReturn(
-            new \TYPO3\CMS\Core\Http\Uri('https://example.com/typo3/module'),
+            new Uri('https://example.com/typo3/module'),
         );
 
         $request = new ServerRequest('https://example.com/typo3/module/help', 'GET');
@@ -91,18 +100,18 @@ final class AdminModuleControllerTest extends TestCase
 
     private function buildModuleTemplateStub(): ModuleTemplate&Stub
     {
-        $menuItem = $this->createStub(\TYPO3\CMS\Backend\Template\Components\Menu\MenuItem::class);
+        $menuItem = $this->createStub(MenuItem::class);
         $menuItem->method('setTitle')->willReturnSelf();
         $menuItem->method('setHref')->willReturnSelf();
         $menuItem->method('setActive')->willReturnSelf();
 
-        $menu = $this->createStub(\TYPO3\CMS\Backend\Template\Components\Menu\Menu::class);
+        $menu = $this->createStub(Menu::class);
         $menu->method('makeMenuItem')->willReturn($menuItem);
 
-        $menuRegistry = $this->createStub(\TYPO3\CMS\Backend\Template\Components\MenuRegistry::class);
+        $menuRegistry = $this->createStub(MenuRegistry::class);
         $menuRegistry->method('makeMenu')->willReturn($menu);
 
-        $docHeaderComponent = $this->createStub(\TYPO3\CMS\Backend\Template\Components\DocHeaderComponent::class);
+        $docHeaderComponent = $this->createStub(DocHeaderComponent::class);
         $docHeaderComponent->method('getMenuRegistry')->willReturn($menuRegistry);
 
         $responseStub = $this->createStub(ResponseInterface::class);

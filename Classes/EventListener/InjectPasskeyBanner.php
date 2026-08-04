@@ -105,6 +105,7 @@ final readonly class InjectPasskeyBanner
             $controller = $event->getController();
             $controller->content = \str_ireplace('</body>', $banner . '</body>', $controller->content);
         }
+
         $event->disableCaching();
     }
 
@@ -129,7 +130,7 @@ final readonly class InjectPasskeyBanner
         $description = LocalizationUtility::translate('banner.encourage.description', 'NrPasskeysFe')
             ?? 'Set up passwordless login with a passkey. Sign in faster using your fingerprint, face, or device PIN.';
 
-        if ($level === 'required' && $graceDeadline !== null) {
+        if ($level === 'required' && $graceDeadline instanceof DateTimeImmutable) {
             $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')
                 ?? 'Passkey setup required';
             $remainingDays = (int) $graceDeadline->diff(new DateTimeImmutable())->days;

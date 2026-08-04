@@ -26,6 +26,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 final class FrontendCredentialRepositoryTest extends TestCase
 {
     private ConnectionPool&Stub $connectionPool;
+
     private FrontendCredentialRepository $subject;
 
     protected function setUp(): void
@@ -233,11 +234,9 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return isset($data['last_used_at'], $data['tstamp'])
-                        && $data['last_used_at'] > 0
-                        && $data['tstamp'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['last_used_at'], $data['tstamp'])
+                    && $data['last_used_at'] > 0
+                    && $data['tstamp'] > 0),
                 ['uid' => 42],
             );
 
@@ -259,11 +258,9 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
-                        && $data['revoked_at'] > 0
-                        && $data['revoked_by'] === 99;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
+                    && $data['revoked_at'] > 0
+                    && $data['revoked_by'] === 99),
                 ['uid' => 5],
             );
 
@@ -304,10 +301,8 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return ($data['sign_count'] ?? null) === 42
-                        && isset($data['tstamp']);
-                }),
+                self::callback(static fn(array $data): bool => ($data['sign_count'] ?? null) === 42
+                    && isset($data['tstamp'])),
                 ['uid' => 5],
             );
 
@@ -364,7 +359,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 
@@ -385,7 +380,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 

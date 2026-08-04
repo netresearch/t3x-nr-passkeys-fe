@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
@@ -28,8 +29,11 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final class EnrollmentControllerTest extends TestCase
 {
     private FrontendEnforcementService&Stub $enforcementService;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private SiteInterface&Stub $site;
+
     private EnrollmentController $subject;
 
     protected function setUp(): void
@@ -194,7 +198,7 @@ final class EnrollmentControllerTest extends TestCase
             ->withParsedBody($body);
     }
 
-    private function decodeBody(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }

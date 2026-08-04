@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 use Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -40,7 +41,7 @@ final class FrontendAdoptionStatsServiceTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

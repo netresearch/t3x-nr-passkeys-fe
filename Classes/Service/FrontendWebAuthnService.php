@@ -14,11 +14,11 @@ use Cose\Algorithm\Signature\ECDSA\ES256;
 use Cose\Algorithm\Signature\ECDSA\ES384;
 use Cose\Algorithm\Signature\ECDSA\ES512;
 use Cose\Algorithm\Signature\RSA\RS256;
-use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use Webauthn\AttestationStatement\AttestationStatementSupportManager;
@@ -73,7 +73,6 @@ final class FrontendWebAuthnService
     public function __construct(
         private readonly FrontendCredentialRepository $credentialRepository,
         private readonly SiteConfigurationService $siteConfigurationService,
-        private readonly FrontendConfiguration $configuration,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -308,7 +307,7 @@ final class FrontendWebAuthnService
         $credentialId = $publicKeyCredential->rawId;
         $credential = $this->credentialRepository->findByCredentialId($credentialId);
 
-        if ($credential === null) {
+        if (!$credential instanceof FrontendCredential) {
             $this->logger->warning('FE assertion with unknown credential ID', [
                 'site' => $siteIdentifier,
             ]);
@@ -386,7 +385,7 @@ final class FrontendWebAuthnService
             }
 
             $credential = $this->credentialRepository->findByCredentialId($publicKeyCredential->rawId);
-            if ($credential === null || $credential->isRevoked()) {
+            if (!$credential instanceof FrontendCredential || $credential->isRevoked()) {
                 return null;
             }
 
@@ -414,7 +413,7 @@ final class FrontendWebAuthnService
 
     private function getSerializer(): SerializerInterface
     {
-        if ($this->serializer === null) {
+        if (!$this->serializer instanceof SerializerInterface) {
             $attestationManager = $this->createAttestationStatementSupportManager();
             $factory = new WebauthnSerializerFactory($attestationManager);
             $this->serializer = $factory->create();
@@ -464,9 +463,7 @@ final class FrontendWebAuthnService
         $params = [];
         foreach (self::ALLOWED_ALGORITHMS as $algo) {
             $algoId = self::ALGORITHM_MAP[$algo] ?? null;
-            if ($algoId !== null) {
-                $params[] = PublicKeyCredentialParameters::createPk($algoId);
-            }
+            $params[] = PublicKeyCredentialParameters::createPk($algoId);
         }
 
         return $params;
@@ -502,8 +499,8 @@ final class FrontendWebAuthnService
     private function credentialToSource(FrontendCredential $credential): CredentialRecord
     {
         $aaguid = $credential->getAaguid() !== ''
-            ? \Symfony\Component\Uid\Uuid::fromString($credential->getAaguid())
-            : \Symfony\Component\Uid\Uuid::v4();
+            ? Uuid::fromString($credential->getAaguid())
+            : Uuid::v4();
 
         return CredentialRecord::create(
             publicKeyCredentialId: $credential->getCredentialId(),

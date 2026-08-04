@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 
+use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\ManagementPluginController;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
@@ -30,6 +31,7 @@ use TYPO3\CMS\Extbase\Mvc\Request;
 final class ManagementPluginControllerTest extends TestCase
 {
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private RecoveryCodeService&Stub $recoveryCodeService;
 
     protected function setUp(): void
@@ -101,7 +103,7 @@ final class ManagementPluginControllerTest extends TestCase
     {
         $site = $this->createStub(SiteInterface::class);
         $site->method('getIdentifier')->willReturn($siteIdentifier);
-        $site->method('getBase')->willReturn(new \GuzzleHttp\Psr7\Uri($baseUrl));
+        $site->method('getBase')->willReturn(new Uri($baseUrl));
 
         $serverRequest = new ServerRequest($baseUrl . '/page', 'GET');
         $serverRequest = $serverRequest->withAttribute('site', $site);

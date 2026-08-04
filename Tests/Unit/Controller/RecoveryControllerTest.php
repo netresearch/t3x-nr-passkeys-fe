@@ -17,8 +17,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
@@ -27,8 +31,11 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final class RecoveryControllerTest extends TestCase
 {
     private RecoveryCodeService&Stub $recoveryCodeService;
+
     private RateLimiterService&Stub $rateLimiterService;
+
     private FrontendUserLookupService&Stub $userLookupService;
+
     private RecoveryController $subject;
 
     protected function setUp(): void
@@ -40,16 +47,16 @@ final class RecoveryControllerTest extends TestCase
         $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
 
         // Register a cache stub for the login token
-        $cacheStub = $this->createStub(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
-        $cacheManagerStub = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheStub = $this->createStub(FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
-        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManagerStub);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
 
         $this->subject = new RecoveryController(
             $this->recoveryCodeService,
             $this->rateLimiterService,
             $this->userLookupService,
-            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -162,7 +169,7 @@ final class RecoveryControllerTest extends TestCase
             ->withParsedBody($body);
     }
 
-    private function decodeBody(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }

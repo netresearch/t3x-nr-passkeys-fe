@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
+use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
@@ -16,6 +17,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * Handles the post-login enrollment interstitial for frontend users.
@@ -44,7 +46,7 @@ final readonly class EnrollmentController
     public function statusAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -67,7 +69,7 @@ final readonly class EnrollmentController
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
-        $graceDeadlineTs = $status->graceDeadline !== null
+        $graceDeadlineTs = $status->graceDeadline instanceof DateTimeImmutable
             ? $status->graceDeadline->getTimestamp()
             : null;
 
@@ -96,7 +98,7 @@ final readonly class EnrollmentController
     public function skipAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -136,7 +138,7 @@ final readonly class EnrollmentController
     private function getSessionNonce(ServerRequestInterface $request): string
     {
         $feUserAuth = $request->getAttribute('frontend.user');
-        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+        if ($feUserAuth instanceof FrontendUserAuthentication) {
             $value = $feUserAuth->getKey('ses', 'nr_passkeys_fe_enrollment_nonce');
 
             return \is_string($value) ? $value : '';
@@ -153,7 +155,7 @@ final readonly class EnrollmentController
     private function setFeUserSessionKey(ServerRequestInterface $request, string $key, mixed $value): void
     {
         $feUserAuth = $request->getAttribute('frontend.user');
-        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+        if ($feUserAuth instanceof FrontendUserAuthentication) {
             $feUserAuth->setKey('ses', $key, $value);
             $feUserAuth->storeSessionData();
         } else {

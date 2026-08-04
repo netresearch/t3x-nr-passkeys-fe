@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
-use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
@@ -26,9 +25,11 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 final class FrontendWebAuthnServiceTest extends TestCase
 {
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private SiteConfigurationService&Stub $siteConfigService;
-    private FrontendConfiguration $configuration;
+
     private FrontendWebAuthnService $subject;
+
     private SiteInterface&Stub $site;
 
     protected function setUp(): void
@@ -40,12 +41,10 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
         $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
-        $this->configuration = new FrontendConfiguration();
 
         $this->subject = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
@@ -239,7 +238,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
@@ -261,7 +259,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
