@@ -93,7 +93,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         // Set up TYPO3_REQUEST with a site attribute so resolveSite() works
         $site = $this->createStub(SiteInterface::class);
         $request = $this->createStub(ServerRequestInterface::class);
-        $request->method('getAttribute')->willReturnCallback(static fn(string $name): ?Stub => $name === 'site' ? $site : null);
+        $request->method('getAttribute')->willReturnCallback(static fn(string $name): ?SiteInterface => $name === 'site' ? $site : null);
         $request->method('getUri')->willReturn(new Uri('https://example.com/'));
         $GLOBALS['TYPO3_REQUEST'] = $request;
 

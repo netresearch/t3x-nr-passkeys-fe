@@ -13,7 +13,6 @@ use Netresearch\NrPasskeysFe\Middleware\PasskeyPublicRouteResolver;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -126,7 +125,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
         $response = $this->createStub(ResponseInterface::class);
         $handler->expects(self::once())
             ->method('handle')
-            ->willReturnCallback(function () use (&$handlerCalled, $response): Stub {
+            ->willReturnCallback(function () use (&$handlerCalled, $response): ResponseInterface {
                 $handlerCalled = true;
                 return $response;
             });
