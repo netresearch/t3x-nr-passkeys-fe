@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Tests/ -->
-<!-- Last updated: 2026-03-23 -->
+<!-- Last updated: 2026-08-05 -->
 
 # Tests/ AGENTS.md
 
@@ -11,12 +11,17 @@
 Tests/
   Unit/                  -> PHPUnit unit tests (fast, no DB, no TYPO3 bootstrap)
   Functional/            -> PHPUnit functional tests (require MySQL, CI only)
+  Integration/           -> Multi-service tests against a real database; part of
+                            the 'functional' testsuite, not a separate one
   Fuzz/                  -> Property-based fuzz tests (eris/eris, PHPUnit testsuite)
   Architecture/          -> PHPat architecture constraint tests
   JavaScript/            -> Vitest JS unit tests
   E2E/                   -> Playwright end-to-end tests (targets DDEV)
   bootstrap.php          -> PHPUnit bootstrap (loads autoloader)
   Fixtures/              -> Test data fixtures (SQL, JSON)
+  AbstractPasskeyFunctionalTestCase.php
+                         -> Base class for Functional/ and Integration/ tests;
+                            carries the extension lists they all load
 ```
 
 ## How to Run Tests
@@ -28,7 +33,7 @@ composer ci:test:php:unit
 # Fuzz tests (PHPUnit testsuite 'fuzz')
 composer ci:test:php:fuzz
 
-# Functional tests (requires MySQL -- run in CI or DDEV)
+# Functional + integration tests (requires MySQL -- run in CI or DDEV)
 composer ci:test:php:functional
 
 # All PHP tests (unit + functional)
@@ -65,11 +70,23 @@ composer ci:mutation
   account for this (create two instances or test each method independently)
 - Data providers: use `#[DataProvider]` attribute (PHPUnit 10+)
 
-### Functional Tests
+### Functional and Integration Tests
 - Require the TYPO3 testing framework bootstrapped with MySQL
 - Run only in CI -- do not assume local MySQL availability
 - Use `DatabaseConnectionTrait` for database access
 - Isolate each test with fixture loading / teardown
+- Extend `AbstractPasskeyFunctionalTestCase`, which carries the extension lists;
+  a test needing more appends to `$coreExtensionsToLoad` in its own `setUp()`
+  before `parent::setUp()`. The lists belong in a base class, not a trait: a
+  trait property whose default differs from `FunctionalTestCase`'s is a fatal
+  error on PHP 8.2-8.4, which PHP 8.5 no longer raises -- so a trait passes
+  locally on 8.5 and breaks three quarters of the CI matrix
+- Double a **site** by stubbing the concrete `Site`, not `SiteInterface`:
+  `getSettings()` is declared on `Site` only. `Tests/Integration/SiteStubTrait`
+  provides that double
+- SQLite is not a substitute for MySQL here: `credential_id` is `varbinary`, and
+  SQLite compares a BLOB column against a string parameter as unequal, so the
+  credential lookups fail there for reasons the code does not have
 
 ### Fuzz Tests
 - Use `eris/eris` generator library

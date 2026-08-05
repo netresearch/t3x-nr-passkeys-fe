@@ -10,10 +10,10 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
 use Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Functional tests for the adoption statistics queries.
@@ -25,17 +25,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * "Unknown column 'DISTINCT fe_user' in 'SELECT'".
  */
 #[CoversClass(FrontendAdoptionStatsService::class)]
-final class FrontendAdoptionStatsServiceTest extends FunctionalTestCase
+final class FrontendAdoptionStatsServiceTest extends AbstractPasskeyFunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
-
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
             'caching' => [

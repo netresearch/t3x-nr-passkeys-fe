@@ -12,10 +12,10 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Adoption;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
 use Netresearch\NrPasskeysFe\Adoption\FrontendPasskeyAdoptionStatsProvider;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * DI smoke test: with both extensions loaded, the frontend provider is part
@@ -27,18 +27,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * can only come from the frontend provider being present in the collection.
  */
 #[CoversNothing]
-final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends FunctionalTestCase
+final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends AbstractPasskeyFunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-        'dashboard',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
-
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
             'caching' => [
@@ -53,6 +43,8 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends Functiona
 
     protected function setUp(): void
     {
+        $this->coreExtensionsToLoad[] = 'dashboard';
+
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
         $this->importCSVDataSet(__DIR__ . '/../Service/Fixtures/tx_nrpasskeysfe_credential.csv');

@@ -11,24 +11,15 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 #[CoversClass(FrontendCredentialRepository::class)]
-final class FrontendCredentialRepositoryTest extends FunctionalTestCase
+final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
-
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
             'caching' => [
