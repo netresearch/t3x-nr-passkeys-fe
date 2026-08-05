@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Authentication;
 
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -19,14 +20,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 final class AuthServiceRegistrationTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
 
     #[Test]
     public function passkeyAuthServiceIsRegisteredInT3Services(): void

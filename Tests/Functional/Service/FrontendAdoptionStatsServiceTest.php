@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
 use Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -26,14 +27,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversClass(FrontendAdoptionStatsService::class)]
 final class FrontendAdoptionStatsServiceTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
 
     protected array $configurationToUseInTestInstance = [
         'SYS' => [

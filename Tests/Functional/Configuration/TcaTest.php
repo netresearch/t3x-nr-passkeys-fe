@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Configuration;
 
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -19,14 +20,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 final class TcaTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
 
     // ---------------------------------------------------------------
     // fe_groups TCA
@@ -112,39 +106,30 @@ final class TcaTest extends FunctionalTestCase
     #[Test]
     public function passkeyLoginPluginIsRegisteredInTtContent(): void
     {
-        $listTypes = $GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? [];
-        $pluginValues = \array_column($listTypes, 'value');
-
         self::assertContains(
             'nrpasskeysfe_passkeylogin',
-            $pluginValues,
-            'PasskeyLogin plugin must be registered in tt_content list_type',
+            $this->getRegisteredPluginSignatures(),
+            'PasskeyLogin plugin must be selectable in tt_content',
         );
     }
 
     #[Test]
     public function passkeyManagementPluginIsRegisteredInTtContent(): void
     {
-        $listTypes = $GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? [];
-        $pluginValues = \array_column($listTypes, 'value');
-
         self::assertContains(
             'nrpasskeysfe_passkeymanagement',
-            $pluginValues,
-            'PasskeyManagement plugin must be registered in tt_content list_type',
+            $this->getRegisteredPluginSignatures(),
+            'PasskeyManagement plugin must be selectable in tt_content',
         );
     }
 
     #[Test]
     public function passkeyEnrollmentPluginIsRegisteredInTtContent(): void
     {
-        $listTypes = $GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? [];
-        $pluginValues = \array_column($listTypes, 'value');
-
         self::assertContains(
             'nrpasskeysfe_passkeyenrollment',
-            $pluginValues,
-            'PasskeyEnrollment plugin must be registered in tt_content list_type',
+            $this->getRegisteredPluginSignatures(),
+            'PasskeyEnrollment plugin must be selectable in tt_content',
         );
     }
 
@@ -170,5 +155,34 @@ final class TcaTest extends FunctionalTestCase
         foreach (['fe_user', 'credential_id', 'label', 'site_identifier', 'storage_pid'] as $required) {
             self::assertContains($required, $columns, "tx_nrpasskeysfe_credential must have column '{$required}'");
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+
+    /**
+     * Plugin signatures selectable in tt_content, from whichever column the
+     * running core registers them in.
+     *
+     * Which column that is depends on the TYPO3 version, because
+     * ExtensionUtility::configurePlugin() is called here without an explicit
+     * plugin type: v13.4 then defaults to PLUGIN_TYPE_PLUGIN ('list_type'),
+     * v14 dropped that constant and always uses 'CType'. Asserting either
+     * column alone therefore passes on one leg of the matrix and fails on the
+     * other. Moving the registration to 'CType' on both is a content-record
+     * migration (existing elements are stored as CType=list plus
+     * list_type=<signature>) and belongs in its own change.
+     *
+     * @return list<string>
+     */
+    private function getRegisteredPluginSignatures(): array
+    {
+        $items = [
+            ...($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] ?? []),
+            ...($GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? []),
+        ];
+
+        return \array_values(\array_map('strval', \array_column($items, 'value')));
     }
 }

@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Integration;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -24,14 +25,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversNothing]
 final class RecoveryFlowTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
 
     private RecoveryCodeService $recoveryCodeService;
 

@@ -10,11 +10,10 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Integration;
 
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -25,14 +24,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversNothing]
 final class EnforcementEscalationTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
+    use SiteStubTrait;
 
     private FrontendEnforcementService $enforcementService;
 
@@ -294,15 +287,10 @@ final class EnforcementEscalationTest extends FunctionalTestCase
 
     private function makeSiteWithLevel(string $enforcementLevel): SiteInterface
     {
-        $site = $this->createMock(SiteInterface::class);
-        $site->method('getIdentifier')->willReturn('site-a');
-        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([
+        return $this->makeSiteWithSettings([
             'nr_passkeys_fe' => [
                 'enforcementLevel' => $enforcementLevel,
             ],
-        ]));
-        $site->method('getBase')->willReturn(new Uri('https://example.com'));
-
-        return $site;
+        ]);
     }
 }

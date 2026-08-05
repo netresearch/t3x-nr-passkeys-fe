@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Adoption;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
 use Netresearch\NrPasskeysFe\Adoption\FrontendPasskeyAdoptionStatsProvider;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -28,15 +29,7 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversNothing]
 final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-        'dashboard',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
 
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
@@ -52,6 +45,8 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends Functiona
 
     protected function setUp(): void
     {
+        $this->coreExtensionsToLoad[] = 'dashboard';
+
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
         $this->importCSVDataSet(__DIR__ . '/../Service/Fixtures/tx_nrpasskeysfe_credential.csv');

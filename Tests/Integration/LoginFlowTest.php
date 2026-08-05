@@ -14,11 +14,9 @@ use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Http\Uri;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -31,14 +29,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversNothing]
 final class LoginFlowTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'frontend',
-    ];
-
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-        'netresearch/nr-passkeys-fe',
-    ];
+    use FunctionalTestExtensionsTrait;
+    use SiteStubTrait;
 
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
@@ -167,10 +159,7 @@ final class LoginFlowTest extends FunctionalTestCase
         $usersConnection = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $usersConnection->update('fe_users', ['usergroup' => '100'], ['uid' => 1]);
 
-        $site = $this->createMock(SiteInterface::class);
-        $site->method('getIdentifier')->willReturn('site-a');
-        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
-        $site->method('getBase')->willReturn(new Uri('https://example.com'));
+        $site = $this->makeSiteWithSettings();
 
         $enforcementService = $this->get(FrontendEnforcementService::class);
         $status = $enforcementService->getStatus(1, 'site-a', $site);
@@ -197,10 +186,7 @@ final class LoginFlowTest extends FunctionalTestCase
         $usersConnection = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $usersConnection->update('fe_users', ['usergroup' => '101'], ['uid' => 1]);
 
-        $site = $this->createMock(SiteInterface::class);
-        $site->method('getIdentifier')->willReturn('site-a');
-        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
-        $site->method('getBase')->willReturn(new Uri('https://example.com'));
+        $site = $this->makeSiteWithSettings();
 
         $enforcementService = $this->get(FrontendEnforcementService::class);
         $status = $enforcementService->getStatus(1, 'site-a', $site);
@@ -242,10 +228,7 @@ final class LoginFlowTest extends FunctionalTestCase
         $usersConnection->update('fe_users', ['usergroup' => '200'], ['uid' => 1]);
 
         // Simulate a fake site request so authUser can resolve the site
-        $site = $this->createMock(SiteInterface::class);
-        $site->method('getIdentifier')->willReturn('site-a');
-        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
-        $site->method('getBase')->willReturn(new Uri('https://example.com'));
+        $site = $this->makeSiteWithSettings();
 
         // We test the enforcement service directly since the auth service
         // requires $GLOBALS['TYPO3_REQUEST'] to resolve the site
