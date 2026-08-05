@@ -23,13 +23,14 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 #[CoversClass(FrontendEnforcementService::class)]
 final class FrontendEnforcementServiceTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private SiteConfigurationService&Stub $siteConfigService;
 
     private FrontendCredentialRepository&Stub $credentialRepository;
@@ -396,12 +397,12 @@ final class FrontendEnforcementServiceTest extends TestCase
     {
         $feUserResult = $this->createStub(Result::class);
         $feUserResult->method('fetchAssociative')->willReturn($userRow);
-        $feUserQb = $this->createQueryBuilderMock($feUserResult);
+        $feUserQb = $this->createQueryBuilderStub($feUserResult);
 
         if ($groups !== null) {
             $groupResult = $this->createStub(Result::class);
             $groupResult->method('fetchAllAssociative')->willReturn($groups);
-            $groupQb = $this->createQueryBuilderMock($groupResult);
+            $groupQb = $this->createQueryBuilderStub($groupResult);
 
             $this->connectionPool->method('getQueryBuilderForTable')
                 ->willReturnCallback(
@@ -415,26 +416,5 @@ final class FrontendEnforcementServiceTest extends TestCase
             $this->connectionPool->method('getQueryBuilderForTable')
                 ->willReturn($feUserQb);
         }
-    }
-
-    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-        $expressionBuilder->method('in')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result instanceof Result) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
     }
 }

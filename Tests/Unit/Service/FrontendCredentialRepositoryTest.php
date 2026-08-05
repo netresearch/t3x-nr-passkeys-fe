@@ -25,6 +25,8 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 #[CoversClass(FrontendCredentialRepository::class)]
 final class FrontendCredentialRepositoryTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private ConnectionPool&Stub $connectionPool;
 
     private FrontendCredentialRepository $subject;
@@ -343,27 +345,6 @@ final class FrontendCredentialRepositoryTest extends TestCase
             'revoked_at' => 0,
             'revoked_by' => 0,
         ];
-    }
-
-    private function createQueryBuilderStub(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-        $expressionBuilder->method('in')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result instanceof Result) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
     }
 
     private function createQueryBuilderMock(?Result $result = null): QueryBuilder&MockObject

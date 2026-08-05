@@ -16,12 +16,12 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 #[CoversClass(FrontendUserLookupService::class)]
 final class FrontendUserLookupServiceTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private ConnectionPool&Stub $connectionPool;
 
     private FrontendUserLookupService $subject;
@@ -135,28 +135,5 @@ final class FrontendUserLookupServiceTest extends TestCase
         self::assertNotNull($row);
         self::assertSame(42, $row['uid']);
         self::assertSame('', $row['username']);
-    }
-
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    private function createQueryBuilderStub(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result instanceof Result) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
     }
 }
