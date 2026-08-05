@@ -19,9 +19,9 @@ Tests/
   E2E/                   -> Playwright end-to-end tests (targets DDEV)
   bootstrap.php          -> PHPUnit bootstrap (loads autoloader)
   Fixtures/              -> Test data fixtures (SQL, JSON)
-  FunctionalTestExtensionsTrait.php
-                         -> Extension lists every Functional/ and Integration/
-                            test instance loads
+  AbstractPasskeyFunctionalTestCase.php
+                         -> Base class for Functional/ and Integration/ tests;
+                            carries the extension lists they all load
 ```
 
 ## How to Run Tests
@@ -75,9 +75,12 @@ composer ci:mutation
 - Run only in CI -- do not assume local MySQL availability
 - Use `DatabaseConnectionTrait` for database access
 - Isolate each test with fixture loading / teardown
-- Take the extension lists from `FunctionalTestExtensionsTrait`; a test needing
-  more appends to `$coreExtensionsToLoad` in its own `setUp()` before
-  `parent::setUp()`
+- Extend `AbstractPasskeyFunctionalTestCase`, which carries the extension lists;
+  a test needing more appends to `$coreExtensionsToLoad` in its own `setUp()`
+  before `parent::setUp()`. The lists belong in a base class, not a trait: a
+  trait property whose default differs from `FunctionalTestCase`'s is a fatal
+  error on PHP 8.2-8.4, which PHP 8.5 no longer raises -- so a trait passes
+  locally on 8.5 and breaks three quarters of the CI matrix
 - Double a **site** by stubbing the concrete `Site`, not `SiteInterface`:
   `getSettings()` is declared on `Site` only. `Tests/Integration/SiteStubTrait`
   provides that double

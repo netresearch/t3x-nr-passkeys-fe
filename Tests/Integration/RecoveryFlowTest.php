@@ -12,10 +12,9 @@ namespace Netresearch\NrPasskeysFe\Tests\Integration;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Integration tests for the recovery code flow with real database.
@@ -23,10 +22,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * Tests generation, verification, single-use enforcement, and regeneration.
  */
 #[CoversNothing]
-final class RecoveryFlowTest extends FunctionalTestCase
+final class RecoveryFlowTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
-
     private RecoveryCodeService $recoveryCodeService;
 
     private FrontendCredentialRepository $credentialRepository;

@@ -14,10 +14,9 @@ use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Integration tests for the complete login-related service flow.
@@ -27,9 +26,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * tested here — only the service-layer integration around them.
  */
 #[CoversNothing]
-final class LoginFlowTest extends FunctionalTestCase
+final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
     use SiteStubTrait;
 
     protected array $configurationToUseInTestInstance = [

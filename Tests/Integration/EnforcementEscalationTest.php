@@ -10,11 +10,10 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Integration;
 
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Integration tests for enforcement escalation with real database.
@@ -22,9 +21,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * Verifies "strictest wins" policy across groups, and site+group combinations.
  */
 #[CoversNothing]
-final class EnforcementEscalationTest extends FunctionalTestCase
+final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
     use SiteStubTrait;
 
     private FrontendEnforcementService $enforcementService;

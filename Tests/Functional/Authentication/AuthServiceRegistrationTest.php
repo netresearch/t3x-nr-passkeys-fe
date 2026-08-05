@@ -10,18 +10,15 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Authentication;
 
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Verifies that PasskeyFrontendAuthenticationService is properly registered
  * in the TYPO3 service chain with the expected priority and subtypes.
  */
-final class AuthServiceRegistrationTest extends FunctionalTestCase
+final class AuthServiceRegistrationTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
-
     #[Test]
     public function passkeyAuthServiceIsRegisteredInT3Services(): void
     {

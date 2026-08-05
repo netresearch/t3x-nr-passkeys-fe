@@ -11,10 +11,9 @@ namespace Netresearch\NrPasskeysFe\Tests\Integration;
 
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Integration tests for multi-site credential isolation.
@@ -24,10 +23,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  * (unscoped) lookup always works regardless of site.
  */
 #[CoversNothing]
-final class MultiSiteIsolationTest extends FunctionalTestCase
+final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
-
     private FrontendCredentialRepository $repository;
 
     protected function setUp(): void

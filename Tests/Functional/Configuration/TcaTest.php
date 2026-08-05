@@ -9,19 +9,16 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Configuration;
 
-use Netresearch\NrPasskeysFe\Tests\FunctionalTestExtensionsTrait;
+use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
  * Functional tests for TCA configuration registered by nr_passkeys_fe.
  *
  * These tests run in a real TYPO3 bootstrap so $GLOBALS['TCA'] is fully loaded.
  */
-final class TcaTest extends FunctionalTestCase
+final class TcaTest extends AbstractPasskeyFunctionalTestCase
 {
-    use FunctionalTestExtensionsTrait;
-
     // ---------------------------------------------------------------
     // fe_groups TCA
     // ---------------------------------------------------------------
