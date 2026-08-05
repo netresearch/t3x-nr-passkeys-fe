@@ -164,6 +164,48 @@ final class FrontendCredentialRepositoryTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // findAllByFeUser()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function findAllByFeUserReturnsCredentialsAcrossSites(): void
+    {
+        $rows = [
+            $this->buildCredentialRow(uid: 1, feUser: 7, siteIdentifier: 'main'),
+            $this->buildCredentialRow(uid: 2, feUser: 7, siteIdentifier: 'other'),
+        ];
+
+        $result = $this->createStub(Result::class);
+        $result->method('fetchAllAssociative')->willReturn($rows);
+
+        $queryBuilder = $this->createQueryBuilderStub($result);
+        $queryBuilder->method('orderBy')->willReturnSelf();
+
+        $this->connectionPool->method('getQueryBuilderForTable')
+            ->willReturn($queryBuilder);
+
+        $credentials = $this->subject->findAllByFeUser(7);
+
+        self::assertCount(2, $credentials);
+        self::assertContainsOnlyInstancesOf(FrontendCredential::class, $credentials);
+    }
+
+    #[Test]
+    public function findAllByFeUserReturnsEmptyArrayWhenNoneFound(): void
+    {
+        $result = $this->createStub(Result::class);
+        $result->method('fetchAllAssociative')->willReturn([]);
+
+        $queryBuilder = $this->createQueryBuilderStub($result);
+        $queryBuilder->method('orderBy')->willReturnSelf();
+
+        $this->connectionPool->method('getQueryBuilderForTable')
+            ->willReturn($queryBuilder);
+
+        self::assertSame([], $this->subject->findAllByFeUser(999));
+    }
+
+    // ---------------------------------------------------------------
     // countByFeUser()
     // ---------------------------------------------------------------
 

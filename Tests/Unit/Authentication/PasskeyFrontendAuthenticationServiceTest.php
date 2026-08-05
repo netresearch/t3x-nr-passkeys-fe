@@ -26,11 +26,16 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[CoversClass(PasskeyFrontendAuthenticationService::class)]
@@ -904,6 +909,90 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturn($queryBuilder);
 
         GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
+    }
+
+    // --- One-time login token (resolvePasskeyToken / authUser consumption) ---
+
+    #[Test]
+    public function authUserAcceptsAndConsumesOneTimeLoginToken(): void
+    {
+        $cache = $this->createMock(FrontendInterface::class);
+        $cache->method('get')->with('passkey_login_tok123')->willReturn('42');
+        $cache->expects(self::once())->method('remove')->with('passkey_login_tok123');
+        $cacheManager = $this->createStub(CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($cache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
+
+        $this->subject->login = [
+            'uident' => \json_encode(['_type' => 'passkey_token', 'token' => 'tok123'], JSON_THROW_ON_ERROR),
+            'status' => 'login',
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']);
+
+        self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserFallsBackToPasswordFlowWhenLoginTokenExpired(): void
+    {
+        $cache = $this->createStub(FrontendInterface::class);
+        $cache->method('get')->willReturn(false);
+        $cacheManager = $this->createStub(CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($cache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
+
+        $this->subject->login = [
+            'uident' => \json_encode(['_type' => 'passkey_token', 'token' => 'gone'], JSON_THROW_ON_ERROR),
+            'status' => 'login',
+        ];
+
+        // Expired token: no passkey payload either, so the password flow
+        // decides — default enforcement is off, TYPO3 continues with 100.
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']);
+
+        self::assertSame(100, $result);
+    }
+
+    // --- resolveSite() host-matching fallback ---
+
+    #[Test]
+    public function resolveSiteFallsBackToHostMatchingWhenRequestHasNoSiteAttribute(): void
+    {
+        $request = $this->createStub(ServerRequestInterface::class);
+        $request->method('getAttribute')->willReturn(null);
+        $request->method('getUri')->willReturn(new Uri('https://match.example.org/login'));
+        $GLOBALS['TYPO3_REQUEST'] = $request;
+
+        $site = $this->createStub(SiteInterface::class);
+        $site->method('getBase')->willReturn(new Uri('https://match.example.org/'));
+        $otherSite = $this->createStub(SiteInterface::class);
+        $otherSite->method('getBase')->willReturn(new Uri('https://elsewhere.example.org/'));
+
+        $siteFinder = $this->createStub(SiteFinder::class);
+        $siteFinder->method('getAllSites')->willReturn([$otherSite, $site]);
+        GeneralUtility::addInstance(SiteFinder::class, $siteFinder);
+
+        $method = (new ReflectionClass($this->subject))->getMethod('resolveSite');
+
+        self::assertSame($site, $method->invoke($this->subject));
+    }
+
+    // --- getLogger() lazy initialisation ---
+
+    #[Test]
+    public function getLoggerLazilyInitializesFromLogManager(): void
+    {
+        $logger = $this->createStub(Logger::class);
+        $logManager = $this->createStub(LogManager::class);
+        $logManager->method('getLogger')->willReturn($logger);
+        GeneralUtility::setSingletonInstance(LogManager::class, $logManager);
+
+        // Fresh service without an injected logger
+        $subject = new PasskeyFrontendAuthenticationService();
+        $method = (new ReflectionClass($subject))->getMethod('getLogger');
+
+        self::assertSame($logger, $method->invoke($subject));
     }
 
     private function injectLogger(object $service, LoggerInterface $logger): void

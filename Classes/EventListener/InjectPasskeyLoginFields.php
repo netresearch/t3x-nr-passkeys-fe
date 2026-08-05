@@ -32,7 +32,7 @@ final readonly class InjectPasskeyLoginFields
      *
      * Used with class_exists() to guard against felogin not being installed.
      */
-    private const FELOGIN_EVENT_CLASS = 'TYPO3\\CMS\\FrontendLogin\\Event\\ModifyLoginFormViewEvent';
+    private const FELOGIN_EVENT_CLASS = ModifyLoginFormViewEvent::class;
 
     public function __construct(
         private SiteConfigurationService $siteConfigurationService,

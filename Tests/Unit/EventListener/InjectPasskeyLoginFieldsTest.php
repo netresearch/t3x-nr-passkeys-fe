@@ -17,7 +17,11 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Page\AssetCollector;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\View\ViewInterface;
+use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
 #[CoversClass(InjectPasskeyLoginFields::class)]
 final class InjectPasskeyLoginFieldsTest extends TestCase
@@ -26,25 +30,25 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
 
     private FrontendConfiguration $frontendConfiguration;
 
-    private AssetCollector&Stub $assetCollector;
-
-    private InjectPasskeyLoginFields $subject;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
         $this->frontendConfiguration = new FrontendConfiguration(enableFePasskeys: true);
-        $this->assetCollector = $this->createStub(AssetCollector::class);
-        $this->subject = new InjectPasskeyLoginFields(
-            $this->siteConfigService,
-            $this->frontendConfiguration,
-            $this->assetCollector,
-        );
+    }
+
+    private function buildEvent(ViewInterface $view, ?SiteInterface $site): ModifyLoginFormViewEvent
+    {
+        $request = new ServerRequest('https://example.com/', 'GET');
+        if ($site instanceof SiteInterface) {
+            $request = $request->withAttribute('site', $site);
+        }
+
+        return new ModifyLoginFormViewEvent($view, $request);
     }
 
     #[Test]
-    public function doesNothingWhenFeloginNotInstalled(): void
+    public function doesNothingForForeignEventObjects(): void
     {
         $assetCollector = $this->createMock(AssetCollector::class);
         $subject = new InjectPasskeyLoginFields(
@@ -56,7 +60,8 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         $assetCollector->expects(self::never())->method('addInlineJavaScript');
         $assetCollector->expects(self::never())->method('addJavaScript');
 
-        // Pass a plain stdClass as the event (not felogin event)
+        // The listener parameter type is object; anything that is not the
+        // felogin event must be ignored.
         $subject->__invoke(new stdClass());
     }
 
@@ -72,25 +77,63 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
 
         $assetCollector->expects(self::never())->method('addInlineJavaScript');
 
-        // Pass a plain stdClass as the event (felogin guard runs first anyway)
-        $subject->__invoke(new stdClass());
+        $subject->__invoke($this->buildEvent($this->createStub(ViewInterface::class), null));
     }
 
     #[Test]
-    public function listenerIsInstantiable(): void
+    public function injectsConfigAndModuleForSiteWithRpId(): void
     {
-        self::assertInstanceOf(InjectPasskeyLoginFields::class, $this->subject);
-    }
+        $site = $this->createStub(SiteInterface::class);
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $this->siteConfigService->method('getOrigin')->willReturn('https://example.com');
 
-    #[Test]
-    public function listenerHasExpectedDependencies(): void
-    {
-        // Verify constructor accepts all required dependencies without errors
-        $listener = new InjectPasskeyLoginFields(
+        $assetCollector = $this->createMock(AssetCollector::class);
+        $assetCollector->expects(self::once())
+            ->method('addInlineJavaScript')
+            ->with(
+                'nr-passkeys-fe-config',
+                self::logicalAnd(
+                    self::stringContains('"rpId":"example.com"'),
+                    self::stringContains('"origin":"https:\/\/example.com"'),
+                ),
+                self::anything(),
+                self::anything(),
+            );
+        $assetCollector->expects(self::once())
+            ->method('addJavaScript')
+            ->with('nr-passkeys-fe-login', self::anything(), self::anything(), self::anything());
+
+        $subject = new InjectPasskeyLoginFields(
             $this->siteConfigService,
             $this->frontendConfiguration,
-            $this->assetCollector,
+            $assetCollector,
         );
-        self::assertInstanceOf(InjectPasskeyLoginFields::class, $listener);
+
+        $view = $this->createMock(ViewInterface::class);
+        $view->expects(self::exactly(3))->method('assign');
+
+        $subject->__invoke($this->buildEvent($view, $site));
+    }
+
+    #[Test]
+    public function injectsEmptyRpIdWhenRequestHasNoSite(): void
+    {
+        $assetCollector = $this->createMock(AssetCollector::class);
+        $assetCollector->expects(self::once())
+            ->method('addInlineJavaScript')
+            ->with(
+                'nr-passkeys-fe-config',
+                self::stringContains('"rpId":""'),
+                self::anything(),
+                self::anything(),
+            );
+
+        $subject = new InjectPasskeyLoginFields(
+            $this->siteConfigService,
+            $this->frontendConfiguration,
+            $assetCollector,
+        );
+
+        $subject->__invoke($this->buildEvent($this->createStub(ViewInterface::class), null));
     }
 }

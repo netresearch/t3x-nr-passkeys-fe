@@ -149,6 +149,39 @@ final class RecoveryControllerTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    #[Test]
+    public function verifyActionCreatesOneTimeLoginTokenOnSuccess(): void
+    {
+        $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
+        $this->recoveryCodeService->method('verify')->willReturn(true);
+
+        // Re-register the cache so the token write can be asserted
+        $cacheMock = $this->createMock(FrontendInterface::class);
+        $cacheMock->expects(self::once())
+            ->method('set')
+            ->with(
+                self::callback(static fn(string $key): bool => \str_starts_with($key, 'passkey_login_')),
+                '42',
+                [],
+                120,
+            );
+        $cacheManagerStub = $this->createStub(CacheManager::class);
+        $cacheManagerStub->method('getCache')->willReturn($cacheMock);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
+
+        $request = $this->buildRequest([
+            'username' => 'user@example.com',
+            'code' => 'ABCD-EFGH',
+        ]);
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeBody($response);
+        self::assertSame('ok', $body['status']);
+        self::assertSame(42, $body['feUserUid']);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $body['loginToken']);
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------

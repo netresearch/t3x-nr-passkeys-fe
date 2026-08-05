@@ -213,6 +213,25 @@ final class EidDispatcherTest extends TestCase
         $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
     }
 
+    #[Test]
+    public function protectedActionControllerExceptionReturns500(): void
+    {
+        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub->method('listAction')->willThrowException(new RuntimeException('Boom'));
+        GeneralUtility::addInstance(ManagementController::class, $managementStub);
+
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = ['uid' => 42];
+
+        $request = $this->buildRequest(['action' => 'manageList'])
+            ->withAttribute('frontend.user', $feUserStub);
+
+        $response = $this->subject->processRequest($request);
+
+        self::assertSame(500, $response->getStatusCode());
+        $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
+    }
+
     // ---------------------------------------------------------------
     // Bootstrap FE user session for eID requests
     // ---------------------------------------------------------------
