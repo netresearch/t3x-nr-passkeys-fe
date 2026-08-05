@@ -18,9 +18,6 @@ use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
-use TYPO3\CMS\Core\Http\Uri;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 
 /**
  * Integration tests for the complete login-related service flow.

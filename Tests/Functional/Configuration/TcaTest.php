@@ -180,6 +180,6 @@ final class TcaTest extends AbstractPasskeyFunctionalTestCase
             ...($GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? []),
         ];
 
-        return \array_values(\array_map('strval', \array_column($items, 'value')));
+        return \array_values(\array_map(strval(...), \array_column($items, 'value')));
     }
 }
