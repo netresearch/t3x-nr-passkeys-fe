@@ -1,0 +1,7 @@
+tt_content
+,uid,pid,CType,list_type,header
+,1,1,list,nrpasskeysfe_passkeylogin,Passkey login plugin
+,2,1,list,nrpasskeysfe_passkeymanagement,Passkey management plugin
+,3,1,list,nrpasskeysfe_passkeyenrollment,Passkey enrollment plugin
+,4,1,list,someother_plugin,Foreign plugin
+,5,1,textmedia,,Regular content element

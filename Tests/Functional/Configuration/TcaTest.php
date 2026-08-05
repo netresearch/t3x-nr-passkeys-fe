@@ -159,26 +159,18 @@ final class TcaTest extends AbstractPasskeyFunctionalTestCase
     // ---------------------------------------------------------------
 
     /**
-     * Plugin signatures selectable in tt_content, from whichever column the
-     * running core registers them in.
+     * Plugin signatures selectable as CType in tt_content.
      *
-     * Which column that is depends on the TYPO3 version, because
-     * ExtensionUtility::configurePlugin() is called here without an explicit
-     * plugin type: v13.4 then defaults to PLUGIN_TYPE_PLUGIN ('list_type'),
-     * v14 dropped that constant and always uses 'CType'. Asserting either
-     * column alone therefore passes on one leg of the matrix and fails on the
-     * other. Moving the registration to 'CType' on both is a content-record
-     * migration (existing elements are stored as CType=list plus
-     * list_type=<signature>) and belongs in its own change.
+     * The plugins are registered with an explicit
+     * ExtensionUtility::PLUGIN_TYPE_CONTENT_ELEMENT (see ext_localconf.php),
+     * so both supported cores register them in the CType column — v13.4 no
+     * longer falls back to the deprecated list_type.
      *
      * @return list<string>
      */
     private function getRegisteredPluginSignatures(): array
     {
-        $items = [
-            ...($GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] ?? []),
-            ...($GLOBALS['TCA']['tt_content']['columns']['list_type']['config']['items'] ?? []),
-        ];
+        $items = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] ?? [];
 
         return \array_values(\array_map(strval(...), \array_column($items, 'value')));
     }

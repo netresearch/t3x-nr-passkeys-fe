@@ -17,11 +17,16 @@ defined('TYPO3') || die();
 
 // Configure Extbase plugins (required for rendering)
 // These Extbase controllers render Fluid templates; actual WebAuthn logic runs via eID/JavaScript.
+// The explicit PLUGIN_TYPE_CONTENT_ELEMENT registers the plugins as CType on
+// both supported cores: v13.4 would otherwise default to the deprecated
+// list_type, v14 always uses CType. Existing list_type content elements are
+// migrated by the nrPasskeysFe_pluginListTypeToCType upgrade wizard.
 ExtensionUtility::configurePlugin(
     'NrPasskeysFe',
     'PasskeyLogin',
     [LoginPluginController::class => 'index'],
     [LoginPluginController::class => 'index'],
+    ExtensionUtility::PLUGIN_TYPE_CONTENT_ELEMENT,
 );
 
 ExtensionUtility::configurePlugin(
@@ -29,6 +34,7 @@ ExtensionUtility::configurePlugin(
     'PasskeyManagement',
     [ManagementPluginController::class => 'index'],
     [ManagementPluginController::class => 'index'],
+    ExtensionUtility::PLUGIN_TYPE_CONTENT_ELEMENT,
 );
 
 ExtensionUtility::configurePlugin(
@@ -36,6 +42,7 @@ ExtensionUtility::configurePlugin(
     'PasskeyEnrollment',
     [EnrollmentPluginController::class => 'index'],
     [EnrollmentPluginController::class => 'index'],
+    ExtensionUtility::PLUGIN_TYPE_CONTENT_ELEMENT,
 );
 
 // Register FE passkey authentication service at priority 80
