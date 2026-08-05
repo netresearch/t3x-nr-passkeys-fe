@@ -126,7 +126,7 @@ run_unit_tests() {
 # Run functional tests
 #
 run_functional_tests() {
-    info "Running functional tests with DBMS=${DBMS}..."
+    info "Running functional tests..."
     check_dependencies
 
     # Determine database driver for functional tests.
@@ -154,6 +154,7 @@ run_functional_tests() {
             info "Using SQLite for functional tests"
         fi
     fi
+    info "Database driver: ${typo3DatabaseDriver}"
 
     if [[ -f "${ROOT_DIR}/Build/phpunit.functional.xml" ]]; then
         "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.functional.xml" ${EXTRA_TEST_OPTIONS}
