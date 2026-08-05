@@ -35,9 +35,6 @@
     },
     "require-dev": {
         "netresearch/typo3-ci-workflows": "^1.1",
-        "ergebnis/phpstan-rules": "^2.6",
-        "dg/bypass-finals": "^1.9",
-        "giorgiosironi/eris": "^1.0",
         "typo3/cms-dashboard": "^13.4 || ^14.1",
         "typo3/cms-felogin": "^13.4 || ^14.1"
     },
@@ -58,6 +55,7 @@
         "allow-plugins": {
             "typo3/class-alias-loader": true,
             "a9f/fractor-extension-installer": true,
+            "ergebnis/composer-normalize": true,
             "captainhook/hook-installer": true,
             "infection/extension-installer": true,
             "phpstan/extension-installer": true,
