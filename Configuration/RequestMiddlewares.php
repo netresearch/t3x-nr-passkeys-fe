@@ -7,15 +7,18 @@
 
 declare(strict_types=1);
 
+use Netresearch\NrPasskeysFe\Middleware\PasskeyEnrollmentInterstitial;
+use Netresearch\NrPasskeysFe\Middleware\PasskeyPublicRouteResolver;
+
 return [
     'frontend' => [
         'nr-passkeys-fe/public-route-resolver' => [
-            'target' => \Netresearch\NrPasskeysFe\Middleware\PasskeyPublicRouteResolver::class,
+            'target' => PasskeyPublicRouteResolver::class,
             'after' => ['typo3/cms-frontend/site'],
             'before' => ['typo3/cms-frontend/authentication'],
         ],
         'nr-passkeys-fe/enrollment-interstitial' => [
-            'target' => \Netresearch\NrPasskeysFe\Middleware\PasskeyEnrollmentInterstitial::class,
+            'target' => PasskeyEnrollmentInterstitial::class,
             'after' => ['typo3/cms-frontend/authentication'],
         ],
     ],

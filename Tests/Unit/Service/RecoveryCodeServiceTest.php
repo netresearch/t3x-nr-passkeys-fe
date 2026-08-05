@@ -17,14 +17,16 @@ use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 #[CoversClass(RecoveryCodeService::class)]
 final class RecoveryCodeServiceTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private ConnectionPool&Stub $connectionPool;
+
     private Connection&Stub $connection;
+
     private RecoveryCodeService $subject;
 
     protected function setUp(): void
@@ -81,8 +83,6 @@ final class RecoveryCodeServiceTest extends TestCase
         $codes = $this->subject->generate(1, 50);
 
         $validChars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-        $invalidChars = '01OILZ'; // Z is valid; 0, 1, O, I, L are excluded
-        $invalidCharsActual = '01OIL';
 
         foreach ($codes as $code) {
             $rawCode = \str_replace('-', '', $code);
@@ -177,7 +177,7 @@ final class RecoveryCodeServiceTest extends TestCase
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -196,7 +196,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ['uid' => 99, 'code_hash' => $hash],
         ]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -211,9 +211,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
-                self::callback(static function (array $data): bool {
-                    return isset($data['used_at']) && $data['used_at'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
                 ['uid' => 99],
             );
 
@@ -232,7 +230,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ['uid' => 1, 'code_hash' => $hash],
         ]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -253,7 +251,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ['uid' => 1, 'code_hash' => $hash],
         ]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -272,7 +270,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ['uid' => 1, 'code_hash' => $hash],
         ]);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -289,7 +287,7 @@ final class RecoveryCodeServiceTest extends TestCase
         $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(7);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
@@ -302,34 +300,10 @@ final class RecoveryCodeServiceTest extends TestCase
         $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn(0);
 
-        $queryBuilder = $this->createQueryBuilderMock($result);
+        $queryBuilder = $this->createQueryBuilderStub($result);
         $this->connectionPool->method('getQueryBuilderForTable')
             ->willReturn($queryBuilder);
 
         self::assertSame(0, $this->subject->countRemaining(1));
-    }
-
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result !== null) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
     }
 }

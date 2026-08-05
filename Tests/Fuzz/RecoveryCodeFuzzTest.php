@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Fuzz;
 
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -47,7 +48,7 @@ final class RecoveryCodeFuzzTest extends TestCase
         $queryBuilder->method('count')->willReturnSelf();
 
         // Fake DB result: no existing codes (empty)
-        $resultStub = $this->createStub(\Doctrine\DBAL\Result::class);
+        $resultStub = $this->createStub(Result::class);
         $resultStub->method('fetchAllAssociative')->willReturn([]);
         $resultStub->method('fetchOne')->willReturn(0);
         $queryBuilder->method('executeQuery')->willReturn($resultStub);

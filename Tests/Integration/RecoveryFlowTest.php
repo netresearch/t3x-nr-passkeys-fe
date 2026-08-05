@@ -188,9 +188,7 @@ final class RecoveryFlowTest extends AbstractPasskeyFunctionalTestCase
     {
         $this->saveCredential(2, 'recovery-norm-cred', 'site-a');
         $codes = $this->recoveryCodeService->generate(2, 5);
-        // Take a generated code and present it lowercase with extra spaces and dashes
         $code = $codes[0];
-        $normalised = \strtolower(\str_replace('-', '  -  ', $code));
 
         // The code after normalisation: strip dashes, uppercase, trim spaces => should NOT match
         // because the normalisation in verify strips dashes but not spaces.

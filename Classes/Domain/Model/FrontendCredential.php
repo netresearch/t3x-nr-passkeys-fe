@@ -125,7 +125,7 @@ final class FrontendCredential
             return [];
         }
 
-        return \array_values(\array_filter($decoded, '\is_string'));
+        return \array_values(\array_filter($decoded, \is_string(...)));
     }
 
     /**

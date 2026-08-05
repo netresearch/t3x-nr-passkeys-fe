@@ -26,8 +26,11 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 final class AdminControllerTest extends TestCase
 {
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private FrontendUserLookupService&Stub $userLookupService;
+
     private RateLimiterService&Stub $rateLimiterService;
+
     private AdminController $subject;
 
     protected function setUp(): void
@@ -96,6 +99,7 @@ final class AdminControllerTest extends TestCase
             $cred->setRevokedAt(\time() - 60);
             $cred->setRevokedBy(1);
         }
+
         return $cred;
     }
 
@@ -200,7 +204,7 @@ final class AdminControllerTest extends TestCase
         $body = \json_decode((string) $response->getBody(), true);
 
         self::assertSame(2, $body['count']);
-        $revokedItems = \array_filter($body['credentials'], static fn($c) => $c['isRevoked'] === true);
+        $revokedItems = \array_filter($body['credentials'], static fn(array $c): bool => $c['isRevoked'] === true);
         self::assertCount(1, $revokedItems);
     }
 

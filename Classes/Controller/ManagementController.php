@@ -23,6 +23,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * Handles passkey self-service management for authenticated frontend users.
@@ -53,7 +54,7 @@ final readonly class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -111,7 +112,7 @@ final readonly class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -204,7 +205,7 @@ final readonly class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
@@ -246,13 +247,13 @@ final readonly class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
-        $credentialUid = self::intFrom($body['uid'] ?? null);
+        $credentialUid = $this->intFrom($body['uid'] ?? null);
         $rawLabel = $body['label'] ?? null;
         $label = \is_string($rawLabel) ? $rawLabel : '';
 
@@ -266,7 +267,7 @@ final readonly class ManagementController
         }
 
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
-        if ($credential === null) {
+        if (!$credential instanceof FrontendCredential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
@@ -291,20 +292,20 @@ final readonly class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication);
+        \assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
         $userRow = $feUser->user;
         $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
-        $credentialUid = self::intFrom($body['uid'] ?? null);
+        $credentialUid = $this->intFrom($body['uid'] ?? null);
 
         if ($credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing credential uid'], 400);
         }
 
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
-        if ($credential === null) {
+        if (!$credential instanceof FrontendCredential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
@@ -321,7 +322,7 @@ final readonly class ManagementController
         return new JsonResponse(['status' => 'ok']);
     }
 
-    private static function intFrom(mixed $value): int
+    private function intFrom(mixed $value): int
     {
         return \is_numeric($value) ? (int) $value : 0;
     }

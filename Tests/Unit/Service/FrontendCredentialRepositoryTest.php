@@ -25,7 +25,10 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 #[CoversClass(FrontendCredentialRepository::class)]
 final class FrontendCredentialRepositoryTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private ConnectionPool&Stub $connectionPool;
+
     private FrontendCredentialRepository $subject;
 
     protected function setUp(): void
@@ -161,6 +164,48 @@ final class FrontendCredentialRepositoryTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // findAllByFeUser()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function findAllByFeUserReturnsCredentialsAcrossSites(): void
+    {
+        $rows = [
+            $this->buildCredentialRow(uid: 1, feUser: 7, siteIdentifier: 'main'),
+            $this->buildCredentialRow(uid: 2, feUser: 7, siteIdentifier: 'other'),
+        ];
+
+        $result = $this->createStub(Result::class);
+        $result->method('fetchAllAssociative')->willReturn($rows);
+
+        $queryBuilder = $this->createQueryBuilderStub($result);
+        $queryBuilder->method('orderBy')->willReturnSelf();
+
+        $this->connectionPool->method('getQueryBuilderForTable')
+            ->willReturn($queryBuilder);
+
+        $credentials = $this->subject->findAllByFeUser(7);
+
+        self::assertCount(2, $credentials);
+        self::assertContainsOnlyInstancesOf(FrontendCredential::class, $credentials);
+    }
+
+    #[Test]
+    public function findAllByFeUserReturnsEmptyArrayWhenNoneFound(): void
+    {
+        $result = $this->createStub(Result::class);
+        $result->method('fetchAllAssociative')->willReturn([]);
+
+        $queryBuilder = $this->createQueryBuilderStub($result);
+        $queryBuilder->method('orderBy')->willReturnSelf();
+
+        $this->connectionPool->method('getQueryBuilderForTable')
+            ->willReturn($queryBuilder);
+
+        self::assertSame([], $this->subject->findAllByFeUser(999));
+    }
+
+    // ---------------------------------------------------------------
     // countByFeUser()
     // ---------------------------------------------------------------
 
@@ -233,11 +278,9 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return isset($data['last_used_at'], $data['tstamp'])
-                        && $data['last_used_at'] > 0
-                        && $data['tstamp'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['last_used_at'], $data['tstamp'])
+                    && $data['last_used_at'] > 0
+                    && $data['tstamp'] > 0),
                 ['uid' => 42],
             );
 
@@ -259,11 +302,9 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
-                        && $data['revoked_at'] > 0
-                        && $data['revoked_by'] === 99;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
+                    && $data['revoked_at'] > 0
+                    && $data['revoked_by'] === 99),
                 ['uid' => 5],
             );
 
@@ -304,10 +345,8 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static function (array $data): bool {
-                    return ($data['sign_count'] ?? null) === 42
-                        && isset($data['tstamp']);
-                }),
+                self::callback(static fn(array $data): bool => ($data['sign_count'] ?? null) === 42
+                    && isset($data['tstamp'])),
                 ['uid' => 5],
             );
 
@@ -350,27 +389,6 @@ final class FrontendCredentialRepositoryTest extends TestCase
         ];
     }
 
-    private function createQueryBuilderStub(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-        $expressionBuilder->method('in')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result !== null) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
-    }
-
     private function createQueryBuilderMock(?Result $result = null): QueryBuilder&MockObject
     {
         $expressionBuilder = $this->createStub(ExpressionBuilder::class);
@@ -385,7 +403,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('createNamedParameter')->willReturn('?');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 

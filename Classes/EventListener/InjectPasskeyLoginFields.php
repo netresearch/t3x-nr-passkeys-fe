@@ -12,6 +12,8 @@ namespace Netresearch\NrPasskeysFe\EventListener;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use TYPO3\CMS\Core\Page\AssetCollector;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
 /**
  * Injects passkey login fields into the felogin form view.
@@ -30,7 +32,7 @@ final readonly class InjectPasskeyLoginFields
      *
      * Used with class_exists() to guard against felogin not being installed.
      */
-    private const FELOGIN_EVENT_CLASS = 'TYPO3\\CMS\\FrontendLogin\\Event\\ModifyLoginFormViewEvent';
+    private const FELOGIN_EVENT_CLASS = ModifyLoginFormViewEvent::class;
 
     public function __construct(
         private SiteConfigurationService $siteConfigurationService,
@@ -52,7 +54,7 @@ final readonly class InjectPasskeyLoginFields
             return;
         }
 
-        if (!($event instanceof \TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent)) {
+        if (!($event instanceof ModifyLoginFormViewEvent)) {
             return;
         }
 
@@ -66,7 +68,7 @@ final readonly class InjectPasskeyLoginFields
         $rpId = '';
         $origin = '';
 
-        if ($site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface) {
+        if ($site instanceof SiteInterface) {
             $rpId = $this->siteConfigurationService->getRpId($site);
             $origin = $this->siteConfigurationService->getOrigin($site);
         }

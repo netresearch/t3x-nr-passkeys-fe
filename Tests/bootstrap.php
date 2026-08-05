@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use DG\BypassFinals;
+
 /**
  * PHPUnit bootstrap that enables bypass-finals before autoloading.
  *
@@ -24,4 +26,4 @@ if (!\defined('LF')) {
 
 require __DIR__ . '/../.Build/vendor/autoload.php';
 
-DG\BypassFinals::enable();
+BypassFinals::enable();

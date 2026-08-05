@@ -60,7 +60,7 @@ final class EidDispatcherTest extends TestCase
         $response = $this->subject->processRequest($request);
 
         self::assertSame(404, $response->getStatusCode());
-        self::assertJsonBodyEquals(['error' => 'Unknown action'], $response);
+        $this->assertJsonBodyEquals(['error' => 'Unknown action'], $response);
     }
 
     #[Test]
@@ -150,7 +150,7 @@ final class EidDispatcherTest extends TestCase
         $response = $this->subject->processRequest($request);
 
         self::assertSame(401, $response->getStatusCode());
-        self::assertJsonBodyEquals(['error' => 'Authentication required'], $response);
+        $this->assertJsonBodyEquals(['error' => 'Authentication required'], $response);
     }
 
     #[Test]
@@ -210,7 +210,26 @@ final class EidDispatcherTest extends TestCase
         $response = $this->subject->processRequest($request);
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertJsonBodyEquals(['error' => 'Internal error'], $response);
+        $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
+    }
+
+    #[Test]
+    public function protectedActionControllerExceptionReturns500(): void
+    {
+        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub->method('listAction')->willThrowException(new RuntimeException('Boom'));
+        GeneralUtility::addInstance(ManagementController::class, $managementStub);
+
+        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub->user = ['uid' => 42];
+
+        $request = $this->buildRequest(['action' => 'manageList'])
+            ->withAttribute('frontend.user', $feUserStub);
+
+        $response = $this->subject->processRequest($request);
+
+        self::assertSame(500, $response->getStatusCode());
+        $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
     }
 
     // ---------------------------------------------------------------
@@ -367,7 +386,7 @@ final class EidDispatcherTest extends TestCase
     /**
      * Assert that the response body decodes to the expected array.
      */
-    private static function assertJsonBodyEquals(array $expected, ResponseInterface $response): void
+    private function assertJsonBodyEquals(array $expected, ResponseInterface $response): void
     {
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);

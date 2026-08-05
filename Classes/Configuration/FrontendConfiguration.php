@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Configuration;
 
 use Throwable;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Frontend extension configuration value object.
@@ -100,14 +102,15 @@ final readonly class FrontendConfiguration
     public static function fromExtensionConfiguration(): self
     {
         try {
-            /** @var \TYPO3\CMS\Core\Configuration\ExtensionConfiguration $extConfApi */
-            $extConfApi = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(
-                \TYPO3\CMS\Core\Configuration\ExtensionConfiguration::class,
+            /** @var ExtensionConfiguration $extConfApi */
+            $extConfApi = GeneralUtility::makeInstance(
+                ExtensionConfiguration::class,
             );
             $rawSettings = $extConfApi->get('nr_passkeys_fe');
             if (!\is_array($rawSettings)) {
                 $rawSettings = [];
             }
+
             /** @var array<string, mixed> $settings */
             $settings = $rawSettings;
         } catch (Throwable) {
@@ -122,9 +125,11 @@ final readonly class FrontendConfiguration
         if ($value === null) {
             return $default;
         }
+
         if (\is_bool($value)) {
             return $value;
         }
+
         if (\is_string($value)) {
             return $value !== '0' && $value !== '';
         }

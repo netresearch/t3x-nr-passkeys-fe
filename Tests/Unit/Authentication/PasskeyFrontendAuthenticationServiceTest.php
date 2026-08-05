@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Authentication;
 
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
@@ -25,10 +26,16 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[CoversClass(PasskeyFrontendAuthenticationService::class)]
@@ -89,12 +96,10 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturnArgument(0);
 
         // Set up TYPO3_REQUEST with a site attribute so resolveSite() works
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\SiteInterface::class);
+        $site = $this->createStub(SiteInterface::class);
         $request = $this->createStub(ServerRequestInterface::class);
-        $request->method('getAttribute')->willReturnCallback(static function (string $name) use ($site) {
-            return $name === 'site' ? $site : null;
-        });
-        $request->method('getUri')->willReturn(new \TYPO3\CMS\Core\Http\Uri('https://example.com/'));
+        $request->method('getAttribute')->willReturnCallback(static fn(string $name): ?SiteInterface => $name === 'site' ? $site : null);
+        $request->method('getUri')->willReturn(new Uri('https://example.com/'));
         $GLOBALS['TYPO3_REQUEST'] = $request;
 
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
@@ -121,7 +126,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
      *
      * @param array<string, mixed> $assertion
      */
-    private static function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
+    private function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
     {
         return \json_encode([
             '_type' => 'passkey',
@@ -154,7 +159,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'frontend_user',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -176,7 +181,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -197,7 +202,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -222,7 +227,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'locked_user',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -258,7 +263,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'nonexistent',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $logger);
 
@@ -285,7 +290,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     public function getUserWithMissingUnameKeyAttemptsDiscoverableLogin(): void
     {
         $this->subject->login = [
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -332,7 +337,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'frontend_user',
-            'uident' => self::buildPasskeyUident(['valid' => 'assertion']),
+            'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
         ];
 
         $rateLimiterService
@@ -380,7 +385,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'frontend_user',
-            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+            'uident' => $this->buildPasskeyUident(['bad' => 'data']),
         ];
 
         $rateLimiterService
@@ -421,7 +426,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'testuser',
-            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+            'uident' => $this->buildPasskeyUident(['bad' => 'data']),
         ];
 
         $webAuthnService
@@ -461,7 +466,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'locked_user',
-            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
+            'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $rateLimiterService
@@ -503,7 +508,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'frontend_user',
-            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
+            'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $webAuthnService
@@ -786,7 +791,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'frontend_user',
-            'uident' => self::buildPasskeyUident(['cached' => 'test'], 'cached-token'),
+            'uident' => $this->buildPasskeyUident(['cached' => 'test'], 'cached-token'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -865,7 +870,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'user',
-            'uident' => self::buildPasskeyUident(['valid' => 'assertion']),
+            'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
         ];
 
         $user = ['uid' => 42, 'username' => 'user'];
@@ -887,7 +892,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $expressionBuilder = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
 
-        $result = $this->createStub(\Doctrine\DBAL\Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn($userRow ?? false);
 
         $queryBuilder = $this->createStub(QueryBuilder::class);
@@ -906,6 +911,90 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
     }
 
+    // --- One-time login token (resolvePasskeyToken / authUser consumption) ---
+
+    #[Test]
+    public function authUserAcceptsAndConsumesOneTimeLoginToken(): void
+    {
+        $cache = $this->createMock(FrontendInterface::class);
+        $cache->method('get')->with('passkey_login_tok123')->willReturn('42');
+        $cache->expects(self::once())->method('remove')->with('passkey_login_tok123');
+        $cacheManager = $this->createStub(CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($cache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
+
+        $this->subject->login = [
+            'uident' => \json_encode(['_type' => 'passkey_token', 'token' => 'tok123'], JSON_THROW_ON_ERROR),
+            'status' => 'login',
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']);
+
+        self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserFallsBackToPasswordFlowWhenLoginTokenExpired(): void
+    {
+        $cache = $this->createStub(FrontendInterface::class);
+        $cache->method('get')->willReturn(false);
+        $cacheManager = $this->createStub(CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($cache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
+
+        $this->subject->login = [
+            'uident' => \json_encode(['_type' => 'passkey_token', 'token' => 'gone'], JSON_THROW_ON_ERROR),
+            'status' => 'login',
+        ];
+
+        // Expired token: no passkey payload either, so the password flow
+        // decides — default enforcement is off, TYPO3 continues with 100.
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']);
+
+        self::assertSame(100, $result);
+    }
+
+    // --- resolveSite() host-matching fallback ---
+
+    #[Test]
+    public function resolveSiteFallsBackToHostMatchingWhenRequestHasNoSiteAttribute(): void
+    {
+        $request = $this->createStub(ServerRequestInterface::class);
+        $request->method('getAttribute')->willReturn(null);
+        $request->method('getUri')->willReturn(new Uri('https://match.example.org/login'));
+        $GLOBALS['TYPO3_REQUEST'] = $request;
+
+        $site = $this->createStub(SiteInterface::class);
+        $site->method('getBase')->willReturn(new Uri('https://match.example.org/'));
+        $otherSite = $this->createStub(SiteInterface::class);
+        $otherSite->method('getBase')->willReturn(new Uri('https://elsewhere.example.org/'));
+
+        $siteFinder = $this->createStub(SiteFinder::class);
+        $siteFinder->method('getAllSites')->willReturn([$otherSite, $site]);
+        GeneralUtility::addInstance(SiteFinder::class, $siteFinder);
+
+        $method = (new ReflectionClass($this->subject))->getMethod('resolveSite');
+
+        self::assertSame($site, $method->invoke($this->subject));
+    }
+
+    // --- getLogger() lazy initialisation ---
+
+    #[Test]
+    public function getLoggerLazilyInitializesFromLogManager(): void
+    {
+        $logger = $this->createStub(Logger::class);
+        $logManager = $this->createStub(LogManager::class);
+        $logManager->method('getLogger')->willReturn($logger);
+        GeneralUtility::setSingletonInstance(LogManager::class, $logManager);
+
+        // Fresh service without an injected logger
+        $subject = new PasskeyFrontendAuthenticationService();
+        $method = (new ReflectionClass($subject))->getMethod('getLogger');
+
+        self::assertSame($logger, $method->invoke($subject));
+    }
+
     private function injectLogger(object $service, LoggerInterface $logger): void
     {
         $reflection = new ReflectionClass($service);
@@ -916,6 +1005,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
                 $prop->setValue($service, $logger);
                 return;
             }
+
             $parent = $parent->getParentClass();
         }
     }

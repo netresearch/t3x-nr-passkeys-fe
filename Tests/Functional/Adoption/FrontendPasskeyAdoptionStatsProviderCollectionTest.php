@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysFe\Adoption\FrontendPasskeyAdoptionStatsProvider;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
 /**
  * DI smoke test: with both extensions loaded, the frontend provider is part
@@ -33,7 +34,7 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends AbstractP
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

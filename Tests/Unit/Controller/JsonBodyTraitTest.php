@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use GuzzleHttp\Psr7\Stream;
 use Netresearch\NrPasskeysFe\Controller\JsonBodyTrait;
 use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\Test;
@@ -58,7 +59,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function decodesJsonFromBodyContent(): void
     {
-        $body = new \GuzzleHttp\Psr7\Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(\fopen('php://temp', 'r+'));
         $body->write('{"key":"value"}');
         $body->rewind();
 
@@ -73,7 +74,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayForInvalidJson(): void
     {
-        $body = new \GuzzleHttp\Psr7\Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(\fopen('php://temp', 'r+'));
         $body->write('{invalid json');
         $body->rewind();
 
@@ -98,7 +99,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayForNonJsonContentType(): void
     {
-        $body = new \GuzzleHttp\Psr7\Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(\fopen('php://temp', 'r+'));
         $body->write('{"key":"value"}');
         $body->rewind();
 
@@ -113,7 +114,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayWhenJsonDecodesToNonArray(): void
     {
-        $body = new \GuzzleHttp\Psr7\Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(\fopen('php://temp', 'r+'));
         $body->write('"just a string"');
         $body->rewind();
 

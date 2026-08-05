@@ -26,6 +26,7 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 final class FrontendAdoptionStatsServiceTest extends TestCase
 {
     private ConnectionPool&Stub $connectionPool;
+
     private FrontendAdoptionStatsService $subject;
 
     protected function setUp(): void
@@ -360,7 +361,7 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         $queryBuilder->method('createNamedParameter')->willReturn('?');
         $queryBuilder->method('quoteIdentifier')->willReturn('`uid`');
 
-        if ($result !== null) {
+        if ($result instanceof Result) {
             $queryBuilder->method('executeQuery')->willReturn($result);
         }
 

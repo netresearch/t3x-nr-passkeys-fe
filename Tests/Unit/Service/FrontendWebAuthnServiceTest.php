@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
-use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
@@ -19,16 +18,21 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use ReflectionClass;
 use RuntimeException;
+use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use Webauthn\CredentialRecord;
 
 #[CoversClass(FrontendWebAuthnService::class)]
 final class FrontendWebAuthnServiceTest extends TestCase
 {
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private SiteConfigurationService&Stub $siteConfigService;
-    private FrontendConfiguration $configuration;
+
     private FrontendWebAuthnService $subject;
+
     private SiteInterface&Stub $site;
 
     protected function setUp(): void
@@ -40,12 +44,10 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
         $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
-        $this->configuration = new FrontendConfiguration();
 
         $this->subject = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
@@ -239,7 +241,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
@@ -261,7 +262,6 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
-            $this->configuration,
             new NullLogger(),
         );
 
@@ -273,5 +273,118 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->expectExceptionCode(1700200040);
 
         $service->createRegistrationOptions(1, 'user', \random_bytes(32), $this->site);
+    }
+
+    // ---------------------------------------------------------------
+    // Assertion handling with a syntactically valid credential payload
+    // ---------------------------------------------------------------
+
+    /**
+     * A minimal assertion payload the webauthn serializer accepts: all
+     * binary fields are base64url, authenticatorData is rpIdHash(32) +
+     * flags(1) + signCount(4).
+     */
+    private function buildAssertionJson(string $credentialId = 'credential-id-123'): string
+    {
+        $b64 = static fn(string $bin): string => \rtrim(\strtr(\base64_encode($bin), '+/', '-_'), '=');
+
+        $clientData = \json_encode([
+            'type' => 'webauthn.get',
+            'challenge' => $b64(\random_bytes(32)),
+            'origin' => 'https://example.com',
+        ], JSON_THROW_ON_ERROR);
+
+        return \json_encode([
+            'id' => $b64($credentialId),
+            'rawId' => $b64($credentialId),
+            'type' => 'public-key',
+            'response' => [
+                'clientDataJSON' => $b64($clientData),
+                'authenticatorData' => $b64(\str_repeat("\x00", 37)),
+                'signature' => $b64('sig'),
+                'userHandle' => null,
+            ],
+        ], JSON_THROW_ON_ERROR);
+    }
+
+    #[Test]
+    public function verifyAssertionResponseRejectsUnknownCredential(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        // Repository stub returns null by default: credential ID is unknown
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(FrontendWebAuthnService::CODE_UNKNOWN_CREDENTIAL);
+
+        $this->subject->verifyAssertionResponse($this->buildAssertionJson(), 'challenge', $this->site);
+    }
+
+    #[Test]
+    public function findFeUserUidFromAssertionReturnsNullForUnknownCredential(): void
+    {
+        // Repository stub returns null by default
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+    }
+
+    #[Test]
+    public function findFeUserUidFromAssertionReturnsNullForRevokedCredential(): void
+    {
+        $revoked = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123', revokedAt: 1700000000);
+        $this->credentialRepository->method('findByCredentialId')->willReturn($revoked);
+
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+    }
+
+    #[Test]
+    public function findFeUserUidFromAssertionReturnsOwnerForActiveCredential(): void
+    {
+        $credential = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123');
+        $this->credentialRepository->method('findByCredentialId')->willReturn($credential);
+
+        self::assertSame(42, $this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+    }
+
+    // ---------------------------------------------------------------
+    // credentialToSource() AAGUID handling
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function credentialToSourceKeepsStoredAaguid(): void
+    {
+        $credential = new FrontendCredential(
+            feUser: 42,
+            credentialId: 'cid',
+            publicKeyCose: 'cose-key',
+            signCount: 7,
+            userHandle: 'uh',
+            aaguid: '01234567-89ab-cdef-0123-456789abcdef',
+        );
+
+        $record = $this->callCredentialToSource($credential);
+
+        self::assertSame('01234567-89ab-cdef-0123-456789abcdef', $record->aaguid->toRfc4122());
+        self::assertSame('cid', $record->publicKeyCredentialId);
+        self::assertSame(7, $record->counter);
+    }
+
+    #[Test]
+    public function credentialToSourceGeneratesRandomAaguidWhenEmpty(): void
+    {
+        $credential = new FrontendCredential(feUser: 42, credentialId: 'cid', aaguid: '');
+
+        $record = $this->callCredentialToSource($credential);
+
+        self::assertInstanceOf(Uuid::class, $record->aaguid);
+        self::assertNotSame('00000000-0000-0000-0000-000000000000', $record->aaguid->toRfc4122());
+    }
+
+    private function callCredentialToSource(FrontendCredential $credential): CredentialRecord
+    {
+        $method = (new ReflectionClass($this->subject))->getMethod('credentialToSource');
+        $record = $method->invoke($this->subject, $credential);
+        \assert($record instanceof CredentialRecord);
+
+        return $record;
     }
 }

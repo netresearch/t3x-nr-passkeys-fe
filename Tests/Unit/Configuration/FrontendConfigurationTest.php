@@ -13,10 +13,19 @@ use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[CoversClass(FrontendConfiguration::class)]
 final class FrontendConfigurationTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        GeneralUtility::purgeInstances();
+        parent::tearDown();
+    }
+
     #[Test]
     public function constructorWithDefaultsReturnsExpectedValues(): void
     {
@@ -177,5 +186,47 @@ final class FrontendConfigurationTest extends TestCase
         self::assertTrue($config->isMagicLinkEnabled());
         self::assertFalse($config->isEnrollmentBannerEnabled());
         self::assertFalse($config->isPostLoginEnrollmentEnabled());
+    }
+
+    #[Test]
+    public function fromExtensionConfigurationMapsApiSettings(): void
+    {
+        $extConfApi = $this->createStub(ExtensionConfiguration::class);
+        $extConfApi->method('get')->willReturn([
+            'enableFePasskeys' => '0',
+            'maxPasskeysPerUser' => '3',
+        ]);
+        GeneralUtility::addInstance(ExtensionConfiguration::class, $extConfApi);
+
+        $config = FrontendConfiguration::fromExtensionConfiguration();
+
+        self::assertFalse($config->isEnableFePasskeys());
+        self::assertSame(3, $config->getMaxPasskeysPerUser());
+    }
+
+    #[Test]
+    public function fromExtensionConfigurationFallsBackToDefaultsForNonArraySettings(): void
+    {
+        $extConfApi = $this->createStub(ExtensionConfiguration::class);
+        $extConfApi->method('get')->willReturn('not-an-array');
+        GeneralUtility::addInstance(ExtensionConfiguration::class, $extConfApi);
+
+        $config = FrontendConfiguration::fromExtensionConfiguration();
+
+        self::assertTrue($config->isEnableFePasskeys());
+        self::assertSame(10, $config->getMaxPasskeysPerUser());
+    }
+
+    #[Test]
+    public function fromExtensionConfigurationFallsBackToDefaultsWhenApiThrows(): void
+    {
+        $extConfApi = $this->createStub(ExtensionConfiguration::class);
+        $extConfApi->method('get')->willThrowException(new RuntimeException('not configured'));
+        GeneralUtility::addInstance(ExtensionConfiguration::class, $extConfApi);
+
+        $config = FrontendConfiguration::fromExtensionConfiguration();
+
+        self::assertTrue($config->isEnableFePasskeys());
+        self::assertSame('off', $config->getDefaultEnforcementLevel());
     }
 }

@@ -23,19 +23,26 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
 #[CoversClass(FrontendEnforcementService::class)]
 final class FrontendEnforcementServiceTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private RecoveryCodeService&Stub $recoveryCodeService;
+
     private EventDispatcherInterface&Stub $eventDispatcher;
+
     private ConnectionPool&Stub $connectionPool;
+
     private SiteInterface&Stub $site;
+
     private FrontendEnforcementService $subject;
 
     protected function setUp(): void
@@ -245,10 +252,8 @@ final class FrontendEnforcementServiceTest extends TestCase
         $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcher->expects(self::once())
             ->method('dispatch')
-            ->with(self::callback(static function (EnforcementLevelResolvedEvent $event): bool {
-                return $event->feUserUid === 42
-                    && $event->getEffectiveLevel() === 'required';
-            }))
+            ->with(self::callback(static fn(EnforcementLevelResolvedEvent $event): bool => $event->feUserUid === 42
+                && $event->getEffectiveLevel() === 'required'))
             ->willReturnArgument(0);
 
         $subject = new FrontendEnforcementService(
@@ -330,10 +335,8 @@ final class FrontendEnforcementServiceTest extends TestCase
             ->method('update')
             ->with(
                 'fe_users',
-                self::callback(static function (array $data): bool {
-                    return isset($data['passkey_grace_period_start'])
-                        && $data['passkey_grace_period_start'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['passkey_grace_period_start'])
+                    && $data['passkey_grace_period_start'] > 0),
                 ['uid' => 42],
             );
 
@@ -394,47 +397,24 @@ final class FrontendEnforcementServiceTest extends TestCase
     {
         $feUserResult = $this->createStub(Result::class);
         $feUserResult->method('fetchAssociative')->willReturn($userRow);
-        $feUserQb = $this->createQueryBuilderMock($feUserResult);
+        $feUserQb = $this->createQueryBuilderStub($feUserResult);
 
         if ($groups !== null) {
             $groupResult = $this->createStub(Result::class);
             $groupResult->method('fetchAllAssociative')->willReturn($groups);
-            $groupQb = $this->createQueryBuilderMock($groupResult);
+            $groupQb = $this->createQueryBuilderStub($groupResult);
 
             $this->connectionPool->method('getQueryBuilderForTable')
                 ->willReturnCallback(
-                    static function (string $table) use ($feUserQb, $groupQb): QueryBuilder {
-                        return match ($table) {
-                            'fe_users' => $feUserQb,
-                            'fe_groups' => $groupQb,
-                            default => throw new RuntimeException('Unexpected table: ' . $table),
-                        };
+                    static fn(string $table): QueryBuilder => match ($table) {
+                        'fe_users' => $feUserQb,
+                        'fe_groups' => $groupQb,
+                        default => throw new RuntimeException('Unexpected table: ' . $table),
                     },
                 );
         } else {
             $this->connectionPool->method('getQueryBuilderForTable')
                 ->willReturn($feUserQb);
         }
-    }
-
-    private function createQueryBuilderMock(?Result $result = null): QueryBuilder&Stub
-    {
-        $expressionBuilder = $this->createStub(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('');
-        $expressionBuilder->method('in')->willReturn('');
-
-        $queryBuilder = $this->createStub(QueryBuilder::class);
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('createNamedParameter')->willReturn('?');
-
-        if ($result !== null) {
-            $queryBuilder->method('executeQuery')->willReturn($result);
-        }
-
-        return $queryBuilder;
     }
 }

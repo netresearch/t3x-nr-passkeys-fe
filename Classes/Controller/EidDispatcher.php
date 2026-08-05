@@ -14,6 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -80,7 +81,7 @@ final class EidDispatcher
             try {
                 return $controller->$method($request);
             } catch (Throwable $e) {
-                GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
+                GeneralUtility::makeInstance(LogManager::class)
                     ->getLogger(self::class)
                     ->error('eID action failed', ['action' => $action, 'error' => $e->getMessage()]);
 
@@ -116,7 +117,7 @@ final class EidDispatcher
             // Dynamic dispatch: ACTION_MAP guarantees method exists (see phpstan-baseline.neon)
             return $controller->$method($request);
         } catch (Throwable $e) {
-            GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
+            GeneralUtility::makeInstance(LogManager::class)
                 ->getLogger(self::class)
                 ->error('eID action failed', ['action' => $action, 'error' => $e->getMessage()]);
 

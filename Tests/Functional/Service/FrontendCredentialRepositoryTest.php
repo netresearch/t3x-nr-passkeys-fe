@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Throwable;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
 #[CoversClass(FrontendCredentialRepository::class)]
 final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTestCase
@@ -24,7 +25,7 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],
@@ -340,6 +341,7 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
         foreach ($credsSiteA as $c) {
             self::assertSame('site-a', $c->getSiteIdentifier());
         }
+
         foreach ($credsSiteB as $c) {
             self::assertSame('site-b', $c->getSiteIdentifier());
         }
@@ -524,6 +526,7 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
                 break;
             }
         }
+
         self::assertTrue($hasRevoked, 'findAllByFeUser should include revoked credentials');
     }
 }

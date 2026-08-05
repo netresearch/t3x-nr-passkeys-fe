@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
+use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -40,6 +42,7 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterface
 {
     private const SESSION_KEY = 'tx_nrpasskeysfe';
+
     private const EID = 'nr_passkeys_fe';
 
     public function __construct(
@@ -53,7 +56,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     {
         // 1. User not authenticated → pass through
         $feUser = $this->resolveFrontendUser($request);
-        if ($feUser === null) {
+        if (!$feUser instanceof FrontendUserAuthentication) {
             return $handler->handle($request);
         }
 
@@ -146,7 +149,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             }
 
             // Grace period expired or not started → start grace period if not started
-            if ($status->graceDeadline === null && $this->hasGracePeriodConfigured($status)) {
+            if (!$status->graceDeadline instanceof DateTimeImmutable && $this->hasGracePeriodConfigured($status)) {
                 $this->enforcementService->startGracePeriod($feUserUid);
                 // After starting, allow skip this first time
                 if (($sessionArray['enrollment_skipped'] ?? false) === true) {
@@ -200,10 +203,10 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
      * Check if the status indicates a grace period is configured (days > 0) but
      * not yet started (graceDeadline is null and not in grace period).
      */
-    private function hasGracePeriodConfigured(\Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus $status): bool
+    private function hasGracePeriodConfigured(FrontendEnforcementStatus $status): bool
     {
         return !$status->inGracePeriod
-            && $status->graceDeadline === null
+            && !$status->graceDeadline instanceof DateTimeImmutable
             && $status->graceDays > 0;
     }
 }

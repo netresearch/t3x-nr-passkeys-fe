@@ -20,6 +20,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Http\ServerRequest;
@@ -31,11 +33,17 @@ use Webauthn\PublicKeyCredentialCreationOptions;
 final class ManagementControllerTest extends TestCase
 {
     private PasskeyEnrollmentService&Stub $enrollmentService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private FrontendWebAuthnService&Stub $webAuthnService;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private ChallengeService&Stub $challengeService;
+
     private SiteInterface&Stub $site;
+
     private ManagementController $subject;
 
     protected function setUp(): void
@@ -61,7 +69,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->siteConfigService,
             $this->challengeService,
-            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -75,7 +83,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->siteConfigService,
             $this->challengeService,
-            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -152,8 +160,8 @@ final class ManagementControllerTest extends TestCase
         $credential = new FrontendCredential(
             uid: 5,
             feUser: 42,
-            label: 'My Key',
             aaguid: '550e8400-e29b-41d4-a716-446655440000',
+            label: 'My Key',
             createdAt: 1700000000,
             lastUsedAt: 0,
         );
@@ -197,8 +205,8 @@ final class ManagementControllerTest extends TestCase
         $credential = new FrontendCredential(
             uid: 10,
             feUser: 42,
-            label: 'YubiKey',
             aaguid: '550e8400-e29b-41d4-a716-446655440000',
+            label: 'YubiKey',
             createdAt: 1700000000,
             lastUsedAt: 1710000000,
         );
@@ -328,7 +336,7 @@ final class ManagementControllerTest extends TestCase
             ->withParsedBody($body);
     }
 
-    private function decodeBody(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }

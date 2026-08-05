@@ -29,10 +29,15 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 final class PasskeyEnrollmentServiceTest extends TestCase
 {
     private FrontendWebAuthnService&Stub $webAuthnService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private SiteConfigurationService&Stub $siteConfigService;
+
     private EventDispatcherInterface&Stub $eventDispatcher;
+
     private SiteInterface&Stub $site;
+
     private PasskeyEnrollmentService $subject;
 
     protected function setUp(): void

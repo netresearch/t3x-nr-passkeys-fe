@@ -252,6 +252,7 @@ final class SiteConfigurationServiceTest extends TestCase
                     if (!\is_array($value) || !\array_key_exists($part, $value)) {
                         return $default;
                     }
+
                     $value = $value[$part];
                 }
 

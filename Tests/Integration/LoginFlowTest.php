@@ -17,6 +17,7 @@ use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
 /**
  * Integration tests for the complete login-related service flow.
@@ -35,7 +36,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

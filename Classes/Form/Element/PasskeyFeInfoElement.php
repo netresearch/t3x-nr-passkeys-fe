@@ -66,8 +66,6 @@ final class PasskeyFeInfoElement extends AbstractFormElement
             return $resultArray;
         }
 
-        $lang = $this->getLanguageService();
-
         // Retrieve all credentials for this user (across all sites)
         $credentials = $this->findAllByFeUser($userId);
         $activeCount = \count(\array_filter(
@@ -126,13 +124,16 @@ final class PasskeyFeInfoElement extends AbstractFormElement
                 if ($siteIdentifier !== '') {
                     $childHtml[] = ' &middot; ' . $siteLabel . ': ' . \htmlspecialchars($siteIdentifier);
                 }
+
                 if ($aaguid !== '') {
                     $childHtml[] = ' &middot; ' . $aaguidLabel . ': <code>' . \htmlspecialchars($aaguid) . '</code>';
                 }
+
                 $childHtml[] = '</small>';
 
                 $childHtml[] = '</li>';
             }
+
             $childHtml[] = '</ul>';
         }
 

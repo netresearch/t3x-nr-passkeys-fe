@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Service;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Event\EnforcementLevelResolvedEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -172,7 +173,7 @@ final class FrontendEnforcementService
             ->where(
                 $queryBuilder->expr()->eq(
                     'uid',
-                    $queryBuilder->createNamedParameter($feUserUid, \Doctrine\DBAL\ParameterType::INTEGER),
+                    $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
                 ),
             )
             ->executeQuery()

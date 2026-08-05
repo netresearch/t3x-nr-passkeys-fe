@@ -125,7 +125,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
         $response = $this->createStub(ResponseInterface::class);
         $handler->expects(self::once())
             ->method('handle')
-            ->willReturnCallback(function () use (&$handlerCalled, $response) {
+            ->willReturnCallback(function () use (&$handlerCalled, $response): ResponseInterface {
                 $handlerCalled = true;
                 return $response;
             });

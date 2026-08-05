@@ -17,14 +17,18 @@ use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 /**
  * Authentication service for passwordless frontend login via Passkeys (WebAuthn).
@@ -74,6 +78,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 $this->passkeyPayload = ['_token_authenticated' => true];
                 return $user;
             }
+
             return false;
         }
 
@@ -151,7 +156,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 $data = \json_decode(\is_string($rawUident) ? $rawUident : '', true);
                 $token = \is_array($data) ? ($data['token'] ?? '') : '';
                 if (\is_string($token) && $token !== '') {
-                    GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+                    GeneralUtility::makeInstance(CacheManager::class)
                         ->getCache('nr_passkeys_fe_nonce')
                         ->remove('passkey_login_' . $token);
                 }
@@ -179,7 +184,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
             // Resolve site for WebAuthn verification
             $site = $this->resolveSite();
-            if ($site === null) {
+            if (!$site instanceof SiteInterface) {
                 $this->getLogger()->warning('FE passkey auth failed: no site context available');
                 return 0;
             }
@@ -244,7 +249,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // Check enforcement: block password login when enforced and user has passkeys
         if ($uid > 0) {
             $site = $this->resolveSite();
-            if ($site !== null) {
+            if ($site instanceof SiteInterface) {
                 $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
                 $status = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
 
@@ -301,7 +306,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         }
 
         try {
-            $cache = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+            $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');
             $cacheKey = 'passkey_login_' . $token;
 
@@ -391,7 +396,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('fe_users');
 
-        $row = $queryBuilder
+        return $queryBuilder
             ->select('*')
             ->from('fe_users')
             ->where(
@@ -404,8 +409,6 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             )
             ->executeQuery()
             ->fetchAssociative();
-
-        return $row !== false ? $row : false;
     }
 
     /**
@@ -430,7 +433,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
         // Fallback: resolve site by matching request host against configured sites
         try {
-            $siteFinder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Site\SiteFinder::class);
+            $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
             $host = $request->getUri()->getHost();
 
             foreach ($siteFinder->getAllSites() as $site) {
@@ -459,14 +462,14 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         }
 
         $feUserAuth = $request->getAttribute('frontend.user');
-        if ($feUserAuth instanceof \TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication) {
+        if ($feUserAuth instanceof FrontendUserAuthentication) {
             $feUserAuth->setKey('ses', $key, $value);
         }
     }
 
     private function getWebAuthnService(): FrontendWebAuthnService
     {
-        if ($this->webAuthnService === null) {
+        if (!$this->webAuthnService instanceof FrontendWebAuthnService) {
             $this->webAuthnService = GeneralUtility::makeInstance(FrontendWebAuthnService::class);
         }
 
@@ -475,7 +478,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
     private function getRateLimiterService(): RateLimiterService
     {
-        if ($this->rateLimiterService === null) {
+        if (!$this->rateLimiterService instanceof RateLimiterService) {
             $this->rateLimiterService = GeneralUtility::makeInstance(RateLimiterService::class);
         }
 
@@ -484,7 +487,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
     private function getEnforcementService(): FrontendEnforcementService
     {
-        if ($this->enforcementService === null) {
+        if (!$this->enforcementService instanceof FrontendEnforcementService) {
             $this->enforcementService = GeneralUtility::makeInstance(FrontendEnforcementService::class);
         }
 
@@ -493,7 +496,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
     private function getSiteConfigService(): SiteConfigurationService
     {
-        if ($this->siteConfigService === null) {
+        if (!$this->siteConfigService instanceof SiteConfigurationService) {
             $this->siteConfigService = GeneralUtility::makeInstance(SiteConfigurationService::class);
         }
 
@@ -502,24 +505,24 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
     private function getChallengeService(): ChallengeService
     {
-        if ($this->challengeService === null) {
+        if (!$this->challengeService instanceof ChallengeService) {
             $this->challengeService = GeneralUtility::makeInstance(ChallengeService::class);
         }
 
         return $this->challengeService;
     }
 
-    private function getLogger(): \Psr\Log\LoggerInterface
+    private function getLogger(): LoggerInterface
     {
-        if ($this->logger === null) {
+        if (!$this->logger instanceof LoggerInterface) {
             try {
-                $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(static::class));
+                $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(self::class));
             } catch (Throwable) {
                 $this->setLogger(new NullLogger());
             }
         }
 
-        \assert($this->logger instanceof \Psr\Log\LoggerInterface);
+        \assert($this->logger instanceof LoggerInterface);
 
         return $this->logger;
     }

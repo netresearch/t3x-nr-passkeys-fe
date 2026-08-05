@@ -97,7 +97,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->assignGroupToUser(1, [50]);
 
         // Set grace period start to now (1 day ago still within 14 days)
-        $gracePeriodStart = \time() - (86400 * 1); // 1 day ago
+        $gracePeriodStart = \time() - (86400); // 1 day ago
         $this->setGracePeriodStart(1, $gracePeriodStart);
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
@@ -173,7 +173,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->createGroup(81, 'required', 7);
         $this->assignGroupToUser(1, [80, 81]);
 
-        $this->setGracePeriodStart(1, \time() - (86400 * 1));
+        $this->setGracePeriodStart(1, \time() - (86400));
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
 

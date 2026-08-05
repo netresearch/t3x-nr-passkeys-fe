@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendAdoptionStatsService;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
 /**
  * Functional tests for the adoption statistics queries.
@@ -31,7 +32,7 @@ final class FrontendAdoptionStatsServiceTest extends AbstractPasskeyFunctionalTe
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

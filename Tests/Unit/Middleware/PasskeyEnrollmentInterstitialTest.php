@@ -31,9 +31,13 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final class PasskeyEnrollmentInterstitialTest extends TestCase
 {
     private FrontendEnforcementService&Stub $enforcementService;
+
     private FrontendCredentialRepository&Stub $credentialRepository;
+
     private SiteConfigurationService&Stub $siteConfigurationService;
+
     private FrontendConfiguration $frontendConfiguration;
+
     private PasskeyEnrollmentInterstitial $subject;
 
     protected function setUp(): void
@@ -112,6 +116,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $feUser = $this->createAuthenticatedFeUser(42);
         $request = $this->buildRequest($feUser, ['eID' => 'nr_passkeys_fe', 'action' => 'loginVerify']);
         $request = $request->withAttribute('nr_passkeys_fe.public_route', true);
+
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
@@ -227,7 +232,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $this->enforcementService->method('getStatus')->willReturn(
-            $this->makeStatus('required', inGracePeriod: false, graceDeadline: null),
+            $this->makeStatus('required', inGracePeriod: false),
         );
 
         $response = $this->subject->process($request, $handler);
@@ -314,12 +319,13 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         if ($queryParams !== []) {
             $uri .= '?' . \http_build_query($queryParams);
         }
+
         $request = new ServerRequest($uri, 'GET');
         $request = $request->withAttribute('frontend.user', $feUser);
         $request = $request->withQueryParams($queryParams);
 
-        if ($site !== null) {
-            $request = $request->withAttribute('site', $site);
+        if ($site instanceof Site) {
+            return $request->withAttribute('site', $site);
         }
 
         return $request;

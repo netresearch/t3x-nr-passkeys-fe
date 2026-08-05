@@ -17,8 +17,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
@@ -27,8 +31,11 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final class RecoveryControllerTest extends TestCase
 {
     private RecoveryCodeService&Stub $recoveryCodeService;
+
     private RateLimiterService&Stub $rateLimiterService;
+
     private FrontendUserLookupService&Stub $userLookupService;
+
     private RecoveryController $subject;
 
     protected function setUp(): void
@@ -40,16 +47,16 @@ final class RecoveryControllerTest extends TestCase
         $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
 
         // Register a cache stub for the login token
-        $cacheStub = $this->createStub(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
-        $cacheManagerStub = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheStub = $this->createStub(FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
-        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManagerStub);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
 
         $this->subject = new RecoveryController(
             $this->recoveryCodeService,
             $this->rateLimiterService,
             $this->userLookupService,
-            $this->createStub(\Psr\EventDispatcher\EventDispatcherInterface::class),
+            $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
     }
@@ -142,6 +149,39 @@ final class RecoveryControllerTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    #[Test]
+    public function verifyActionCreatesOneTimeLoginTokenOnSuccess(): void
+    {
+        $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
+        $this->recoveryCodeService->method('verify')->willReturn(true);
+
+        // Re-register the cache so the token write can be asserted
+        $cacheMock = $this->createMock(FrontendInterface::class);
+        $cacheMock->expects(self::once())
+            ->method('set')
+            ->with(
+                self::callback(static fn(string $key): bool => \str_starts_with($key, 'passkey_login_')),
+                '42',
+                [],
+                120,
+            );
+        $cacheManagerStub = $this->createStub(CacheManager::class);
+        $cacheManagerStub->method('getCache')->willReturn($cacheMock);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
+
+        $request = $this->buildRequest([
+            'username' => 'user@example.com',
+            'code' => 'ABCD-EFGH',
+        ]);
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeBody($response);
+        self::assertSame('ok', $body['status']);
+        self::assertSame(42, $body['feUserUid']);
+        self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $body['loginToken']);
+    }
+
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
@@ -162,7 +202,7 @@ final class RecoveryControllerTest extends TestCase
             ->withParsedBody($body);
     }
 
-    private function decodeBody(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }

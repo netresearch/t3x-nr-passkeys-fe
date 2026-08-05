@@ -35,7 +35,8 @@
     },
     "require-dev": {
         "netresearch/typo3-ci-workflows": "^1.1",
-        "typo3/cms-dashboard": "^13.4 || ^14.1"
+        "typo3/cms-dashboard": "^13.4 || ^14.1",
+        "typo3/cms-felogin": "^13.4 || ^14.1"
     },
     "suggest": {
         "typo3/cms-dashboard": "Adds passkey adoption / credential count widgets to the TYPO3 dashboard"
@@ -74,7 +75,9 @@
     },
     "scripts": {
         "ci:cgl": "Build/Scripts/runTests.sh cgl:fix",
+        "ci:rector": "Build/Scripts/runTests.sh rector:fix",
         "ci:test:php:cgl": "Build/Scripts/runTests.sh cgl",
+        "ci:test:php:rector": "Build/Scripts/runTests.sh rector",
         "ci:test:php:phpstan": "Build/Scripts/runTests.sh phpstan",
         "ci:test:php:unit": "Build/Scripts/runTests.sh unit",
         "ci:test:php:functional": "Build/Scripts/runTests.sh functional",

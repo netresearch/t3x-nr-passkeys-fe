@@ -22,6 +22,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -201,7 +202,7 @@ final readonly class LoginController
             // The JS will submit this token via the felogin form so the auth
             // service can authenticate without needing site context.
             $token = \bin2hex(\random_bytes(32));
-            $cache = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Cache\CacheManager::class)
+            $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');
             $cache->set(
                 'passkey_login_' . $token,

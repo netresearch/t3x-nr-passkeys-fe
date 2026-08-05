@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysFe\Controller\RecoveryController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -234,7 +235,7 @@ final class RequestPayloadFuzzTest extends TestCase
 
         // Track attributes so withAttribute()/getAttribute() work correctly
         $attributes = [];
-        if ($feUser !== null) {
+        if ($feUser instanceof Stub) {
             $attributes['frontend.user'] = $feUser;
         }
 

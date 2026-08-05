@@ -7,7 +7,9 @@
 
 declare(strict_types=1);
 
-\defined('TYPO3') or die();
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+\defined('TYPO3') || die();
 
 $tempColumns = [
     'passkeys' => [
@@ -32,10 +34,10 @@ $tempColumns = [
     ],
 ];
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('fe_users', $tempColumns);
+ExtensionManagementUtility::addTCAcolumns('fe_users', $tempColumns);
 
 // Add Passkeys tab to the fe_users form
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+ExtensionManagementUtility::addToAllTCAtypes(
     'fe_users',
     '--div--;LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.tab.passkeys,passkeys,passkey_grace_period_start,passkey_nudge_until',
 );

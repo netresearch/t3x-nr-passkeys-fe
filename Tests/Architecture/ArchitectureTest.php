@@ -12,6 +12,8 @@ namespace Netresearch\NrPasskeysFe\Tests\Architecture;
 use PHPat\Selector\Selector;
 use PHPat\Test\Builder\Rule;
 use PHPat\Test\PHPat;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
  * Architecture rules enforced via PHPStan + phpat.
@@ -69,8 +71,8 @@ final class ArchitectureTest
             ->classes(Selector::inNamespace(self::NS . 'Controller'))
             ->shouldNot()->dependOn()
             ->classes(
-                Selector::classname('TYPO3\\CMS\\Core\\Database\\ConnectionPool'),
-                Selector::classname('TYPO3\\CMS\\Core\\Database\\Query\\QueryBuilder'),
+                Selector::classname(ConnectionPool::class),
+                Selector::classname(QueryBuilder::class),
             )
             ->because('Controllers must use repository services, not access the database directly');
     }
