@@ -14,7 +14,8 @@ required.
 
 ## Features
 
-- **Passkey-first login** -- Discoverable (usernameless) and username-first flows via a standalone plugin
+- **Passkey-first login** -- Discoverable (usernameless) and username-first flows via a standalone plugin,
+  including WebAuthn Conditional UI: the browser offers the passkey in the username field's autofill menu
 - **felogin integration** -- Injects a passkey button into the standard felogin plugin
 - **Self-service management** -- Users can enroll, rename, and revoke their own passkeys from the frontend
 - **Recovery codes** -- 10 one-time bcrypt-hashed recovery codes as a fallback
