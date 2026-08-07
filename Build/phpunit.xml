@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    executionOrder omits "defects" on purpose: that ordering needs the
+    result cache, which cacheResult="false" deliberately disables. PHPUnit
+    then emits a runner warning, and failOnWarning turns it into a failed
+    build even when every test passed.
+-->
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
          backupGlobals="true"
          bootstrap="../Tests/bootstrap.php"
          cacheResult="false"
          colors="true"
-         executionOrder="depends,defects"
+         executionOrder="depends"
          failOnRisky="true"
          failOnWarning="true">
     <testsuites>

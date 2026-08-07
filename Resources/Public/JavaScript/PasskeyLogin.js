@@ -494,8 +494,6 @@
   }
 
   async function handlePasskeyLogin(ctx) {
-    var eidUrl = ctx.eidUrl;
-    var siteIdentifier = ctx.siteIdentifier;
     var discoverable = ctx.discoverable;
     var usernameInput = ctx.usernameInput;
     var btnEl = ctx.btnEl;
