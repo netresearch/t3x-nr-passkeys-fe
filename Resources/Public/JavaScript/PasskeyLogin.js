@@ -73,13 +73,30 @@
       return;
     }
 
-    // Check for conditional mediation (autofill UI)
-    if (window.PublicKeyCredential.isConditionalMediationAvailable) {
-      window.PublicKeyCredential.isConditionalMediationAvailable().then(function (available) {
-        if (available && usernameInput) {
-          usernameInput.setAttribute('autocomplete', 'username webauthn');
-        }
-      });
+    // Conditional UI / autofill: the username field advertises WebAuthn and an
+    // armed ceremony waits for the user to pick a passkey from the browser's
+    // autofill menu. The attribute alone does nothing — without a pending
+    // credentials.get({mediation:'conditional'}) the menu has no passkeys to
+    // offer. Degrades silently to the button where unsupported.
+    var ctx = {
+      eidUrl: eidUrl,
+      siteIdentifier: siteIdentifier,
+      discoverable: discoverable,
+      usernameInput: usernameInput,
+      btnEl: btnEl,
+      btnText: btnText,
+      btnLoading: btnLoading,
+      statusEl: statusEl,
+      errorEl: errorEl,
+      conditionalAbort: null,
+      conditionalGeneration: 0,
+      conditionalRefreshTimer: null,
+      navigatingAway: false,
+    };
+
+    if (discoverable && usernameInput
+        && typeof window.PublicKeyCredential.isConditionalMediationAvailable === 'function') {
+      startConditionalLogin(ctx);
     }
 
     // Detect failed passkey login from previous attempt
@@ -87,10 +104,7 @@
 
     if (btnEl) {
       btnEl.addEventListener('click', function () {
-        handlePasskeyLogin(
-          eidUrl, siteIdentifier, discoverable,
-          usernameInput, btnEl, btnText, btnLoading, statusEl, errorEl
-        );
+        handlePasskeyLogin(ctx);
       });
     }
 
@@ -220,8 +234,280 @@
     }
   }
 
-  async function handlePasskeyLogin(eidUrl, siteIdentifier, discoverable, usernameInput, btnEl, btnText, btnLoading, statusEl, errorEl) {
+  /**
+   * Cancel the armed conditional ceremony, if any, and stop its refresh timer.
+   * Safe to call when nothing is armed.
+   */
+  function stopConditionalLogin(ctx) {
+    ctx.conditionalGeneration++;
+    if (ctx.conditionalRefreshTimer !== null) {
+      clearTimeout(ctx.conditionalRefreshTimer);
+      ctx.conditionalRefreshTimer = null;
+    }
+    if (ctx.conditionalAbort) {
+      ctx.conditionalAbort.abort();
+      ctx.conditionalAbort = null;
+    }
+  }
+
+  /**
+   * Put the autofill ceremony back in place. Skipped once a session has been
+   * established, so no ceremony is started into a page that is leaving.
+   */
+  function rearmConditionalLogin(ctx) {
+    if (ctx.navigatingAway) {
+      return;
+    }
+    if (!ctx.discoverable || !ctx.usernameInput
+        || typeof window.PublicKeyCredential.isConditionalMediationAvailable !== 'function') {
+      return;
+    }
+    startConditionalLogin(ctx);
+  }
+
+  /**
+   * Swap the armed challenge for a fresh one before the server would reject it
+   * as expired. Aborting closes an open autofill menu, so a refresh waits while
+   * the username field has focus and happens on blur instead.
+   */
+  function scheduleConditionalRefresh(ctx, ttlSeconds) {
+    var ttl = Math.max(30, Number(ttlSeconds) || 120);
+    if (ctx.conditionalRefreshTimer !== null) {
+      clearTimeout(ctx.conditionalRefreshTimer);
+    }
+    ctx.conditionalRefreshTimer = setTimeout(function () {
+      ctx.conditionalRefreshTimer = null;
+      if (document.activeElement === ctx.usernameInput) {
+        ctx.usernameInput.addEventListener('blur', function onBlur() {
+          ctx.usernameInput.removeEventListener('blur', onBlur);
+          startConditionalLogin(ctx);
+        });
+        return;
+      }
+      startConditionalLogin(ctx);
+    }, Math.floor(ttl * 1000 / 2));
+  }
+
+  /**
+   * Arm a conditional-mediation ceremony so the browser can offer discoverable
+   * passkeys in the username field's autofill menu.
+   *
+   * The ceremony holds its challenge until the user picks a credential, which
+   * can be far later than the challenge lives — hence the refresh timer. It is
+   * also spent once it settles, so every outcome that is not an abort re-arms:
+   * without that the menu would offer no passkeys for the rest of the page.
+   */
+  async function startConditionalLogin(ctx) {
+    var available = false;
+    try {
+      available = await window.PublicKeyCredential.isConditionalMediationAvailable();
+    } catch (e) {
+      return;
+    }
+    if (!available) {
+      return;
+    }
+
+    stopConditionalLogin(ctx);
+    var generation = ctx.conditionalGeneration;
+
+    // Advertise WebAuthn autofill without clobbering an existing token.
+    var existing = ctx.usernameInput.getAttribute('autocomplete') || '';
+    if (existing.indexOf('webauthn') === -1) {
+      ctx.usernameInput.setAttribute('autocomplete', (existing ? existing + ' ' : 'username ') + 'webauthn');
+    }
+
+    // Prefetch discoverable options quietly: a rate limit or any other error
+    // here must not surface on page load — the explicit button stays.
+    var optionsData = await fetchLoginOptions(ctx, '', true);
+    if (!optionsData || generation !== ctx.conditionalGeneration) {
+      return;
+    }
+
+    var abort = new AbortController();
+    ctx.conditionalAbort = abort;
+    scheduleConditionalRefresh(ctx, optionsData.challengeTtlSeconds);
+
+    try {
+      var assertion = await navigator.credentials.get({
+        publicKey: buildRequestOptions(optionsData.options),
+        mediation: 'conditional',
+        signal: abort.signal,
+      });
+      if (generation !== ctx.conditionalGeneration) {
+        return;
+      }
+      ctx.conditionalAbort = null;
+      await completeAssertion(ctx, assertion, optionsData.options, optionsData.challengeToken);
+      if (generation === ctx.conditionalGeneration) {
+        rearmConditionalLogin(ctx);
+      }
+    } catch (err) {
+      if (generation !== ctx.conditionalGeneration) {
+        return;
+      }
+      ctx.conditionalAbort = null;
+      // An abort means another flow deliberately took over and decides what
+      // happens next; a dismissed menu (NotAllowedError) is normal here.
+      if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
+        console.error('[nr_passkeys_fe] conditional login error:', err);
+      }
+      if (err.name !== 'AbortError') {
+        rearmConditionalLogin(ctx);
+      }
+    }
+  }
+
+  /**
+   * Fetch assertion options from the eID endpoint. When silent is true the
+   * caller is the autofill prefetch and errors stay off the screen.
+   */
+  async function fetchLoginOptions(ctx, username, silent) {
+    var optionsUrl = U.buildEidUrl(ctx.eidUrl, {action: 'loginOptions'});
+    var response;
+    try {
+      response = await fetch(optionsUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, siteIdentifier: ctx.siteIdentifier }),
+        credentials: 'same-origin',
+      });
+    } catch (e) {
+      if (!silent) {
+        U.showError(ctx.errorEl, U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
+      }
+      return null;
+    }
+    if (response.ok) {
+      return response.json();
+    }
+    if (silent) {
+      return null;
+    }
+    var errData = await response.json().catch(function () { return {}; });
+    if (response.status === 429) {
+      U.showError(ctx.errorEl, U.t('js.login.error.rateLimit', 'Too many attempts. Please try again later.'));
+    } else {
+      U.showError(ctx.errorEl, errData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
+    }
+    return null;
+  }
+
+  /**
+   * Map the server's assertion options onto PublicKeyCredentialRequestOptions.
+   */
+  function buildRequestOptions(options) {
+    var publicKeyOptions = {
+      challenge: U.base64urlToBuffer(options.challenge),
+      rpId: options.rpId,
+      timeout: options.timeout || 60000,
+      userVerification: options.userVerification || 'required',
+    };
+    if (options.allowCredentials && options.allowCredentials.length > 0) {
+      publicKeyOptions.allowCredentials = options.allowCredentials.map(function (cred) {
+        return {
+          type: cred.type,
+          id: U.base64urlToBuffer(cred.id),
+          transports: cred.transports || [],
+        };
+      });
+    }
+    return publicKeyOptions;
+  }
+
+  /**
+   * Encode the assertion, verify it at the eID endpoint and establish the
+   * session. Shared by the button flow and the autofill ceremony so both
+   * behave identically once an assertion exists.
+   *
+   * @returns {Promise<boolean>} true when a session was established and the
+   *   page is navigating away.
+   */
+  async function completeAssertion(ctx, assertion, options, challengeToken) {
+    var siteIdentifier = ctx.siteIdentifier;
+    var eidUrl = ctx.eidUrl;
+    var statusEl = ctx.statusEl;
+    var errorEl = ctx.errorEl;
+    // Step 4: Encode the response
+    var credentialResponse = {
+      id: U.bufferToBase64url(assertion.rawId),
+      rawId: U.bufferToBase64url(assertion.rawId),
+      type: assertion.type,
+      response: {
+        clientDataJSON: U.bufferToBase64url(assertion.response.clientDataJSON),
+        authenticatorData: U.bufferToBase64url(assertion.response.authenticatorData),
+        signature: U.bufferToBase64url(assertion.response.signature),
+        userHandle: assertion.response.userHandle
+          ? U.bufferToBase64url(assertion.response.userHandle)
+          : null,
+      },
+    };
+
+    // Step 5: Verify the assertion via eID endpoint (server-side WebAuthn verification).
+    // The eID has full site context and establishes the FE session.
+    // On success, redirect to the post-login page or reload.
+    U.showStatus(statusEl, U.t('js.login.status.verifying', 'Verifying...'));
+    try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
+    var verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
+    var verifyResponse = await fetch(verifyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        assertion: credentialResponse,
+        challengeToken: challengeToken,
+        siteIdentifier: siteIdentifier,
+      }),
+      credentials: 'same-origin',
+    });
+
+    var verifyData = await verifyResponse.json().catch(function () { return {}; });
+
+    if (verifyResponse.ok && verifyData.status === 'ok' && verifyData.loginToken) {
+      try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
+
+      // Submit the login token via felogin form to establish a real FE session.
+      // The eID verified the assertion; the token proves it to the auth service.
+      if (U.submitLoginToken(verifyData.loginToken)) {
+        ctx.navigatingAway = true;
+        stopConditionalLogin(ctx);
+        return true;
+      }
+
+      // No felogin form (standalone plugin) — just reload
+      U.showStatus(statusEl, U.t('js.login.status.authenticated', 'Authenticated! Redirecting...'));
+      ctx.navigatingAway = true;
+      stopConditionalLogin(ctx);
+      window.location.reload();
+      return true;
+    }
+
+    try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
+    // The server confirmed this credential ID is not (or no longer) registered.
+    // Tell the platform authenticator / password manager so it can prune the
+    // orphaned passkey instead of offering it again (WebAuthn Signal API).
+    if (verifyData.reason === 'unknown_credential') {
+      signalUnknownCredential(options.rpId, credentialResponse.id);
+    }
+    U.showError(errorEl, verifyData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
+    U.hideStatus(statusEl);
+    return false;
+  }
+
+  async function handlePasskeyLogin(ctx) {
+    var eidUrl = ctx.eidUrl;
+    var siteIdentifier = ctx.siteIdentifier;
+    var discoverable = ctx.discoverable;
+    var usernameInput = ctx.usernameInput;
+    var btnEl = ctx.btnEl;
+    var btnText = ctx.btnText;
+    var btnLoading = ctx.btnLoading;
+    var statusEl = ctx.statusEl;
+    var errorEl = ctx.errorEl;
+
     U.hideError(errorEl);
+    // Only one credentials.get() ceremony may be in flight: the armed
+    // conditional one has to go before the modal one can start.
+    stopConditionalLogin(ctx);
     var username = usernameInput ? usernameInput.value.trim() : '';
 
     // Only require username for non-discoverable (username-first) flow
@@ -230,6 +516,7 @@
       if (usernameInput) {
         usernameInput.focus();
       }
+      rearmConditionalLogin(ctx);
       return;
     }
 
@@ -237,108 +524,24 @@
 
     try {
       // Step 1: Fetch assertion options from eID
-      var optionsUrl = U.buildEidUrl(eidUrl, {action: 'loginOptions'});
-      var optionsResponse = await fetch(optionsUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username, siteIdentifier: siteIdentifier }),
-        credentials: 'same-origin',
-      });
-
-      if (!optionsResponse.ok) {
-        var errData = await optionsResponse.json().catch(function () { return {}; });
-        if (optionsResponse.status === 429) {
-          U.showError(errorEl, U.t('js.login.error.rateLimit', 'Too many attempts. Please try again later.'));
-        } else {
-          U.showError(errorEl, errData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
-        }
+      var optionsData = await fetchLoginOptions(ctx, username, false);
+      if (!optionsData) {
         U.setLoading(false, btnEl, btnText, btnLoading);
+        rearmConditionalLogin(ctx);
         return;
       }
-
-      var optionsData = await optionsResponse.json();
       var options = optionsData.options;
       var challengeToken = optionsData.challengeToken;
 
       // Step 2: Build PublicKeyCredentialRequestOptions
-      var publicKeyOptions = {
-        challenge: U.base64urlToBuffer(options.challenge),
-        rpId: options.rpId,
-        timeout: options.timeout || 60000,
-        userVerification: options.userVerification || 'required',
-      };
-
-      if (options.allowCredentials && options.allowCredentials.length > 0) {
-        publicKeyOptions.allowCredentials = options.allowCredentials.map(function (cred) {
-          return {
-            type: cred.type,
-            id: U.base64urlToBuffer(cred.id),
-            transports: cred.transports || [],
-          };
-        });
-      }
+      var publicKeyOptions = buildRequestOptions(options);
 
       // Step 3: Call WebAuthn API
       var assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
 
-      // Step 4: Encode the response
-      var credentialResponse = {
-        id: U.bufferToBase64url(assertion.rawId),
-        rawId: U.bufferToBase64url(assertion.rawId),
-        type: assertion.type,
-        response: {
-          clientDataJSON: U.bufferToBase64url(assertion.response.clientDataJSON),
-          authenticatorData: U.bufferToBase64url(assertion.response.authenticatorData),
-          signature: U.bufferToBase64url(assertion.response.signature),
-          userHandle: assertion.response.userHandle
-            ? U.bufferToBase64url(assertion.response.userHandle)
-            : null,
-        },
-      };
-
-      // Step 5: Verify the assertion via eID endpoint (server-side WebAuthn verification).
-      // The eID has full site context and establishes the FE session.
-      // On success, redirect to the post-login page or reload.
-      U.showStatus(statusEl, U.t('js.login.status.verifying', 'Verifying...'));
-      try { sessionStorage.setItem('nr_passkeys_fe_attempt', '1'); } catch (e) { /* ignore */ }
-      var verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
-      var verifyResponse = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assertion: credentialResponse,
-          challengeToken: challengeToken,
-          siteIdentifier: siteIdentifier,
-        }),
-        credentials: 'same-origin',
-      });
-
-      var verifyData = await verifyResponse.json().catch(function () { return {}; });
-
-      if (verifyResponse.ok && verifyData.status === 'ok' && verifyData.loginToken) {
-        try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-
-        // Submit the login token via felogin form to establish a real FE session.
-        // The eID verified the assertion; the token proves it to the auth service.
-        if (U.submitLoginToken(verifyData.loginToken)) {
-          return;
-        }
-
-        // No felogin form (standalone plugin) — just reload
-        U.showStatus(statusEl, U.t('js.login.status.authenticated', 'Authenticated! Redirecting...'));
-        window.location.reload();
+      if (await completeAssertion(ctx, assertion, options, challengeToken)) {
         return;
       }
-
-      try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }
-      // The server confirmed this credential ID is not (or no longer) registered.
-      // Tell the platform authenticator / password manager so it can prune the
-      // orphaned passkey instead of offering it again (WebAuthn Signal API).
-      if (verifyData.reason === 'unknown_credential') {
-        signalUnknownCredential(options.rpId, credentialResponse.id);
-      }
-      U.showError(errorEl, verifyData.error || U.t('js.login.error.generic', 'Authentication failed. Please try again.'));
-      U.hideStatus(statusEl);
     } catch (err) {
       if (err.name === 'NotAllowedError') {
         U.showError(errorEl, U.t('js.login.error.notAllowed', 'Authentication was cancelled or no passkey found for this site.'));
@@ -354,6 +557,9 @@
 
     U.setLoading(false, btnEl, btnText, btnLoading);
     U.hideStatus(statusEl);
+    // Reaching here means the flow ended without establishing a session; the
+    // autofill needs a working ceremony again.
+    rearmConditionalLogin(ctx);
   }
 
   /**

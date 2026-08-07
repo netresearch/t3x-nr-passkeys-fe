@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Event\BeforePasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -47,6 +48,7 @@ final readonly class LoginController
         private FrontendUserLookupService $userLookupService,
         private RateLimiterService $rateLimiterService,
         private ChallengeService $challengeService,
+        private ExtensionConfigurationService $configurationService,
         private EventDispatcherInterface $eventDispatcher,
         private LoggerInterface $logger,
     ) {}
@@ -94,6 +96,11 @@ final readonly class LoginController
                 return new JsonResponse([
                     'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
                     'challengeToken' => $challengeToken,
+                    // The conditional-UI ceremony holds this challenge until the
+                    // user picks a passkey from the autofill menu, which may be
+                    // long after the request. PasskeyLogin.js re-arms with a
+                    // fresh one before the token expires, so it needs the TTL.
+                    'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
                 ]);
             } catch (Throwable $e) {
                 $this->logger->error('FE discoverable assertion options failed', [
@@ -126,6 +133,7 @@ final readonly class LoginController
             return new JsonResponse([
                 'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
                 'challengeToken' => $challengeToken,
+                'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
             ]);
         } catch (Throwable $e) {
             $this->logger->error('FE assertion options failed', [

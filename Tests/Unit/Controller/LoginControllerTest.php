@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
@@ -74,6 +76,11 @@ final class LoginControllerTest extends TestCase
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
 
+        // The options endpoint reports the challenge TTL so the client can
+        // re-arm its conditional-UI ceremony before the challenge expires.
+        $configurationService = $this->createStub(ExtensionConfigurationService::class);
+        $configurationService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
+
         $this->subject = new LoginController(
             $this->webAuthnService,
             $this->siteConfigService,
@@ -81,6 +88,7 @@ final class LoginControllerTest extends TestCase
             $this->userLookupService,
             $this->rateLimiterService,
             $this->challengeService,
+            $configurationService,
             $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
         );
@@ -124,6 +132,10 @@ final class LoginControllerTest extends TestCase
         self::assertArrayHasKey('options', $body);
         self::assertArrayHasKey('challengeToken', $body);
         self::assertSame('test-challenge-token', $body['challengeToken']);
+        // Without the TTL the client cannot know when to re-arm its autofill
+        // ceremony, and a passkey picked after the challenge expired fails.
+        self::assertArrayHasKey('challengeTtlSeconds', $body);
+        self::assertGreaterThan(0, $body['challengeTtlSeconds']);
     }
 
     // ---------------------------------------------------------------
