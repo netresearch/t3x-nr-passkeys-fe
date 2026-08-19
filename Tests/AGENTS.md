@@ -1,9 +1,19 @@
 <!-- FOR AI AGENTS - Scoped to Tests/ -->
-<!-- Last updated: 2026-08-05 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure -->
+<!-- Last updated: 2026-08-19 -->
 
 # Tests/ AGENTS.md
 
-**Scope:** Test suite for `nr_passkeys_fe`.
+## Overview
+
+**Scope:** Test suite for `nr_passkeys_fe` — PHPUnit (unit, functional,
+integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
+
+## Setup
+
+- PHP suites: `composer install` is enough for unit/fuzz; functional needs MySQL (CI or DDEV).
+- JS/E2E suites: `npm install` at the repo root (`vitest.config.js` lives there).
+- E2E additionally needs the DDEV environment running: `make up`.
 
 ## Structure
 
@@ -24,7 +34,7 @@ Tests/
                             carries the extension lists they all load
 ```
 
-## How to Run Tests
+## Running tests
 
 ```bash
 # Unit tests only (no database required)
@@ -55,7 +65,7 @@ npx playwright test
 composer ci:mutation
 ```
 
-## Test Conventions
+## Conventions
 
 ### PHPUnit (Unit + Functional)
 - Test class extends nothing (plain PHPUnit) or `UnitTestCase`
@@ -124,6 +134,29 @@ composer ci:mutation
 | Template rendering | Functional |
 | Full login flow | E2E |
 | WebAuthn JS modules | JS unit |
+
+## Security
+
+- Never weaken security assertions to make a test pass (constant-time comparison, challenge single-use, rate limiting).
+- Fuzz tests (`Tests/Fuzz/`) exist to attack payload parsing — extend them when adding new request payloads.
+- Test fixtures must not contain real credentials; use obviously fake data.
+
+## Examples
+- Unit test pattern: `Tests/Unit/Service/` (bypass-finals, per-test instances).
+- Functional base class: `Tests/AbstractPasskeyFunctionalTestCase.php`.
+- Site double: `Tests/Integration/SiteStubTrait.php`.
+- JS test pattern: `Tests/JavaScript/PasskeyLogin.test.js`.
+
+## PR Checklist
+- [ ] New code paths have tests at the level listed under "What Needs Tests"
+- [ ] `composer ci:test:php:unit` and `composer ci:test:php:cgl` pass locally
+- [ ] No shared state between tests; no sleep-based waiting
+- [ ] Test output is pristine (expected errors asserted, not printed)
+
+## When stuck
+- Flaky fuzz test: re-run once; if still failing, treat as a real finding.
+- Functional tests failing locally: they need MySQL — run them in CI or DDEV, not on SQLite.
+- CacheManager errors in unit tests: register the stub in `setUp()` (see Conventions).
 
 ## Boundaries
 - Do NOT add `sleep()` in tests

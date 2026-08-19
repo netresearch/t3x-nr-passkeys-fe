@@ -1,9 +1,19 @@
 <!-- FOR AI AGENTS - Scoped to Documentation/ -->
-<!-- Last updated: 2026-03-23 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure -->
+<!-- Last updated: 2026-08-19 -->
 
 # Documentation/ AGENTS.md
 
-**Scope:** TYPO3 extension documentation following docs.typo3.org standards.
+## Overview
+
+**Scope:** TYPO3 extension documentation following docs.typo3.org standards
+(reStructuredText rendered by TYPO3 render-guides). Includes user guide,
+developer guide, security docs, and 12 ADRs under `Adr/`.
+
+## Setup
+
+- Rendering needs Docker (directly or via DDEV — `ddev docs` / `make docs`).
+- `guides.xml` is the render config; its version must match `ext_emconf.php`.
 
 ## Structure
 
@@ -49,7 +59,7 @@ Documentation/
   Images/                            -> Screenshots (PNG only, :alt: required)
 ```
 
-## Standards
+## Style & standards
 
 - **Format**: reStructuredText (.rst)
 - **Encoding**: UTF-8, LF line endings, 4-space indentation
@@ -61,7 +71,7 @@ Documentation/
 - **TYPO3 directives**: `.. confval::`, `.. note::`, `.. warning::`,
   `.. tip::`, `.. important::`, `.. versionadded::`
 
-## ADR Format
+## Examples (ADR format)
 
 ```rst
 .. include:: /Includes.rst.txt
@@ -94,7 +104,7 @@ Alternatives Considered
 ADR files use ``.. include:: /Includes.rst.txt`` (absolute from docs root).
 Do NOT modify existing ADR files (Adr001-012). Add new ones as Adr013+.
 
-## Rendering
+## Build (render docs)
 
 ```bash
 # Local rendering via DDEV
@@ -108,6 +118,23 @@ docker run --rm -v $(pwd):/project \
 ```
 
 Output goes to `Documentation-GENERATED-temp/` (gitignored).
+
+## Security
+
+- Use placeholder domains (`example.com`) and obviously fake credentials in all examples.
+- Screenshots must not contain real user data or real credential identifiers.
+- Keep Security/ThreatModel.rst in sync when security-relevant behavior changes.
+
+## PR Checklist
+- [ ] Docs render without warnings (CI runs the render check via docs.yml)
+- [ ] New config options documented with `.. confval::`
+- [ ] Cross-references use `:ref:` labels, not file paths
+- [ ] New ADRs numbered sequentially (Adr013+), existing ADRs untouched
+
+## When stuck
+- Render errors: run the Docker render locally (see Build above) and read the warnings.
+- Directive reference: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/
+- Follow existing pages in this directory as formatting references.
 
 ## Rules
 

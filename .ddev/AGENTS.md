@@ -1,4 +1,4 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-23 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 
 # AGENTS.md — .ddev
 
@@ -8,6 +8,24 @@ DDEV local development environment for **EXT:nr_passkeys_fe** (TYPO3 frontend pa
 Supports TYPO3 v13.4 LTS and v14.x. Requires the sibling BE extension (`t3x-nr-passkeys-be/main`)
 mounted as a path repository. Uses **PHP 8.5**, **MariaDB 11.4**, and **NodeJS 20** (for Vitest JS tests).
 <!-- AGENTS-GENERATED:END overview -->
+
+## Setup
+
+First run: `make up` (or `ddev setup`) — starts DDEV, installs all supported
+TYPO3 versions into named volumes, renders docs. Prerequisite: the BE extension
+worktree checked out at `../../t3x-nr-passkeys-be/main` (mounted as a path
+repository). Docker Desktop must be running.
+
+## Tests
+
+- Inside the container: `ddev exec npm run test:js` (NodeJS 20 is configured).
+- E2E tests target this environment: `npm run test:e2e` from the host once `make up` completed.
+
+## Security
+
+- All credentials here (`admin` / `Joh316!!`, FE user `demo` / `demo`) are local
+  demo fixtures for `*.ddev.site` only — never reuse them outside DDEV and never
+  put real credentials into `data/demo-pages.sql` or compose files.
 
 <!-- AGENTS-GENERATED:START filemap -->
 ## Key Files
@@ -26,7 +44,7 @@ mounted as a path repository. Uses **PHP 8.5**, **MariaDB 11.4**, and **NodeJS 2
 <!-- AGENTS-GENERATED:END filemap -->
 
 <!-- AGENTS-GENERATED:START commands -->
-## Common Commands
+## Commands
 | Task | Command |
 |------|---------|
 | Full setup (first time) | `ddev setup` or `make up` |
@@ -44,7 +62,7 @@ mounted as a path repository. Uses **PHP 8.5**, **MariaDB 11.4**, and **NodeJS 2
 <!-- AGENTS-GENERATED:END commands -->
 
 <!-- AGENTS-GENERATED:START patterns -->
-## Key Patterns
+## Examples & key patterns
 
 ### Extension Mounts
 The FE extension is mounted at `/var/www/nr_passkeys_fe` and the BE extension (dependency) at
@@ -100,7 +118,7 @@ Created automatically by `install-v13` / `install-v14` from the fixture at `data
 <!-- AGENTS-GENERATED:END patterns -->
 
 <!-- AGENTS-GENERATED:START code-style -->
-## Configuration Style
+## Code style (configuration)
 - Keep `config.yaml` minimal, use `docker-compose.web.yaml` for service overrides
 - Document custom commands with `## Description:` / `## Usage:` / `## Example:` headers
 - Use `set -e` in web commands to fail fast on errors
@@ -114,6 +132,12 @@ Created automatically by `install-v13` / `install-v14` from the fixture at `data
 - [ ] Both extensions resolve correctly from path repositories
 - [ ] Works on macOS, Linux, and Windows (WSL2)
 <!-- AGENTS-GENERATED:END checklist -->
+
+## When stuck
+
+- `ddev logs` and `ddev describe` first; `ddev restart` fixes most stale-container states.
+- Broken install state: re-run `ddev install-v13` / `ddev install-v14` (drops + recreates the DB).
+- Path-repository resolution errors: verify the BE worktree exists (see Setup).
 
 <!-- AGENTS-GENERATED:START skill-reference -->
 ## Skill Reference

@@ -1,11 +1,29 @@
 <!-- FOR AI AGENTS - Scoped to Classes/ -->
-<!-- Last updated: 2026-03-23 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure -->
+<!-- Last updated: 2026-08-19 -->
 
 # Classes/ AGENTS.md
 
-**Scope:** PHP source code for `nr_passkeys_fe`.
+## Overview
 
-## Namespace Structure
+**Scope:** PHP source code for `nr_passkeys_fe`. All classes live under
+`Netresearch\NrPasskeysFe\` (PSR-4 from `Classes/`). Layering (inner to outer):
+Domain (Model + Dto) -> Service -> Controller / Authentication / Middleware /
+EventListener — enforced by PHPat (see `Tests/Architecture/` and `docs/ARCHITECTURE.md`).
+
+## Setup
+
+- `composer install` from the repo root (installs into `.Build/`).
+- The BE dependency `netresearch/nr-passkeys-be` provides WebAuthn ceremonies,
+  challenge service, and rate limiter — do not reimplement those here.
+
+## Tests & checks
+
+- After every change here: `composer ci:test:php:cgl` + `composer ci:test:php:phpstan` (level 10).
+- Unit tests: `composer ci:test:php:unit` (includes the PHPat architecture rules via PHPStan).
+- DB-touching code (repositories, upgrade wizards) needs functional tests: `composer ci:test:php:functional` (MySQL, CI/DDEV only).
+
+## Namespace Structure (verified)
 
 All classes are under `Netresearch\NrPasskeysFe\` (PSR-4 from `Classes/`).
 
@@ -45,7 +63,7 @@ Service/
   FrontendUserLookupService              -> fe_users table lookup (extracted from credential repo)
 ```
 
-## PHP Conventions
+## Code style (PHP conventions)
 
 - `declare(strict_types=1)` in every file
 - `final` on service classes and event classes (allow extension via events, not inheritance)
@@ -55,7 +73,7 @@ Service/
 - Return types always declared
 - Never suppress PHPStan errors -- fix the root cause
 
-## Key Patterns
+## Examples (key patterns)
 
 ### Auth service (no DI)
 ```php
@@ -96,6 +114,25 @@ if (!password_verify($submitted, $storedHash)) {
     // reject
 }
 ```
+
+## Security
+
+- Recovery codes: hash with bcrypt, verify with `password_verify()` — never string comparison.
+- Never skip nonce/HMAC verification in challenge handling; challenges are single-use.
+- Validate and type-check every eID request payload (`JsonBodyTrait`) before use.
+- Credential IDs are binary — always base64url-encode at boundaries, never log raw payloads.
+
+## PR Checklist
+- [ ] `composer ci:test:php:cgl` and `composer ci:test:php:phpstan` pass
+- [ ] New code paths covered by unit tests (functional for DB access)
+- [ ] State-changing operations dispatch their PSR-14 event
+- [ ] No new PHPStan suppressions
+
+## When stuck
+- Check the Golden Samples table in the root AGENTS.md for a reference implementation.
+- Component map + dependency rules: `docs/ARCHITECTURE.md`.
+- WebAuthn ceremony internals live in the BE extension (`netresearch/nr-passkeys-be`), not here.
+- eID endpoint reference: Documentation/DeveloperGuide/Api.rst.
 
 ## Boundaries
 - Do NOT use Extbase repositories or QuerySettings
