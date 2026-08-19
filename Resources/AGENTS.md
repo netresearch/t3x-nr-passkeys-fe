@@ -1,9 +1,25 @@
 <!-- FOR AI AGENTS - Scoped to Resources/ -->
-<!-- Last updated: 2026-03-23 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure -->
+<!-- Last updated: 2026-08-19 -->
 
 # Resources/ AGENTS.md
 
-**Scope:** Templates, JavaScript modules, XLIFF, and public assets.
+## Overview
+
+**Scope:** Fluid templates, vanilla-JS WebAuthn modules, XLIFF translations,
+and public assets (SVG icons). The JS modules have zero npm runtime
+dependencies and are loaded via TYPO3's ES module import map.
+
+## Setup
+
+- No build step: JS ships as-is (no bundler, no transpiler).
+- For JS tests: `npm install` at the repo root (Vitest is a dev dependency).
+
+## Tests
+
+- JS unit tests: `npm run test:js` (Vitest, specs in `Tests/JavaScript/`).
+- Coverage: `npm run test:js:coverage`.
+- Template rendering is covered by functional tests; full flows by Playwright E2E (`npm run test:e2e`).
 
 ## Structure
 
@@ -43,7 +59,7 @@ Resources/
       PasskeyUtils.js          -> Shared utilities (base64url, DOM helpers, buildEidUrl)
 ```
 
-## Template Conventions
+## Conventions (Fluid templates)
 
 - All Fluid templates use `{namespace f=TYPO3\CMS\Fluid\ViewHelpers}`
 - Layout: `<f:layout name="Default"/>`
@@ -53,7 +69,7 @@ Resources/
 - CSS classes follow BEM: `nr-passkeys-*` prefix
 - No inline `<style>` blocks in templates (use included CSS or parent theme)
 
-## JavaScript Module Patterns
+## Patterns to Follow (JavaScript modules)
 
 All JavaScript modules follow these rules:
 
@@ -95,6 +111,23 @@ const credential = await navigator.credentials.get({
 - Database field labels go in `locallang_db.xlf`
 - Backend module labels go in `locallang_mod.xlf`
 - Format: XLIFF 1.2 (`version="1.2"`)
+
+## Security
+
+- All WebAuthn responses are base64url-encoded before POSTing — never send raw ArrayBuffers or roll custom encoders (use the helpers in PasskeyUtils).
+- No inline event handlers or `eval` — keep modules CSP-compatible.
+- Error messages shown to users come from XLIFF keys; never render server error details verbatim.
+
+## PR Checklist
+- [ ] `npm run test:js` passes
+- [ ] New labels added to the XLIFF files (English source)
+- [ ] No new npm runtime dependencies
+- [ ] Data attributes (`data-passkey-*`) used for JS hooks, no id/class coupling
+
+## When stuck
+- WebAuthn API behavior: check existing modules first (PasskeyLogin, PasskeyEnrollment).
+- Import-map issues: the module must be registered in Configuration/JavaScriptModules.php.
+- Fluid questions: templates follow the conventions above; layout is Default.
 
 ## Boundaries
 - Do NOT add npm packages to the JavaScript modules (zero runtime deps)

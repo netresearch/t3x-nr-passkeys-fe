@@ -1,6 +1,6 @@
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
-<!-- Last updated: 2026-03-23 | Last verified: 2026-03-23 -->
+<!-- Last updated: 2026-08-19 | Last verified: 2026-08-19 -->
 
 # AGENTS.md
 
@@ -14,8 +14,8 @@ Includes felogin integration, self-service management, recovery codes, per-site 
 enforcement (Off → Encourage → Required → Enforced), post-login enrollment interstitial,
 backend admin module, and 7 PSR-14 events.
 
-Requires ``netresearch/nr-passkeys-be`` ^0.6 as a Composer dependency (reuses WebAuthn
-ceremonies, challenge service, rate limiter). See ADR-001.
+Requires ``netresearch/nr-passkeys-be`` ^0.12 as a Composer dependency (reuses WebAuthn
+ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emconf.php`.
 
 | Key | Value |
 |-----|-------|
@@ -25,7 +25,7 @@ ceremonies, challenge service, rate limiter). See ADR-001.
 | Namespace | `Netresearch\NrPasskeysFe` |
 | TYPO3 | ^13.4 \|\| ^14.1 |
 | PHP | ^8.2 |
-| Depends on | `netresearch/nr-passkeys-be` ^0.6 |
+| Depends on | `netresearch/nr-passkeys-be` ^0.12 |
 
 ## Global Rules
 - Conventional Commits: `type(scope): subject`
@@ -35,7 +35,7 @@ ceremonies, challenge service, rate limiter). See ADR-001.
 - Do NOT commit `composer.lock` (library, not application)
 
 ## Commands (verified)
-> Source: `composer.json` scripts, `Makefile`
+> Source: `composer.json` scripts, `package.json` scripts, `Makefile`
 
 | Task | Command | ~Time |
 |------|---------|-------|
@@ -47,46 +47,34 @@ ceremonies, challenge service, rate limiter). See ADR-001.
 | Fuzz tests | `composer ci:test:php:fuzz` | 5s |
 | Functional tests | `composer ci:test:php:functional` | 30s |
 | Unit + functional | `composer ci:test:php:all` | 35s |
-| JS tests | `npx vitest run` | 2s |
-| E2E tests | `npx playwright test` | 30s |
+| JS tests | `npm run test:js` | 2s |
+| E2E tests | `npm run test:e2e` (needs DDEV) | 30s |
 | Mutation testing | `composer ci:mutation` | 60s |
 | Local CI (no DB) | `make ci` | 25s |
 | DDEV full setup | `make up` | 5m |
 
 ## File Map
 ```
-Classes/                       -> PHP source (PSR-4: Netresearch\NrPasskeysFe\)
-  Authentication/               -> PasskeyFrontendAuthenticationService (auth chain)
-  Configuration/                -> Site + extension configuration value objects
-  Controller/                   -> EidDispatcher, Login, Enrollment, Management,
-                                   Recovery, Admin, AdminModule controllers
-  Domain/Dto/                   -> Typed DTOs
-  Domain/Enum/                  -> RecoveryMethod enum
-  Domain/Model/                 -> FrontendCredential, RecoveryCode (plain PHP)
-  Event/                        -> 7 PSR-14 event classes
-  EventListener/                -> felogin integration, encourage banner
-  Form/Element/                 -> PasskeyFeInfoElement (TCA read-only)
-  Middleware/                   -> PasskeyPublicRouteResolver, PasskeyEnrollmentInterstitial
-  Service/                      -> FrontendWebAuthnService, SiteConfigurationService,
-                                   FrontendCredentialRepository, FrontendEnforcementService,
-                                   RecoveryCodeService, PasskeyEnrollmentService,
-                                   FrontendAdoptionStatsService, FrontendUserLookupService
-Build/                         -> Tooling configuration (NOT .Build/ which is composer output)
-Configuration/                 -> TYPO3 config (TCA, FlexForms, Services.yaml, TypoScript,
-                                   RequestMiddlewares, JavaScriptModules)
-Documentation/                 -> TYPO3 RST documentation (docs.typo3.org format)
-  Adr/                          -> 12 Architecture Decision Records
-Resources/Private/             -> Fluid templates (Login, Enrollment, Management, AdminModule)
-Resources/Public/JavaScript/   -> 8 JS modules (Login, Enrollment, Management, Recovery,
-                                   RecoveryCodes, Banner, FeAdmin, Utils)
-Tests/Unit/                    -> Unit tests (PHPUnit)
-Tests/Functional/              -> Functional tests (require MySQL, CI only)
-Tests/Fuzz/                    -> Fuzz tests (property-based)
-Tests/Architecture/            -> PHPat architecture tests
-Tests/JavaScript/              -> JS unit tests (Vitest)
-Tests/E2E/                     -> E2E tests (Playwright, targets DDEV v13)
-Makefile                       -> make up, make ci, make help
-.github/workflows/             -> CI, TER Publish, PR Quality Gates, CodeQL, OpenSSF Scorecard
+Classes/                     -> PHP source (PSR-4: Netresearch\NrPasskeysFe\)
+  Authentication/            -> PasskeyFrontendAuthenticationService (auth chain)
+  Configuration/             -> Site + extension configuration value objects
+  Controller/                -> EidDispatcher + Login/Enrollment/Management/Recovery/Admin/AdminModule
+  Domain/                    -> Dto/ (typed DTOs), Enum/, Model/ (plain PHP entities)
+  Event/                     -> 7 PSR-14 event classes
+  EventListener/             -> felogin integration, encourage banner
+  Form/Element/              -> PasskeyFeInfoElement (TCA read-only)
+  Middleware/                -> PasskeyPublicRouteResolver, PasskeyEnrollmentInterstitial
+  Service/                   -> WebAuthn, site config, credentials, enforcement, recovery, stats
+  Updates/                   -> Upgrade wizards (list_type -> CType migration)
+Build/                       -> Tooling config (NOT .Build/ which is composer output)
+Configuration/               -> TCA, FlexForms, Services.yaml/.php, TypoScript, middlewares
+Documentation/               -> TYPO3 RST docs; Adr/ holds 12 ADRs
+docs/                        -> ARCHITECTURE.md (agent component map), exec-plans/
+Resources/Private/           -> Fluid templates (Login, Enrollment, Management, AdminModule)
+Resources/Public/JavaScript/ -> 8 vanilla-JS ES modules
+Tests/                       -> Unit, Functional, Integration, Fuzz, Architecture, JavaScript, E2E
+Makefile                     -> make up, make ci, make help
+.github/workflows/           -> thin callers of central reusable workflows
 ```
 
 ## Golden Samples
@@ -124,7 +112,6 @@ Makefile                       -> make up, make ci, make help
 ### Always Do
 - Run `composer ci:test:php:cgl` and `composer ci:test:php:phpstan` before committing
 - Add tests for new code paths (unit preferred, functional for DB)
-- Use conventional commit format
 - Validate all user inputs in controllers and eID dispatcher
 - Show test output as evidence before claiming work is complete
 - Dispatch the appropriate PSR-14 event after state-changing operations
@@ -140,6 +127,15 @@ Makefile                       -> make up, make ci, make help
 - Changing the database schema
 - Modifying CI/CD configuration
 - Changing enforcement model semantics
+
+## Index of scoped AGENTS.md
+- `./Classes/AGENTS.md` — PHP source: namespaces, conventions, auth-flow patterns
+- `./Configuration/AGENTS.md` — TCA, Services.yaml, TypoScript, site config schema
+- `./Tests/AGENTS.md` — all test suites, how to run them, conventions
+- `./Resources/AGENTS.md` — Fluid templates, JS modules, XLIFF
+- `./Documentation/AGENTS.md` — RST docs, ADR format, rendering
+- `./.ddev/AGENTS.md` — DDEV local environment, demo data
+- `./.github/workflows/AGENTS.md` — CI/CD workflows and central reusables
 
 ## Commit Signing
 
