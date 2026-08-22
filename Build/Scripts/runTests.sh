@@ -1,370 +1,55 @@
 #!/usr/bin/env bash
 
 #
-# TYPO3 Extension Test Runner - nr_passkeys_fe
-# Based on TYPO3 Best Practices: https://github.com/TYPO3BestPractices/tea
+# Bootstrap for the shared TYPO3 extension test runner.
 #
-# This script provides a unified interface for running various test suites
-# and quality tools for the nr_passkeys_fe extension.
+# Copy this file to Build/Scripts/runTests.sh in an extension. It is NOT the
+# runner: the runner is versioned once in netresearch/typo3-ci-workflows and
+# composer links it to .Build/bin/runTests.sh. This stub exists only because
+# the runner provisions the very environment it lives in, so it cannot be
+# behind a completed `composer install` — the first run on a fresh clone has
+# to create it.
 #
-# Usage: ./Build/Scripts/runTests.sh [options] <command>
+# Per-extension settings belong in Build/Scripts/runTests.conf, never here.
+# Anything this stub grows beyond handing over is drift; fix the shared runner
+# instead.
 #
 
-set -e
+set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+cd "$(dirname "$0")/../.."
 
-# Extension root directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-
-# Composer binary
-VENDOR_BIN="${ROOT_DIR}/.Build/bin"
-
-# Default values
-PHP_VERSION="${PHP_VERSION:-8.5}"
-DBMS="${DBMS:-sqlite}"
-EXTRA_TEST_OPTIONS=""
-COVERAGE=""
-
-#
-# Print usage information
-#
-usage() {
-    cat << EOF
-TYPO3 Extension Test Runner - nr_passkeys_fe
-
-Usage: $(basename "$0") [OPTIONS] <COMMAND>
-
-Commands:
-    unit              Run unit tests
-    functional        Run functional tests
-    fuzz              Run fuzz tests (property-based testing)
-    mutation          Run mutation tests with Infection
-    phpstan           Run PHPStan static analysis
-    cgl               Run PHP-CS-Fixer in dry-run mode
-    cgl:fix           Run PHP-CS-Fixer and apply fixes
-    rector            Run Rector in dry-run mode
-    rector:fix        Run Rector and apply changes
-    ci                Run full CI suite (cgl, phpstan, unit)
-    all               Run all tests and quality checks
-
-Options:
-    -h, --help        Show this help message
-    -v, --verbose     Verbose output
-    -c, --coverage    Generate code coverage report
-    -p, --php         PHP version (default: ${PHP_VERSION})
-    -d, --dbms        Database system for functional tests (default: ${DBMS})
-                      Options: sqlite, mysql, mariadb, postgres
-    -x                Extra options to pass to PHPUnit
-
-Examples:
-    $(basename "$0") unit
-    $(basename "$0") -c unit                  # With coverage
-    $(basename "$0") -x "--filter=testName" unit
-    $(basename "$0") ci
-
-EOF
+# composer.json says where composer puts binaries. Hardcoding .Build/bin was
+# wrong for nine extensions in this fleet: seven use lowercase .build/bin and
+# two use vendor/bin, and there this stub would not have found the runner at
+# all. The runner detects the same thing for itself; the stub has to do it
+# before the runner exists.
+bin_dir() {
+    local dir=""
+    if type jq >/dev/null 2>&1; then
+        dir="$(jq -r '.config["bin-dir"] // ((.config["vendor-dir"] // "vendor") + "/bin") // empty' composer.json 2>/dev/null)"
+    else
+        dir="$(sed -n 's/.*"bin-dir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' composer.json | head -n1)"
+        [[ -n "${dir}" ]] || dir="$(sed -n 's/.*"vendor-dir"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1\/bin/p' composer.json | head -n1)"
+    fi
+    printf '%s' "${dir:-vendor/bin}"
 }
 
-#
-# Print colored message
-#
-info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+RUNNER="$(bin_dir)/runTests.sh"
 
-success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-#
-# Check if composer dependencies are installed
-#
-check_dependencies() {
-    if [[ ! -d "${ROOT_DIR}/.Build/vendor" ]]; then
-        error "Dependencies not installed. Run 'composer install' first."
+if [[ ! -x "${RUNNER}" ]]; then
+    echo "runTests.sh: ${RUNNER} not found — installing dependencies first." >&2
+    if ! type composer >/dev/null 2>&1; then
+        echo "runTests.sh: composer is not on PATH, cannot bootstrap ${RUNNER}." >&2
         exit 1
     fi
-}
+    composer install --no-interaction --no-progress
+fi
 
-#
-# Run unit tests
-#
-run_unit_tests() {
-    info "Running unit tests..."
-    check_dependencies
-
-    local coverage_opts=""
-    if [[ -n "${COVERAGE}" ]]; then
-        coverage_opts="--coverage-html ${ROOT_DIR}/.Build/coverage/html --coverage-clover ${ROOT_DIR}/.Build/coverage/clover.xml"
-        mkdir -p "${ROOT_DIR}/.Build/coverage"
-    fi
-
-    "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.xml" --testsuite unit ${coverage_opts} ${EXTRA_TEST_OPTIONS}
-    success "Unit tests completed"
-
-    if [[ -n "${COVERAGE}" ]]; then
-        info "Coverage report: ${ROOT_DIR}/.Build/coverage/html/index.html"
-    fi
-}
-
-#
-# Run functional tests
-#
-run_functional_tests() {
-    info "Running functional tests..."
-    check_dependencies
-
-    # Determine database driver for functional tests.
-    # Priority: explicit env var > --dbms flag > MySQL auto-detect in CI > SQLite fallback
-    if [[ -z "${typo3DatabaseDriver:-}" ]]; then
-        if [[ "${DBMS}" == "mysql" || "${DBMS}" == "mariadb" ]] || \
-           { [[ "${CI:-}" == "true" ]] && mysqladmin ping --host=127.0.0.1 --silent 2>/dev/null; }; then
-            export typo3DatabaseDriver="pdo_mysql"
-            export typo3DatabaseHost="${typo3DatabaseHost:-127.0.0.1}"
-            export typo3DatabasePort="${typo3DatabasePort:-3306}"
-            export typo3DatabaseName="${typo3DatabaseName:-typo3_test}"
-            export typo3DatabaseUsername="${typo3DatabaseUsername:-root}"
-            export typo3DatabasePassword="${typo3DatabasePassword:-root}"
-            info "Using MySQL for functional tests"
-        elif [[ "${DBMS}" == "postgres" ]]; then
-            export typo3DatabaseDriver="pdo_pgsql"
-            export typo3DatabaseHost="${typo3DatabaseHost:-127.0.0.1}"
-            export typo3DatabasePort="${typo3DatabasePort:-5432}"
-            export typo3DatabaseName="${typo3DatabaseName:-typo3_test}"
-            export typo3DatabaseUsername="${typo3DatabaseUsername:-root}"
-            export typo3DatabasePassword="${typo3DatabasePassword:-root}"
-            info "Using PostgreSQL for functional tests"
-        else
-            export typo3DatabaseDriver="pdo_sqlite"
-            info "Using SQLite for functional tests"
-        fi
-    fi
-    info "Database driver: ${typo3DatabaseDriver}"
-
-    if [[ -f "${ROOT_DIR}/Build/phpunit.functional.xml" ]]; then
-        "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.functional.xml" ${EXTRA_TEST_OPTIONS}
-    else
-        warning "FunctionalTests.xml not found, skipping..."
-    fi
-    success "Functional tests completed"
-}
-
-#
-# Run mutation tests
-#
-run_mutation_tests() {
-    info "Running mutation tests with Infection..."
-    check_dependencies
-
-    if [[ -f "${ROOT_DIR}/Build/infection.json5" ]]; then
-        "${VENDOR_BIN}/infection" --configuration="${ROOT_DIR}/Build/infection.json5" --threads=4 -s --no-progress
-    else
-        warning "infection.json5 not found in Build/, skipping..."
-    fi
-    success "Mutation tests completed"
-}
-
-#
-# Run PHPStan
-#
-run_phpstan() {
-    info "Running PHPStan static analysis..."
-    check_dependencies
-    "${VENDOR_BIN}/phpstan" analyse -c "${ROOT_DIR}/Build/phpstan.neon"
-    success "PHPStan analysis completed"
-}
-
-#
-# Run PHP-CS-Fixer (dry-run)
-#
-run_cgl() {
-    info "Running PHP-CS-Fixer (dry-run)..."
-    check_dependencies
-    "${VENDOR_BIN}/php-cs-fixer" fix --dry-run --diff --config="${ROOT_DIR}/Build/.php-cs-fixer.php"
-    success "CGL check completed"
-}
-
-#
-# Run PHP-CS-Fixer (fix)
-#
-run_cgl_fix() {
-    info "Running PHP-CS-Fixer (applying fixes)..."
-    check_dependencies
-    "${VENDOR_BIN}/php-cs-fixer" fix --config="${ROOT_DIR}/Build/.php-cs-fixer.php"
-    success "CGL fixes applied"
-}
-
-#
-# Run Rector (dry-run)
-#
-run_rector() {
-    info "Running Rector (dry-run)..."
-    check_dependencies
-    "${VENDOR_BIN}/rector" process --config "${ROOT_DIR}/Build/rector.php" --dry-run
-    success "Rector analysis completed"
-}
-
-#
-# Run Rector (fix)
-#
-run_rector_fix() {
-    info "Running Rector (applying changes)..."
-    check_dependencies
-    "${VENDOR_BIN}/rector" process --config "${ROOT_DIR}/Build/rector.php"
-    success "Rector changes applied"
-}
-
-#
-# Run CI suite
-#
-run_ci() {
-    info "Running CI suite..."
-    run_cgl
-    run_phpstan
-    run_unit_tests
-    success "CI suite completed"
-}
-
-#
-# Run all tests and checks
-#
-run_all() {
-    info "Running all tests and quality checks..."
-    run_cgl
-    run_phpstan
-    run_unit_tests
-    run_functional_tests
-    success "All tests and checks completed"
-}
-
-#
-# Parse command line arguments
-#
-parse_args() {
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            -v|--verbose)
-                set -x
-                shift
-                ;;
-            -c|--coverage)
-                COVERAGE="1"
-                shift
-                ;;
-            -p|--php)
-                PHP_VERSION="$2"
-                shift 2
-                ;;
-            -d|--dbms)
-                DBMS="$2"
-                shift 2
-                ;;
-            -x)
-                EXTRA_TEST_OPTIONS="$2"
-                shift 2
-                ;;
-            --)
-                shift
-                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
-                break
-                ;;
-            unit)
-                shift
-                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
-                run_unit_tests
-                exit 0
-                ;;
-            functional)
-                shift
-                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
-                run_functional_tests
-                exit 0
-                ;;
-            fuzz)
-                shift
-                EXTRA_TEST_OPTIONS="${EXTRA_TEST_OPTIONS} $*"
-                info "Running fuzz tests..."
-                check_dependencies
-                "${VENDOR_BIN}/phpunit" -c "${ROOT_DIR}/Build/phpunit.xml" --testsuite fuzz ${EXTRA_TEST_OPTIONS}
-                success "Fuzz tests completed"
-                exit 0
-                ;;
-            mutation)
-                run_mutation_tests
-                exit 0
-                ;;
-            phpstan)
-                run_phpstan
-                exit 0
-                ;;
-            cgl)
-                run_cgl
-                exit 0
-                ;;
-            cgl:fix)
-                run_cgl_fix
-                exit 0
-                ;;
-            rector)
-                run_rector
-                exit 0
-                ;;
-            rector:fix)
-                run_rector_fix
-                exit 0
-                ;;
-            ci)
-                run_ci
-                exit 0
-                ;;
-            all)
-                run_all
-                exit 0
-                ;;
-            *)
-                error "Unknown option or command: $1"
-                usage
-                exit 1
-                ;;
-        esac
-    done
-
-    # No command provided
-    usage
+if [[ ! -x "${RUNNER}" ]]; then
+    echo "runTests.sh: ${RUNNER} is still missing after composer install." >&2
+    echo "             Is netresearch/typo3-ci-workflows in require-dev?" >&2
     exit 1
-}
+fi
 
-#
-# Main entry point
-#
-main() {
-    cd "${ROOT_DIR}"
-
-    if [[ $# -eq 0 ]]; then
-        usage
-        exit 1
-    fi
-
-    parse_args "$@"
-}
-
-main "$@"
+exec "${RUNNER}" "$@"
