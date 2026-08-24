@@ -34,7 +34,7 @@
         "typo3/cms-fluid": "^13.4 || ^14.1"
     },
     "require-dev": {
-        "netresearch/typo3-ci-workflows": "^1.1",
+        "netresearch/typo3-ci-workflows": "^1.8.1",
         "typo3/cms-dashboard": "^13.4 || ^14.1",
         "typo3/cms-felogin": "^13.4 || ^14.1",
         "typo3/cms-install": "^13.4 || ^14.1"
@@ -75,15 +75,15 @@
         }
     },
     "scripts": {
-        "ci:cgl": "Build/Scripts/runTests.sh cgl:fix",
-        "ci:rector": "Build/Scripts/runTests.sh rector:fix",
-        "ci:test:php:cgl": "Build/Scripts/runTests.sh cgl",
-        "ci:test:php:rector": "Build/Scripts/runTests.sh rector",
-        "ci:test:php:phpstan": "Build/Scripts/runTests.sh phpstan",
-        "ci:test:php:unit": "Build/Scripts/runTests.sh unit",
-        "ci:test:php:functional": "Build/Scripts/runTests.sh functional",
-        "ci:test:php:fuzz": "Build/Scripts/runTests.sh fuzz",
-        "ci:mutation": "Build/Scripts/runTests.sh mutation",
+        "ci:cgl": "Build/Scripts/runTests.sh -s cgl",
+        "ci:rector": "Build/Scripts/runTests.sh -s rector",
+        "ci:test:php:cgl": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then php-cs-fixer fix --config Build/.php-cs-fixer.php --dry-run --diff \"$@\"; else ./Build/Scripts/runTests.sh -s cgl -n \"$@\"; fi' --",
+        "ci:test:php:rector": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then rector process --config Build/rector.php --dry-run \"$@\"; else ./Build/Scripts/runTests.sh -s rector -n \"$@\"; fi' --",
+        "ci:test:php:phpstan": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpstan analyse -c Build/phpstan.neon \"$@\"; else ./Build/Scripts/runTests.sh -s phpstan \"$@\"; fi' --",
+        "ci:test:php:unit": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.xml --testsuite unit \"$@\"; else ./Build/Scripts/runTests.sh -s unit \"$@\"; fi' --",
+        "ci:test:php:functional": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.functional.xml \"$@\"; else ./Build/Scripts/runTests.sh -s functional \"$@\"; fi' --",
+        "ci:test:php:fuzz": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.xml --testsuite fuzz \"$@\"; else ./Build/Scripts/runTests.sh -s fuzz \"$@\"; fi' --",
+        "ci:mutation": "Build/Scripts/runTests.sh -s mutation",
         "ci:test:php:all": [
             "@ci:test:php:unit",
             "@ci:test:php:functional"
