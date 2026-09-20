@@ -107,13 +107,11 @@ final readonly class RecoveryController
         $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         try {
-            $this->rateLimiterService->checkRateLimit('fe_recovery_verify', $ip);
+            $this->rateLimiterService->consumeRateLimit('fe_recovery_verify', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
-
-        $this->rateLimiterService->recordAttempt('fe_recovery_verify', $ip);
 
         // Look up the fe_user to get their UID
         $feUserUid = $this->findFeUserUid($username);
