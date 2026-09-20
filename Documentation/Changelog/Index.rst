@@ -6,6 +6,70 @@
 Changelog
 =========
 
+Version 1.0.0
+=============
+
+*Stable, and paired with nr_passkeys_be 1.0*
+
+Breaking / Important
+--------------------
+
+- **The extension state changes from ``beta`` to ``stable``.** From this
+  release on the public API follows semantic versioning: a removal or an
+  incompatible change to a public class, method or configuration setting
+  needs a new major version.
+
+- **``nr_passkeys_be`` 1.0.0 or newer is required.** That release removed
+  ``RateLimiterService::checkRateLimit()`` and ``::recordAttempt()``, which
+  this extension called in ``LoginController`` and ``RecoveryController``.
+  Both call sites now use ``consumeRateLimit()``, which performs the check
+  and the increment inside one critical section — the separate check-then-
+  record pair left a window in which concurrent requests could all pass the
+  check before any of them incremented. No installation could reach the
+  broken combination: the dependency constraint refused ``nr_passkeys_be``
+  1.0.0 until this release.
+
+Bugfixes
+--------
+
+- **Passkey login works on SQLite-backed installations.**
+  ``tx_nrpasskeysfe_credential.credential_id`` is a ``varbinary`` column, but
+  the lookups bound it as a plain string and ``save()`` declared no column
+  types. MySQL compares that regardless; SQLite stores a string-bound
+  parameter as a TEXT storage class, which never equals the BLOB the value
+  was written as, so the credential could not be found and the login failed.
+  The lookups now bind with ``ParameterType::BINARY`` and the insert declares
+  ``credential_id``, ``user_handle`` and ``public_key_cose`` by type.
+
+Tests
+-----
+
+- The functional suite passes on SQLite as well as MySQL: 113 tests on both,
+  where SQLite previously produced twelve failures. The end-to-end
+  specifications under ``Tests/E2E/`` remain drafts and are not part of any
+  suite that runs.
+
+Version 0.6.0
+=============
+
+*Conditional UI and CType plugin registration*
+
+This release shipped without a changelog entry. Its contents:
+
+Features
+--------
+
+- **WebAuthn Conditional UI on the login plugin** -- the browser offers a
+  stored passkey directly in the username field's autofill menu, so a
+  returning user never has to press the passkey button. The plugin's
+  discoverable switch governs it.
+
+- **Plugins register as CType on both supported TYPO3 versions**, so the
+  content elements appear in the element wizard on v13 and v14 alike.
+
+- **Rector runs with the shared organisation configuration**, including the
+  TYPO3 v13 level set.
+
 Version 0.5.0
 =============
 
