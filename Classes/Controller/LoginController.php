@@ -70,12 +70,10 @@ final readonly class LoginController
         $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         try {
-            $this->rateLimiterService->checkRateLimit('fe_login_options', $ip);
+            $this->rateLimiterService->consumeRateLimit('fe_login_options', $ip);
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
-
-        $this->rateLimiterService->recordAttempt('fe_login_options', $ip);
 
         try {
             $site = $this->siteConfigurationService->getCurrentSite($request);
@@ -169,12 +167,10 @@ final readonly class LoginController
         $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         try {
-            $this->rateLimiterService->checkRateLimit('fe_login_verify', $ip);
+            $this->rateLimiterService->consumeRateLimit('fe_login_verify', $ip);
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
-
-        $this->rateLimiterService->recordAttempt('fe_login_verify', $ip);
 
         try {
             $challenge = $this->challengeService->verifyChallengeToken($challengeToken);

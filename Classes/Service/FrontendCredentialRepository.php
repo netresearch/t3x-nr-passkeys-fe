@@ -45,7 +45,10 @@ final readonly class FrontendCredentialRepository
             ->where(
                 $queryBuilder->expr()->eq(
                     'credential_id',
-                    $queryBuilder->createNamedParameter($credentialId),
+                    // credential_id is varbinary; bind as BINARY so the value matches
+                    // regardless of DB engine. On SQLite a string-bound parameter is a
+                    // TEXT storage class and never equals the BLOB the value is stored as.
+                    $queryBuilder->createNamedParameter($credentialId, ParameterType::BINARY),
                 ),
             )
             ->executeQuery()
@@ -75,7 +78,10 @@ final readonly class FrontendCredentialRepository
             ->where(
                 $queryBuilder->expr()->eq(
                     'credential_id',
-                    $queryBuilder->createNamedParameter($credentialId),
+                    // credential_id is varbinary; bind as BINARY so the value matches
+                    // regardless of DB engine. On SQLite a string-bound parameter is a
+                    // TEXT storage class and never equals the BLOB the value is stored as.
+                    $queryBuilder->createNamedParameter($credentialId, ParameterType::BINARY),
                 ),
                 $queryBuilder->expr()->eq(
                     'storage_pid',
@@ -194,7 +200,17 @@ final readonly class FrontendCredentialRepository
         $data['crdate'] = $now;
         $data['created_at'] = $now;
 
-        $connection->insert(self::TABLE, $data);
+        // Bind the binary columns by their schema type so the stored storage class
+        // matches what findByCredentialId() queries with (cross-DB; see the note there).
+        $connection->insert(
+            self::TABLE,
+            $data,
+            [
+                'credential_id' => ParameterType::BINARY,
+                'public_key_cose' => ParameterType::LARGE_OBJECT,
+                'user_handle' => ParameterType::BINARY,
+            ],
+        );
 
         $credential->setUid((int) $connection->lastInsertId());
     }

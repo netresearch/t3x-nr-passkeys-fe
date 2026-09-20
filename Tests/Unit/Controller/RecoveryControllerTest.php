@@ -117,7 +117,7 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns429WhenRateLimitExceeded(): void
     {
-        $this->rateLimiterService->method('checkRateLimit')
+        $this->rateLimiterService->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildRequest([

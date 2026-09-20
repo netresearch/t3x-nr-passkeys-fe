@@ -101,7 +101,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function optionsActionReturns429WhenRateLimitExceeded(): void
     {
-        $this->rateLimiterService->method('checkRateLimit')
+        $this->rateLimiterService->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildJsonRequest('POST', []);
@@ -213,7 +213,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns429WhenRateLimitExceeded(): void
     {
-        $this->rateLimiterService->method('checkRateLimit')
+        $this->rateLimiterService->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildJsonRequest('POST', [
