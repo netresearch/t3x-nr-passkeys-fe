@@ -48,8 +48,15 @@
    * @param {string} token - The login token returned by the eID verify endpoint
    * @returns {boolean} Whether the form was found and submitted
    */
+
   window.NrPasskeysFe.submitLoginToken = function (token) {
-    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]');
+    // felogin's own form where the plugin sits beside it, and the plugin's
+    // hidden form where it stands alone. Both are rendered by TYPO3 and carry
+    // the `__RequestToken` a frontend login is only accepted with — a form
+    // assembled here would be rejected silently, leaving the visitor anonymous
+    // after a ceremony that succeeded.
+    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
+      || document.querySelector('#nr-passkeys-fe-token-form');
     if (!form) {
       return false;
     }
