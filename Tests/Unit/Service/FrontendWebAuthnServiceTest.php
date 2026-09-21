@@ -24,6 +24,7 @@ use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use Webauthn\CredentialRecord;
+use Webauthn\PublicKeyCredentialDescriptor;
 
 #[CoversClass(FrontendWebAuthnService::class)]
 final class FrontendWebAuthnServiceTest extends TestCase
@@ -388,6 +389,175 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
         self::assertInstanceOf(Uuid::class, $record->aaguid);
         self::assertNotSame('00000000-0000-0000-0000-000000000000', $record->aaguid->toRfc4122());
+    }
+
+    // ---------------------------------------------------------------
+    // createDecoyAssertionOptions()
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function decoyOptionsCarryTheChallengeAndRpIdOfARealRequest(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+
+        $result = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'challenge-bytes', $this->site);
+
+        self::assertSame('challenge-bytes', $result['options']->challenge);
+        self::assertSame('example.com', $result['options']->rpId);
+        self::assertSame('required', $result['options']->userVerification);
+        self::assertNotSame('', $result['optionsJson']);
+    }
+
+    #[Test]
+    public function decoyOptionsCarryAtLeastOneCredentialDescriptor(): void
+    {
+        // An empty list would mark the answer as a decoy: a real username-first
+        // request always names the credentials the user enrolled.
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+
+        $result = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
+
+        self::assertNotSame([], $result['options']->allowCredentials);
+    }
+
+    #[Test]
+    public function theSameUsernameAlwaysYieldsTheSameDecoys(): void
+    {
+        // A caller who asks twice and receives two different lists knows the
+        // list is generated rather than stored.
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+
+        $first = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
+        $second = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
+
+        self::assertSame(
+            $this->descriptorFingerprints($first['options']->allowCredentials),
+            $this->descriptorFingerprints($second['options']->allowCredentials),
+        );
+    }
+
+    #[Test]
+    public function twoUsernamesYieldDifferentDecoys(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+
+        $first = $this->subject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
+        $second = $this->subject->createDecoyAssertionOptions('bob@example.com', 'c', $this->site);
+
+        // The ids, not the fingerprints: length and transports come from the
+        // selector derivation, so they differ per username even when the ids
+        // themselves do not. An id that is the same for every username is what
+        // gives the answer away, and comparing fingerprints would pass anyway.
+        $mine = \array_map(static fn(PublicKeyCredentialDescriptor $d): string => \bin2hex($d->id), $first['options']->allowCredentials);
+        $theirs = \array_map(static fn(PublicKeyCredentialDescriptor $d): string => \bin2hex($d->id), $second['options']->allowCredentials);
+
+        self::assertSame([], \array_intersect($mine, $theirs));
+
+        // Inequality is not enough. Drop the username from the id derivation
+        // and every account shares one byte stream, cut to the length the
+        // selectors chose — the ids then differ while one is a prefix of the
+        // other, which is the same disclosure in a shape `assertNotSame` likes.
+        foreach ($mine as $id) {
+            foreach ($theirs as $other) {
+                $shared = \min(\strlen($id), \strlen($other));
+                self::assertNotSame(
+                    \substr($id, 0, $shared),
+                    \substr($other, 0, $shared),
+                    "no decoy id may be a prefix of another username's",
+                );
+            }
+        }
+    }
+
+    #[Test]
+    public function decoysDependOnTheEncryptionKey(): void
+    {
+        // Without the key in the derivation anyone could compute the decoys for
+        // a username and recognise every future answer as one.
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $mine = $this->subject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
+
+        $otherConfiguration = $this->createStub(ExtensionConfigurationService::class);
+        $otherConfiguration->method('getEncryptionKey')->willReturn(\str_repeat('b', 64));
+        $otherSubject = new FrontendWebAuthnService(
+            $this->credentialRepository,
+            $this->siteConfigService,
+            $otherConfiguration,
+            new NullLogger(),
+        );
+
+        $theirs = $otherSubject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
+
+        self::assertNotSame(
+            $this->descriptorFingerprints($mine['options']->allowCredentials),
+            $this->descriptorFingerprints($theirs['options']->allowCredentials),
+        );
+    }
+
+    #[Test]
+    public function everyDecoyLooksLikeACredentialAnAuthenticatorCouldHold(): void
+    {
+        // A descriptor whose length or transport set no real authenticator
+        // produces would identify the answer as a decoy on sight. The lengths
+        // are checked across a corpus because each username reaches only one or
+        // two of them; 64 bytes is the case that needs a second HMAC block.
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+
+        $lengths = [];
+        $transportSets = [];
+        $counts = [];
+
+        for ($i = 0; $i < 200; ++$i) {
+            $credentials = $this->subject
+                ->createDecoyAssertionOptions('user' . $i . '@example.com', 'c', $this->site)['options']
+                ->allowCredentials;
+
+            $counts[] = \count($credentials);
+            foreach ($credentials as $descriptor) {
+                self::assertSame('public-key', $descriptor->type);
+                $lengths[] = \strlen($descriptor->id);
+                $transportSets[] = $descriptor->transports;
+            }
+        }
+
+        self::assertSame([], \array_diff(\array_unique($lengths), [16, 20, 32, 64]));
+        self::assertSame([16, 20, 32, 64], $this->sortedUnique($lengths), 'every id length has to occur');
+        self::assertSame([1, 2, 3], $this->sortedUnique($counts));
+
+        foreach ($transportSets as $transports) {
+            self::assertSame(
+                [],
+                \array_diff($transports, ['internal', 'hybrid', 'usb', 'nfc']),
+                'a decoy claims only transports a real authenticator reports',
+            );
+        }
+    }
+
+    /**
+     * @param list<PublicKeyCredentialDescriptor> $descriptors
+     *
+     * @return list<string>
+     */
+    private function descriptorFingerprints(array $descriptors): array
+    {
+        return \array_map(
+            static fn(PublicKeyCredentialDescriptor $descriptor): string => \bin2hex($descriptor->id)
+                . '|' . \implode(',', $descriptor->transports),
+            $descriptors,
+        );
+    }
+
+    /**
+     * @param list<int> $values
+     *
+     * @return list<int>
+     */
+    private function sortedUnique(array $values): array
+    {
+        $unique = \array_values(\array_unique($values));
+        \sort($unique);
+
+        return $unique;
     }
 
     private function callCredentialToSource(FrontendCredential $credential): CredentialRecord
