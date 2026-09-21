@@ -346,6 +346,68 @@ final class LoginControllerTest extends TestCase
         return $request->withParsedBody($body);
     }
 
+    // ---------------------------------------------------------------
+    // optionsAction() — constant-time budget
+    // ---------------------------------------------------------------
+    //
+    // The three username-first branches do different work: a decoy derives
+    // its descriptors, a real answer queries the credentials and serializes
+    // them. A caller who averages enough requests per username reads that
+    // difference as an answer about the account, which is the channel the
+    // decoys exist to close, so each branch is held to one floor. The floor
+    // is asserted as a lower bound, which a sleep guarantees — an upper bound
+    // would measure the machine.
+
+    private const BUDGET_MS = 150.0;
+
+    #[Test]
+    public function anUnknownUsernameIsAnsweredAtTheBudget(): void
+    {
+        $this->setupDbUserNotFound();
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
+
+        self::assertGreaterThanOrEqual(self::BUDGET_MS, $this->timeOptionsAction('unknown@example.com'));
+    }
+
+    #[Test]
+    public function aUserWithoutPasskeysIsAnsweredAtTheBudget(): void
+    {
+        $this->setupDbUserFound(42);
+        $this->credentialRepository->method('findByFeUser')->willReturn([]);
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
+
+        self::assertGreaterThanOrEqual(self::BUDGET_MS, $this->timeOptionsAction('user@example.com'));
+    }
+
+    #[Test]
+    public function aUserWithAPasskeyIsAnsweredAtTheBudget(): void
+    {
+        // The real branch too: a floor on the decoys alone is the same signal
+        // with the sign flipped.
+        $this->setupDbUserFound(42);
+        $this->credentialRepository->method('findByFeUser')->willReturn([$this->createStub(FrontendCredential::class)]);
+        $this->webAuthnService->method('createAssertionOptions')->willReturn([
+            'options' => null,
+            'optionsJson' => '{"challenge":"abc123"}',
+        ]);
+
+        self::assertGreaterThanOrEqual(self::BUDGET_MS, $this->timeOptionsAction('user@example.com'));
+    }
+
+    private function timeOptionsAction(string $username): float
+    {
+        $request = $this->buildJsonRequest('POST', ['username' => $username]);
+
+        $start = \hrtime(true);
+        $this->subject->optionsAction($request);
+
+        return (\hrtime(true) - $start) / 1_000_000;
+    }
+
     private function setupDbUserFound(int $uid): void
     {
         $this->userLookupService->method('findFeUserUidByUsername')

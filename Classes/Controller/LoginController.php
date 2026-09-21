@@ -42,6 +42,17 @@ final readonly class LoginController
 {
     use JsonBodyTrait;
 
+    /**
+     * How long a username-first answer takes, whatever it answers.
+     *
+     * 150 ms is the upper end of the jitter this replaces, and below what a
+     * person notices while a login form waits. Whether it is above what the
+     * slowest branch needs depends on the instance and is not assumed here:
+     * a branch that runs past it is logged, so the first site where the
+     * budget is too low says so instead of quietly leaking the difference.
+     */
+    private const USERNAME_FIRST_BUDGET_NS = 150_000_000;
+
     public function __construct(
         private FrontendWebAuthnService $webAuthnService,
         private SiteConfigurationService $siteConfigurationService,
@@ -109,16 +120,19 @@ final readonly class LoginController
             }
         }
 
-        // Username-first: look up the fe_user
+        // Username-first. Every answer below leaves at the same budget: the
+        // branches do different work, and a caller who times enough requests
+        // reads that difference as an answer about the account.
+        $deadline = \hrtime(true) + self::USERNAME_FIRST_BUDGET_NS;
+
         $feUserUid = $this->findFeUserUid($username);
         if ($feUserUid === null) {
             // An unknown username is answered like a known one. A 401 here told
-            // a caller that the account does not exist — the timing jitter that
-            // used to sit in this branch hid the wrong channel, because the
-            // status code and the response shape said it outright.
-            \usleep(\random_int(50000, 150000));
-
-            return $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site);
+            // a caller that the account does not exist outright.
+            return $this->answerAtBudget(
+                $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site),
+                $deadline,
+            );
         }
 
         try {
@@ -129,24 +143,26 @@ final readonly class LoginController
                 // Same for a user who exists but has enrolled no passkey on
                 // this site: the answer must not separate them from a user who
                 // has one.
-                \usleep(\random_int(50000, 150000));
-
-                return $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site);
+                return $this->answerAtBudget(
+                    $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site),
+                    $deadline,
+                );
             }
 
             $result = $this->webAuthnService->createAssertionOptions($feUserUid, $challenge, $site);
 
-            return new JsonResponse([
+            return $this->answerAtBudget(new JsonResponse([
                 'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
                 'challengeToken' => $challengeToken,
                 'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
-            ]);
+            ]), $deadline);
         } catch (Throwable $e) {
             $this->logger->error('FE assertion options failed', [
                 'username_hash' => \hash('sha256', $username),
                 'error' => $e->getMessage(),
             ]);
-            return new JsonResponse(['error' => 'Internal error'], 500);
+
+            return $this->answerAtBudget(new JsonResponse(['error' => 'Internal error'], 500), $deadline);
         }
     }
 
@@ -257,6 +273,40 @@ final readonly class LoginController
     private function findFeUserUid(string $username): ?int
     {
         return $this->userLookupService->findFeUserUidByUsername($username);
+    }
+
+    /**
+     * Hold a username-first answer back until the shared budget is spent.
+     *
+     * The branches do different work: a decoy derives its descriptors, a real
+     * answer queries the credentials and serializes them. Whatever the
+     * difference is, it is systematic, and a caller who averages enough
+     * requests per username reads it as an answer about the account. A common
+     * floor removes that, where random jitter does not — jitter is noise
+     * around the same two means and averaging it away is exactly what an
+     * attacker with many samples does.
+     *
+     * What this does not cover: work that runs past the budget still shows,
+     * so a heavily loaded site can leak the difference again. The tell is a
+     * measured response time above the budget.
+     */
+    private function answerAtBudget(ResponseInterface $response, int $deadline): ResponseInterface
+    {
+        $remainingNs = $deadline - \hrtime(true);
+        if ($remainingNs > 0) {
+            \usleep(\intdiv($remainingNs, 1000));
+
+            return $response;
+        }
+
+        // Past the budget, so this answer is as slow as its own work and the
+        // floor protects nothing. Without this line the failure is invisible.
+        $this->logger->warning('FE login options exceeded the constant-time budget', [
+            'budget_ms' => \intdiv(self::USERNAME_FIRST_BUDGET_NS, 1_000_000),
+            'over_by_ms' => \intdiv(-$remainingNs, 1_000_000),
+        ]);
+
+        return $response;
     }
 
     /**
