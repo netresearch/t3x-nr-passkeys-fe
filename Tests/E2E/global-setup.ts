@@ -5,15 +5,18 @@ import { target } from './instance-address';
 /**
  * Wait until the instance actually answers before the first test runs.
  *
- * The shared runner waits for open TCP ports — MariaDB 3306, PHP-FPM 9000,
- * Apache 80 — and an open port is not readiness. Apache accepts a connection
- * on :80 while its proxy cannot yet resolve the `phpfpm` container, and TYPO3
- * answers 503 while the installation is still finishing. The first spec then
- * fails against a proxy error page, which reads like a defect in the extension
- * and is a race in the environment.
+ * The shared runner checks one page before handing over: after the containers
+ * are up it requires `/` to answer 200. It never asks the backend. In the
+ * first CI run of this suite the first backend request, made after that check
+ * had passed, met Apache's "DNS lookup failure for: phpfpm" twice and a TYPO3
+ * 503 once; every request after that succeeded. What made the `phpfpm` alias
+ * unresolvable for that moment is not established. The failure landed on the
+ * first spec and read like a defect in the module it happened to open.
  *
- * Both halves are polled because the suite needs both: the backend login for
- * the module spec, the frontend login page for everything else.
+ * So the suite asks for the two pages it actually needs — the backend login
+ * for the module spec, the frontend login page for everything else — and does
+ * not start until both answer 200. That covers a fault still present when the
+ * suite begins; one that starts later, mid-run, it cannot see.
  *
  * The address is the one the runner published, not the alias the browser is
  * pointed at: this runs in Node, where the browser's host-resolver rule does
