@@ -41,6 +41,28 @@
          data-site-identifier="{siteIdentifier}"
          data-discoverable="1">
 
+        <!--
+            The form that carries the verified login token into TYPO3.
+
+            A frontend login is only accepted with a valid `__RequestToken`,
+            which TYPO3 signs per request and only a rendered form can carry.
+            Where the login plugin sits next to felogin, PasskeyLogin.js uses
+            felogin's form; on a page that holds only this plugin there is none,
+            and a form assembled in JavaScript is rejected without a word — the
+            ceremony succeeds, the page reloads and the visitor stays anonymous.
+            This form is that page's equivalent.
+        -->
+        <f:form id="nr-passkeys-fe-token-form"
+                actionUri="{f:uri.page()}"
+                method="post"
+                requestToken="{loginRequestToken}"
+                fieldNamePrefix=""
+                additionalAttributes="{style: 'display:none'}">
+            <input type="hidden" name="logintype" value="login" />
+            <input type="hidden" name="user" value="__passkey__" />
+            <input type="hidden" name="pass" value="" />
+        </f:form>
+
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
         <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 

@@ -1,44 +1,56 @@
+import { test, expect } from '@playwright/test';
+import { eidUrl, FE_USER } from './fixtures';
+
 /**
- * E2E tests for passkey recovery flow.
+ * Recovery: the path a user takes when the passkey is gone.
  *
- * Requires a running TYPO3 instance. See login.spec.ts for setup instructions.
+ * Generating a code needs a session and delivers out of band, so what is
+ * asserted here is the half a browser can reach — the form the login page
+ * offers, and that a wrong code is refused without saying whether the user
+ * exists.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import { test, expect } from '@playwright/test';
+test.describe('Passkey recovery', () => {
+    test('the login page offers the recovery form', async ({ page }) => {
+        await page.goto('/login-plugin');
+        await page.waitForLoadState('networkidle');
 
-test.describe('Passkey Recovery', () => {
-    test.skip('All E2E tests require a running TYPO3 instance', () => {});
+        await page.locator('[data-action="show-recovery"]').first().click();
 
-    test('recovery page renders code input', async ({ page }) => {
-        await page.goto('/passkey-recovery');
-        const codeInput = page.locator('[data-action="recovery-format"]');
-        await expect(codeInput).toBeVisible();
+        await expect(page.locator('#nr-passkeys-fe-recovery-username')).toBeVisible();
+        await expect(page.locator('#nr-passkeys-fe-recovery-code')).toBeVisible();
     });
 
-    test('code input auto-formats to XXXX-XXXX', async ({ page }) => {
-        await page.goto('/passkey-recovery');
-        const codeInput = page.locator('[data-action="recovery-format"]');
-        await codeInput.fill('ABCDEFGH');
-        await codeInput.dispatchEvent('input');
-        await expect(codeInput).toHaveValue('ABCD-EFGH');
+    test('a wrong recovery code is refused', async ({ page }) => {
+        await page.goto('/login-plugin');
+
+        const response = await page.request.post(eidUrl('recoveryVerify'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
+        });
+
+        expect(response.status()).toBeGreaterThanOrEqual(400);
+        const body = await response.text();
+        // The refusal must not disclose whether the account exists.
+        expect(body.toLowerCase()).not.toContain('unknown user');
+        expect(body.toLowerCase()).not.toContain('no such user');
     });
 
-    test('submitting empty code shows validation error', async ({ page }) => {
-        await page.goto('/passkey-recovery');
-        const submitBtn = page.locator('[data-action="recovery-submit"]');
-        if (await submitBtn.count() > 0) {
-            await submitBtn.click();
-            const errorEl = page.locator('.nr-passkeys-fe-recovery__error');
-            await expect(errorEl).toBeVisible();
-        }
-    });
+    test('a wrong code for an unknown user is refused the same way', async ({ page }) => {
+        await page.goto('/login-plugin');
 
-    test('valid recovery code redirects to post-login page', async ({ page }) => {
-        await page.goto('/passkey-recovery');
-        const codeInput = page.locator('[data-action="recovery-format"]');
+        const known = await page.request.post(eidUrl('recoveryVerify'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
+        });
+        const unknown = await page.request.post(eidUrl('recoveryVerify'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { username: 'nobody_e2e_xyz', code: 'AAAA-BBBB-CCCC' },
+        });
 
-        // This would require a real unused code — test verifies the flow structure only
-        await codeInput.fill('ABCD-EFGH');
-        // Actual submission would fail with "invalid code" in a real test
+        expect(unknown.status()).toBe(known.status());
     });
 });

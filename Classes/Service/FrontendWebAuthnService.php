@@ -14,6 +14,7 @@ use Cose\Algorithm\Signature\ECDSA\ES256;
 use Cose\Algorithm\Signature\ECDSA\ES384;
 use Cose\Algorithm\Signature\ECDSA\ES512;
 use Cose\Algorithm\Signature\RSA\RS256;
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -73,6 +74,7 @@ final class FrontendWebAuthnService
     public function __construct(
         private readonly FrontendCredentialRepository $credentialRepository,
         private readonly SiteConfigurationService $siteConfigurationService,
+        private readonly ExtensionConfigurationService $configurationService,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -530,5 +532,101 @@ final class FrontendWebAuthnService
             transports: \json_encode($source->transports, JSON_THROW_ON_ERROR),
             siteIdentifier: $siteIdentifier,
         );
+    }
+
+    /**
+     * Lengths and transport sets a decoy credential descriptor can claim.
+     *
+     * The values are the ones real authenticators emit, so a decoy sits inside
+     * the population it has to hide in.
+     */
+    private const DECOY_ID_LENGTHS = [16, 20, 32, 64];
+
+    /**
+     * @var list<list<string>>
+     */
+    private const DECOY_TRANSPORT_SETS = [['internal'], ['internal', 'hybrid'], ['usb'], ['usb', 'nfc'], ['hybrid'], []];
+
+    /**
+     * Create assertion options that disclose nothing about the username.
+     *
+     * A username-first request for a user who does not exist, or who has no
+     * passkey on this site, must be answered exactly like one for a user who
+     * does: same status, same shape, credential descriptors that cannot be told
+     * apart from real ones. Answering 401 there instead tells a caller which
+     * frontend users have a passkey enrolled, one request at a time.
+     *
+     * The descriptors are derived from the username, so the same name always
+     * yields the same set and a caller cannot separate them by asking twice.
+     *
+     * @return array{options: PublicKeyCredentialRequestOptions, optionsJson: string}
+     */
+    public function createDecoyAssertionOptions(
+        string $username,
+        string $challenge,
+        SiteInterface $site,
+    ): array {
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: $challenge,
+            rpId: $this->siteConfigurationService->getRpId($site),
+            allowCredentials: $this->buildDecoyDescriptors($username),
+            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
+            timeout: 60000,
+        );
+
+        return [
+            'options' => $options,
+            'optionsJson' => $this->serializeRequestOptions($options),
+        ];
+    }
+
+    /**
+     * @return list<PublicKeyCredentialDescriptor>
+     */
+    private function buildDecoyDescriptors(string $username): array
+    {
+        $derivedKey = \hash_hkdf('sha256', $this->configurationService->getEncryptionKey(), 32, 'nr_passkeys_fe_decoy');
+        $seed = \hash_hmac('sha256', $username . '|count', $derivedKey, true);
+        $count = 1 + \ord($seed[0]) % 3;
+        $descriptors = [];
+
+        for ($index = 0; $index < $count; ++$index) {
+            // Two independent derivations, and they must stay independent. The
+            // selectors decide how long the id is and which transports it
+            // claims; the id is what the caller actually receives. Taking both
+            // from one HMAC — publishing the material whose first bytes chose
+            // the shape — makes every decoy verifiable from its own bytes, and
+            // a response that fails that check is then certainly a real one.
+            $selectors = \hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
+            $length = self::DECOY_ID_LENGTHS[\ord($selectors[0]) % \count(self::DECOY_ID_LENGTHS)];
+            $transports = self::DECOY_TRANSPORT_SETS[\ord($selectors[1]) % \count(self::DECOY_TRANSPORT_SETS)];
+
+            $descriptors[] = PublicKeyCredentialDescriptor::create(
+                type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
+                id: $this->deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
+                transports: $transports,
+            );
+        }
+
+        return $descriptors;
+    }
+
+    /**
+     * Derive a decoy credential id of the requested length.
+     *
+     * sha256 yields 32 bytes, so a 64-byte id needs a second block; each block
+     * is keyed by its own index so the second is not a function of the first.
+     */
+    private function deriveDecoyId(string $derivedKey, string $label, int $length): string
+    {
+        $id = '';
+        $block = 0;
+
+        while (\strlen($id) < $length) {
+            $id .= \hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
+            ++$block;
+        }
+
+        return \substr($id, 0, $length);
     }
 }
