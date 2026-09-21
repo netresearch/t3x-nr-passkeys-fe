@@ -143,26 +143,44 @@ final class LoginControllerTest extends TestCase
     // ---------------------------------------------------------------
 
     #[Test]
-    public function optionsActionReturns401WhenUsernameNotFound(): void
+    public function optionsActionAnswersAnUnknownUsernameWithDecoyOptions(): void
     {
+        // A 401 here would name the account as non-existent. The endpoint has
+        // to answer as it does for a user who has a passkey — same status, same
+        // shape — or a caller can enumerate frontend users one request at a
+        // time.
         $this->setupDbUserNotFound();
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
 
         $request = $this->buildJsonRequest('POST', ['username' => 'unknown@example.com']);
         $response = $this->subject->optionsAction($request);
 
-        self::assertSame(401, $response->getStatusCode());
+        self::assertSame(200, $response->getStatusCode());
+        $body = \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertArrayHasKey('options', $body);
+        self::assertArrayHasKey('challengeToken', $body);
     }
 
     #[Test]
-    public function optionsActionReturns401WhenUserHasNoPasskeys(): void
+    public function optionsActionAnswersAUserWithoutPasskeysWithDecoyOptions(): void
     {
+        // Same for an account that exists but has enrolled nothing on this
+        // site: the answer must not separate it from one that has.
         $this->setupDbUserFound(42);
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
 
         $request = $this->buildJsonRequest('POST', ['username' => 'user@example.com']);
         $response = $this->subject->optionsAction($request);
 
-        self::assertSame(401, $response->getStatusCode());
+        self::assertSame(200, $response->getStatusCode());
+        $body = \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertArrayHasKey('options', $body);
+        self::assertArrayHasKey('challengeToken', $body);
     }
 
     #[Test]

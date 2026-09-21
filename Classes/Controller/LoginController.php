@@ -25,6 +25,7 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -111,9 +112,13 @@ final readonly class LoginController
         // Username-first: look up the fe_user
         $feUserUid = $this->findFeUserUid($username);
         if ($feUserUid === null) {
-            // Prevent user enumeration: return generic error with timing delay
+            // An unknown username is answered like a known one. A 401 here told
+            // a caller that the account does not exist — the timing jitter that
+            // used to sit in this branch hid the wrong channel, because the
+            // status code and the response shape said it outright.
             \usleep(\random_int(50000, 150000));
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+
+            return $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site);
         }
 
         try {
@@ -121,9 +126,12 @@ final readonly class LoginController
             $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
 
             if ($credentials === []) {
-                // User has no passkeys — prevent enumeration via timing
+                // Same for a user who exists but has enrolled no passkey on
+                // this site: the answer must not separate them from a user who
+                // has one.
                 \usleep(\random_int(50000, 150000));
-                return new JsonResponse(['error' => 'Authentication failed'], 401);
+
+                return $this->decoyOptionsResponse($username, $challenge, $challengeToken, $site);
             }
 
             $result = $this->webAuthnService->createAssertionOptions($feUserUid, $challenge, $site);
@@ -249,5 +257,34 @@ final readonly class LoginController
     private function findFeUserUid(string $username): ?int
     {
         return $this->userLookupService->findFeUserUidByUsername($username);
+    }
+
+    /**
+     * Answer a username-first request with decoy options.
+     *
+     * Same status, same keys and a credential list that cannot be told apart
+     * from a real one, so the response discloses nothing about whether the
+     * username exists or carries a passkey. The ceremony then fails in the
+     * browser the way a cancelled one does, which is what the user sees.
+     */
+    private function decoyOptionsResponse(
+        string $username,
+        string $challenge,
+        string $challengeToken,
+        SiteInterface $site,
+    ): ResponseInterface {
+        try {
+            $result = $this->webAuthnService->createDecoyAssertionOptions($username, $challenge, $site);
+
+            return new JsonResponse([
+                'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
+                'challengeToken' => $challengeToken,
+                'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
+            ]);
+        } catch (Throwable $e) {
+            $this->logger->error('FE decoy assertion options failed', ['error' => $e->getMessage()]);
+
+            return new JsonResponse(['error' => 'Internal error'], 500);
+        }
     }
 }

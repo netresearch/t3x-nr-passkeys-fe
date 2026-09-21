@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
@@ -31,6 +32,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
     private SiteConfigurationService&Stub $siteConfigService;
 
+    private ExtensionConfigurationService&Stub $configurationService;
+
     private FrontendWebAuthnService $subject;
 
     private SiteInterface&Stub $site;
@@ -45,9 +48,15 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
         $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
 
+        // The decoy descriptors are keyed by the encryption key, so the stub
+        // answers with the same one the user-handle derivation above uses.
+        $this->configurationService = $this->createStub(ExtensionConfigurationService::class);
+        $this->configurationService->method('getEncryptionKey')->willReturn(\str_repeat('a', 64));
+
         $this->subject = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
+            $this->configurationService,
             new NullLogger(),
         );
 
@@ -241,6 +250,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
+            $this->configurationService,
             new NullLogger(),
         );
 
@@ -262,6 +272,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $service = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
+            $this->configurationService,
             new NullLogger(),
         );
 
