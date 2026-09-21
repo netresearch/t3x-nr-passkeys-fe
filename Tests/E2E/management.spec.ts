@@ -1,52 +1,78 @@
+import { test, expect } from '@playwright/test';
+import {
+    addVirtualAuthenticator,
+    eidUrl,
+    loginWithPassword,
+    registerPasskey,
+    removeAllCredentials,
+    removeVirtualAuthenticator,
+} from './fixtures';
+
 /**
- * E2E tests for passkey management flow.
+ * The management plugin: what a logged-in frontend user can do with their own
+ * credentials.
  *
- * Requires a running TYPO3 instance. See login.spec.ts for setup instructions.
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import { test, expect } from '@playwright/test';
+test.describe('Passkey management plugin', () => {
+    test('the management page renders the plugin for a logged-in user', async ({ page }) => {
+        await loginWithPassword(page);
 
-test.describe('Passkey Management', () => {
-    test.skip('All E2E tests require a running TYPO3 instance', () => {});
+        await page.goto('/member');
+        await page.waitForLoadState('networkidle');
 
-    test.beforeEach(async ({ page }) => {
-        // Navigate to management page as authenticated fe_user
-        await page.goto('/passkey-management');
+        const plugin = page.locator('[data-nr-passkeys-fe="management"]');
+        await expect(plugin).toBeVisible();
+        await expect(plugin).toHaveAttribute('data-list-url', /eID=nr_passkeys_fe/);
     });
 
-    test('management page renders passkey list table', async ({ page }) => {
-        const table = page.locator('#nr-passkeys-fe-credential-body').or(
-            page.locator('.nr-passkeys-fe-management__empty'),
-        );
-        await expect(table).toBeVisible();
+    test('a registered credential appears in the list, can be renamed and removed', async ({ page }) => {
+        const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
+        await loginWithPassword(page);
+        await removeAllCredentials(page);
+
+        const registered = await registerPasskey(page, 'E2E management key');
+        expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
+
+        const listed = await page.request.get(eidUrl('manageList'));
+        expect(listed.status()).toBe(200);
+        const credentials = (await listed.json()).credentials;
+        expect(Array.isArray(credentials)).toBe(true);
+        expect(credentials).toHaveLength(1);
+        expect(credentials[0].label).toBe('E2E management key');
+
+        const renamed = await page.request.post(eidUrl('manageRename'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { uid: credentials[0].uid, label: 'Renamed by e2e' },
+        });
+        expect(renamed.status(), await renamed.text()).toBe(200);
+        const afterRename = (await (await page.request.get(eidUrl('manageList'))).json()).credentials;
+        expect(afterRename[0].label).toBe('Renamed by e2e');
+
+        const removed = await page.request.post(eidUrl('manageRemove'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { uid: credentials[0].uid },
+        });
+        expect(removed.status(), await removed.text()).toBe(200);
+        const afterRemove = (await (await page.request.get(eidUrl('manageList'))).json()).credentials;
+        expect(afterRemove).toHaveLength(0);
+
+        await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
-    test('rename passkey shows inline edit input', async ({ page }) => {
-        const renameBtn = page.locator('[data-action="rename-credential"]').first();
-        if (await renameBtn.count() > 0) {
-            await renameBtn.click();
-            const renameInput = page.locator('.nr-passkeys-fe-management__rename-input');
-            await expect(renameInput).toBeVisible();
-        }
-    });
+    test('the management endpoints refuse an anonymous caller', async ({ page }) => {
+        await page.context().clearCookies();
+        await page.goto('/member');
 
-    test('remove passkey shows confirmation dialog', async ({ page }) => {
-        const removeBtn = page.locator('[data-action="remove-credential"]').first();
-        if (await removeBtn.count() > 0) {
-            page.on('dialog', async (dialog) => {
-                expect(dialog.message()).toContain('Remove passkey');
-                await dialog.dismiss();
-            });
-            await removeBtn.click();
-        }
-    });
+        const listed = await page.request.get(eidUrl('manageList'));
+        expect(listed.status()).toBeGreaterThanOrEqual(400);
 
-    test('empty state shown when no passkeys registered', async ({ page }) => {
-        // If the user has no passkeys, the empty state element should be visible
-        const emptyEl = page.locator('.nr-passkeys-fe-management__empty');
-        const credentialBody = page.locator('#nr-passkeys-fe-credential-body tr');
-        if (await credentialBody.count() === 0) {
-            await expect(emptyEl).toBeVisible();
-        }
+        const renamed = await page.request.post(eidUrl('manageRename'), {
+            headers: { 'Content-Type': 'application/json' },
+            data: { uid: 1, label: 'anonymous rename' },
+        });
+        expect(renamed.status()).toBeGreaterThanOrEqual(400);
     });
 });

@@ -1,55 +1,47 @@
+import { test, expect } from '@playwright/test';
+import { eidUrl, loginWithPassword } from './fixtures';
+
 /**
- * E2E tests for passkey enrollment flow.
+ * The enrollment plugin, which asks a logged-in user without a passkey to
+ * create one.
  *
- * Requires a running TYPO3 instance. See login.spec.ts for setup instructions.
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import { test, expect } from '@playwright/test';
+test.describe('Passkey enrollment plugin', () => {
+    test('the enrollment page renders the plugin for a logged-in user', async ({ page }) => {
+        await loginWithPassword(page);
 
-test.describe('Passkey Enrollment', () => {
-    test.skip('All E2E tests require a running TYPO3 instance', () => {});
+        await page.goto('/enrollment');
+        await page.waitForLoadState('networkidle');
 
-    test('enrollment page shows register passkey button', async ({ page }) => {
-        await page.goto('/passkey-enrollment');
-        const btn = page.locator('[data-action="register-passkey"]');
-        await expect(btn).toBeVisible();
+        await expect(page.locator('[data-nr-passkeys-fe="enrollment"]')).toBeVisible();
     });
 
-    test('empty label defaults to "Passkey" after trim', async ({ page }) => {
-        await page.goto('/passkey-enrollment');
-        const labelInput = page.locator('#enrollment-device-label');
-        await labelInput.fill('');
-        // The module defaults empty label to 'Passkey' before sending
-        await expect(labelInput).toHaveValue('');
+    test('the status endpoint answers for a logged-in user', async ({ page }) => {
+        await loginWithPassword(page);
+
+        const response = await page.request.get(eidUrl('enrollmentStatus'));
+        expect(response.status(), await response.text()).toBe(200);
+
+        const data = await response.json();
+        // The shape is what the plugin's JavaScript reads to decide whether to
+        // prompt: how many passkeys the user holds, which enforcement level
+        // applies, and whether a grace period is running.
+        expect(data).toHaveProperty('passkeyCount');
+        expect(typeof data.passkeyCount).toBe('number');
+        expect(data).toHaveProperty('effectiveLevel');
+        expect(['off', 'encourage', 'required', 'enforced']).toContain(data.effectiveLevel);
+        expect(data).toHaveProperty('inGracePeriod');
+        expect(typeof data.inGracePeriod).toBe('boolean');
     });
 
-    test('successful registration shows success message', async ({ page }) => {
-        // Set up virtual authenticator
-        const client = await (page.context() as any).newCDPSession(page);
-        await client.send('WebAuthn.enable');
-        await client.send('WebAuthn.addVirtualAuthenticator', {
-            options: {
-                protocol: 'ctap2',
-                transport: 'internal',
-                hasResidentKey: true,
-                hasUserVerification: true,
-                isUserVerified: true,
-            },
-        });
+    test('the status endpoint refuses an anonymous caller', async ({ page }) => {
+        await page.context().clearCookies();
+        await page.goto('/enrollment');
 
-        await page.goto('/passkey-enrollment');
-        const btn = page.locator('[data-action="register-passkey"]');
-        await btn.click();
-
-        // Either a redirect or success element
-        const successEl = page.locator('.nr-passkeys-fe-enrollment-form__success');
-        await expect(successEl.or(page.locator('body'))).toBeVisible();
-    });
-
-    test('registration when already enrolled shows already-registered error', async ({ page }) => {
-        await page.goto('/passkey-enrollment');
-        const errorEl = page.locator('.nr-passkeys-fe-enrollment__error, .nr-passkeys-fe-enrollment-form__error');
-        // Error may or may not be visible depending on state
-        await expect(errorEl).toBeDefined();
+        const response = await page.request.get(eidUrl('enrollmentStatus'));
+        expect(response.status()).toBeGreaterThanOrEqual(400);
     });
 });

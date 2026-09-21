@@ -1,42 +1,61 @@
+import { test, expect, Page } from '@playwright/test';
+
 /**
- * E2E tests for the backend admin module.
+ * The backend module the extension adds for administrators.
  *
- * Requires a running TYPO3 instance. See login.spec.ts for setup instructions.
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-import { test, expect } from '@playwright/test';
+const BE_USER = process.env.TYPO3_ADMIN_USER || 'admin';
+const BE_PASSWORD = process.env.TYPO3_BACKEND_PASSWORD || process.env.TYPO3_ADMIN_PASS || 'Joh316!!';
 
-test.describe('Admin — Passkey Overview', () => {
-    test.skip('All E2E tests require a running TYPO3 instance', () => {});
+// TYPO3 derives a module's route from its identifier, not from its parent:
+// ModuleFactory turns `nr_passkeys_fe` into /module/nr/passkeys/fe unless the
+// registration sets an explicit `path`, and Configuration/Backend/Modules.php
+// sets none. A wrong URL does not fail loudly — TYPO3 redirects to the user's
+// start module, and every assertion then runs against the Dashboard.
+const MODULE_URL = '/typo3/module/nr/passkeys/fe';
 
-    test.beforeEach(async ({ page }) => {
-        // Navigate to backend as admin user
-        await page.goto('/typo3/login');
-        // Login with admin credentials (set via env vars in CI)
-        const username = process.env.TYPO3_ADMIN_USERNAME || 'admin';
-        const password = process.env.TYPO3_ADMIN_PASSWORD || 'password';
-        await page.fill('[name="username"]', username);
-        await page.fill('[name="p_field"]', password);
-        await page.click('[name="commandLI"]');
-        await page.waitForURL(/backend\.php/);
+async function loginToBackend(page: Page): Promise<boolean> {
+    await page.goto('/typo3/login');
+    await page.waitForLoadState('networkidle');
+
+    const username = page.locator('input[name="username"]');
+    if (!await username.isVisible({ timeout: 5000 }).catch(() => false)) {
+        return false;
+    }
+
+    await username.fill(BE_USER);
+    await page.locator('input[name="p_field"]').fill(BE_PASSWORD);
+    await page.locator('#t3-login-submit').click();
+    await page.waitForLoadState('networkidle');
+
+    return !page.url().includes('/login');
+}
+
+test.describe('Backend module', () => {
+    test('an administrator reaches the module and it renders its own content', async ({ page }) => {
+        expect(await loginToBackend(page), 'the backend login has to succeed').toBe(true);
+
+        await page.goto(MODULE_URL);
+        await page.waitForLoadState('networkidle');
+
+        // The module URL must resolve rather than redirect to the start module.
+        expect(page.url()).toContain('/module/nr/passkeys/fe');
+
+        const frame = page.frame('list_frame') ?? page;
+        const body = await frame.locator('body').textContent();
+        expect((body || '').toLowerCase()).toContain('passkey');
     });
 
-    test('admin module is accessible from module menu', async ({ page }) => {
-        // Navigate to the nr_passkeys_fe admin module
-        await page.goto('/typo3/module/web/NrPasskeysFe');
-        await expect(page).not.toHaveURL(/login/);
-    });
+    test('the module is not reachable without a backend session', async ({ page }) => {
+        await page.context().clearCookies();
 
-    test('adoption stats dashboard is rendered', async ({ page }) => {
-        await page.goto('/typo3/module/web/NrPasskeysFe');
-        const statsEl = page.locator('.nr-passkeys-fe-admin__stats, h1');
-        await expect(statsEl).toBeVisible();
-    });
+        await page.goto(MODULE_URL);
+        await page.waitForLoadState('networkidle');
 
-    test('credential list shows registered passkeys', async ({ page }) => {
-        await page.goto('/typo3/module/web/NrPasskeysFe');
-        // Credentials table or empty state should be present
-        const content = page.locator('main, .module-body');
-        await expect(content).toBeVisible();
+        // TYPO3 sends an unauthenticated request to the login screen.
+        await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 10_000 });
     });
 });
