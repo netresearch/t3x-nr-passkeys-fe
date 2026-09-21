@@ -41,7 +41,7 @@
             <p>
                 <f:translate key="help.rollout.step.3.description" extensionName="NrPasskeysFe" />
             </p>
-            <f:be.infobox title="{f:translate(key: 'help.rollout.step.3.tip.title', extensionName: 'NrPasskeysFe')}" state="-1">
+            <f:be.infobox title="{f:translate(key: 'help.rollout.step.3.tip.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
                 <f:translate key="help.rollout.step.3.tip" extensionName="NrPasskeysFe" />
             </f:be.infobox>
 
@@ -99,7 +99,7 @@
             <p>
                 <f:translate key="help.recovery.step.4.description.2" extensionName="NrPasskeysFe" />
             </p>
-            <f:be.infobox title="{f:translate(key: 'help.recovery.warning.title', extensionName: 'NrPasskeysFe')}" state="1">
+            <f:be.infobox title="{f:translate(key: 'help.recovery.warning.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
                 <f:translate key="help.recovery.warning.description" extensionName="NrPasskeysFe" />
             </f:be.infobox>
         </div>
@@ -145,7 +145,7 @@
                     </tr>
                 </tbody>
             </table>
-            <f:be.infobox title="{f:translate(key: 'help.enforcement.strictest_wins.title', extensionName: 'NrPasskeysFe')}" state="-2">
+            <f:be.infobox title="{f:translate(key: 'help.enforcement.strictest_wins.title', extensionName: 'NrPasskeysFe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
                 <f:translate key="help.enforcement.strictest_wins.description" extensionName="NrPasskeysFe" />
             </f:be.infobox>
         </div>

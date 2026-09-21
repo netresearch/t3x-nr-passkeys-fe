@@ -49,6 +49,27 @@ test.describe('Backend module', () => {
         expect((body || '').toLowerCase()).toContain('passkey');
     });
 
+    test('the help page renders its infoboxes with their severities', async ({ page }) => {
+        // The help page carries three of the module's four infoboxes, and on
+        // TYPO3 13 a wrongly typed `state` takes the whole page down with a
+        // 503. The dashboard's own infobox only renders once every user has a
+        // passkey, so this page is where the argument is actually exercised.
+        // Asserting the callout classes pins the state-to-severity mapping too.
+        expect(await loginToBackend(page), 'the backend login has to succeed').toBe(true);
+
+        const response = await page.goto(`${MODULE_URL}/help`);
+        await page.waitForLoadState('networkidle');
+        expect(response?.status(), 'the help route has to render, not redirect or fail').toBe(200);
+
+        const frame = page.frame('list_frame') ?? page;
+        for (const severity of ['info', 'warning', 'notice']) {
+            await expect(
+                frame.locator(`.callout.callout-${severity}`),
+                `an infobox with severity "${severity}" has to render`,
+            ).toHaveCount(1);
+        }
+    });
+
     test('the module is not reachable without a backend session', async ({ page }) => {
         await page.context().clearCookies();
 
