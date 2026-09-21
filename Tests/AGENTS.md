@@ -13,7 +13,7 @@ integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
 
 - PHP suites: `composer install` is enough for unit/fuzz; functional needs MySQL (CI or DDEV).
 - JS/E2E suites: `npm install` at the repo root (`vitest.config.js` lives there).
-- E2E additionally needs the DDEV environment running: `make up`.
+- E2E needs no DDEV: `Build/Scripts/runTests.sh -s e2e` installs its own TYPO3 in containers.
 
 ## Structure
 
@@ -26,7 +26,7 @@ Tests/
   Fuzz/                  -> Property-based fuzz tests (eris/eris, PHPUnit testsuite)
   Architecture/          -> PHPat architecture constraint tests
   JavaScript/            -> Vitest JS unit tests
-  E2E/                   -> Playwright end-to-end tests (targets DDEV)
+  E2E/                   -> Playwright end-to-end tests (own containerised TYPO3)
   bootstrap.php          -> PHPUnit bootstrap (loads autoloader)
   Fixtures/              -> Test data fixtures (SQL, JSON)
   AbstractPasskeyFunctionalTestCase.php
@@ -58,8 +58,8 @@ composer ci:test:php:cgl
 # JavaScript unit tests (Vitest)
 npx vitest run
 
-# E2E tests (requires DDEV running)
-npx playwright test
+# E2E tests (installs its own TYPO3 in containers; E2E_TYPO3_VERSION=14 for v14)
+Build/Scripts/runTests.sh -s e2e
 
 # Mutation testing (Infection, min-MSI 80%)
 composer ci:mutation
@@ -115,10 +115,11 @@ composer ci:mutation
 - Config: `vitest.config.js` at project root
 
 ### E2E Tests (Playwright)
-- Located in `Tests/E2E/`
-- Target: DDEV installation at `https://nr-passkeys-fe.ddev.site`
-- Require a running DDEV environment: `make up`
-- Use WebAuthn virtual authenticators (Playwright's built-in)
+- Located in `Tests/E2E/`; shared helpers in `Tests/E2E/fixtures.ts`, config in `playwright.config.ts` at the repository root
+- Run with `Build/Scripts/runTests.sh -s e2e`. The runner provisions its own TYPO3 (pages, plugin content elements, a seeded frontend user) from the `e2e_provision_*` hooks in `Build/Scripts/runTests.conf`. No DDEV.
+- `E2E_TYPO3_VERSION=14` selects the v14 instance; the default is v13
+- In CI the same suite runs from `.github/workflows/e2e.yml` against TYPO3 13 and 14, entered through `Build/Scripts/ci-e2e.sh`
+- Use WebAuthn virtual authenticators via CDP (`Tests/E2E/fixtures.ts`)
 - Spec files: `*.spec.ts`
 
 ## What Needs Tests

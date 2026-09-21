@@ -25,7 +25,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 | Namespace | `Netresearch\NrPasskeysFe` |
 | TYPO3 | ^13.4 \|\| ^14.1 |
 | PHP | ^8.2 |
-| Depends on | `netresearch/nr-passkeys-be` ^0.12 |
+| Depends on | `netresearch/nr-passkeys-be` ^1.0 |
 
 ## Global Rules
 - Conventional Commits: `type(scope): subject`
@@ -33,6 +33,8 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 - PER-CS3.0 code style via php-cs-fixer
 - PHPStan level 10 (do not lower)
 - Do NOT commit `composer.lock` (library, not application)
+- DO commit `package-lock.json`: the e2e runner reads the resolved Playwright version out of it to pick a browser image that matches
+- E2E tests run via `Build/Scripts/runTests.sh -s e2e`, which installs its own TYPO3 in containers (MariaDB + Apache + PHP-FPM). In CI the same suite runs from `.github/workflows/e2e.yml` against TYPO3 13 and 14, entered through `Build/Scripts/ci-e2e.sh`. DDEV is for local development only.
 
 ## Commands (verified)
 > Source: `composer.json` scripts, `package.json` scripts, `Makefile`
@@ -48,7 +50,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 | Functional tests | `composer ci:test:php:functional` | 30s |
 | Unit + functional | `composer ci:test:php:all` | 35s |
 | JS tests | `npm run test:js` | 2s |
-| E2E tests | `npm run test:e2e` (needs DDEV) | 30s |
+| E2E tests | `Build/Scripts/runTests.sh -s e2e` | 3m |
 | Mutation testing | `composer ci:mutation` | 60s |
 | Local CI (no DB) | `make ci` | 25s |
 | DDEV full setup | `make up` | 5m |
