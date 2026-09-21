@@ -6,6 +6,58 @@
 Changelog
 =========
 
+Version 1.0.1
+=============
+
+*Login fixes, and the end-to-end suite in CI*
+
+Security
+--------
+
+- **The login options endpoint no longer tells a caller which usernames
+  exist.** A username-first request for a known account was answered with
+  assertion options and status 200, one for an unknown account with 401 and
+  an error body, so the frontend users of a site could be enumerated one
+  request at a time. Unknown accounts and accounts without a passkey on the
+  site are now answered with decoy options: same status, same keys, and
+  credential descriptors derived from the username with HMAC-SHA256 under
+  the encryption key, so they are stable per username and cannot be told
+  apart from real ones. The ceremony then fails in the browser the way a
+  cancelled one does.
+
+- **All username-first answers take the same time.** The random delay that
+  used to sit in the unknown-account branch ran on that side only, which made
+  the response time a second way to tell the answers apart. Every
+  username-first answer now leaves after a shared floor of 150 ms. Work that
+  runs past that floor still shows its own duration; such a request logs a
+  warning with the overrun.
+
+Bugfixes
+--------
+
+- **A passkey login on a page without felogin now establishes a session.**
+  After a successful ceremony the script posted the login token through a
+  form it assembled itself, and TYPO3 refuses a frontend login whose
+  ``__RequestToken`` is missing or carries the wrong scope — silently, with
+  a 200 and no session cookie. The login plugin template now renders a
+  hidden form whose token has the scope ``core/user-auth/fe``, and the script
+  only submits forms TYPO3 rendered.
+
+- **The backend module renders on TYPO3 13.** The dashboard and help
+  templates passed the ``state`` of ``f:be.infobox`` as a string; TYPO3 13
+  types that argument ``int`` and answered every module page with 503.
+
+Tests
+-----
+
+- The end-to-end suite runs. 15 Playwright tests drive registration,
+  discoverable login through to an authenticated session, credential
+  management, enrollment, recovery and the backend module against a TYPO3
+  instance the shared test runner provisions, and
+  ``.github/workflows/e2e.yml`` runs them on TYPO3 13 and 14 for every pull
+  request. Before this release every specification was skipped and no
+  workflow ran them.
+
 Version 1.0.0
 =============
 
