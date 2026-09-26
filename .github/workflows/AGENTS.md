@@ -36,7 +36,7 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 ## Build & test pipeline (ci.yml)
 
 `ci.yml` calls `netresearch/typo3-ci-workflows/.github/workflows/ci.yml@main` with:
-- PHP 8.2 / 8.3 / 8.4 / 8.5 × TYPO3 `^13.4` / `^14.1`
+- PHP 8.2 / 8.3 / 8.4 / 8.5 × TYPO3 `^13.4` / `^14.3`
 - Functional tests enabled against MySQL
 - Coverage upload to Codecov (`CODECOV_TOKEN` secret)
 

@@ -26,7 +26,7 @@ jobs:
     with:
       # The same range this extension supports; the shared provisioner builds
       # e2e instances for 13 and 14 only.
-      typo3-versions: '["^13.4", "^14.1"]'
+      typo3-versions: '["^13.4", "^14.3"]'
       # setup-script mode: the script owns installation, provisioning and the
       # test run, because the environment comes from the e2e_provision_* hooks
       # in Build/Scripts/runTests.conf rather than from the workflow's default
