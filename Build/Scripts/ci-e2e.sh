@@ -27,7 +27,7 @@ if [[ -z "${E2E_TYPO3_VERSION:-}" ]]; then
     exit 1
 fi
 
-# A constraint such as `^14.1` is normalised to its major by the shared
+# A constraint such as `^14.3` is normalised to its major by the shared
 # provisioner (e2e-provision.sh), so it is exported unchanged. The provisioner
 # rejects 11 and 12 and falls back to 13, which would silently test something
 # other than the matrix cell says — this extension requires 13 or 14 anyway.

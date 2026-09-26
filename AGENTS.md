@@ -23,7 +23,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 | Composer | `netresearch/nr-passkeys-fe` |
 | Extension key | `nr_passkeys_fe` |
 | Namespace | `Netresearch\NrPasskeysFe` |
-| TYPO3 | ^13.4 \|\| ^14.1 |
+| TYPO3 | ^13.4 \|\| ^14.3 |
 | PHP | ^8.2 |
 | Depends on | `netresearch/nr-passkeys-be` ^1.0 |
 

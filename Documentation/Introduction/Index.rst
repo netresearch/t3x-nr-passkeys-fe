@@ -95,7 +95,7 @@ Features
 
     ..  card:: TYPO3 v13 and v14
 
-        Compatible with TYPO3 13.4 LTS and 14.1+. PHP 8.2, 8.3, 8.4,
+        Compatible with TYPO3 13.4 LTS and 14.3 LTS. PHP 8.2, 8.3, 8.4,
         and 8.5 supported.
 
 Supported authenticators

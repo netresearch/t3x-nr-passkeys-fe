@@ -27,17 +27,17 @@
     "require": {
         "php": "^8.2",
         "netresearch/nr-passkeys-be": "^1.0",
-        "typo3/cms-core": "^13.4 || ^14.1",
-        "typo3/cms-frontend": "^13.4 || ^14.1",
-        "typo3/cms-backend": "^13.4 || ^14.1",
-        "typo3/cms-extbase": "^13.4 || ^14.1",
-        "typo3/cms-fluid": "^13.4 || ^14.1"
+        "typo3/cms-core": "^13.4 || ^14.3",
+        "typo3/cms-frontend": "^13.4 || ^14.3",
+        "typo3/cms-backend": "^13.4 || ^14.3",
+        "typo3/cms-extbase": "^13.4 || ^14.3",
+        "typo3/cms-fluid": "^13.4 || ^14.3"
     },
     "require-dev": {
         "netresearch/typo3-ci-workflows": "^1.8.1",
-        "typo3/cms-dashboard": "^13.4 || ^14.1",
-        "typo3/cms-felogin": "^13.4 || ^14.1",
-        "typo3/cms-install": "^13.4 || ^14.1"
+        "typo3/cms-dashboard": "^13.4 || ^14.3",
+        "typo3/cms-felogin": "^13.4 || ^14.3",
+        "typo3/cms-install": "^13.4 || ^14.3"
     },
     "suggest": {
         "typo3/cms-dashboard": "Adds passkey adoption / credential count widgets to the TYPO3 dashboard"

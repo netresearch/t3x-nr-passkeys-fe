@@ -28,7 +28,7 @@ Manual setup
 Prerequisites
 -------------
 
-- TYPO3 13.4 LTS or 14.1+ with HTTPS
+- TYPO3 13.4 LTS or 14.3 LTS with HTTPS
 - Composer-based installation
 
 Step 1: Install
