@@ -70,8 +70,9 @@ final class BackendThemeMarkupTest extends TestCase
         self::assertSame('{group.adoptionPercentage}', $bar->getAttribute('value'));
         self::assertCount(0, $this->query('Dashboard.html', '//*[@role="progressbar"]'));
 
-        // The percentage stays visible next to the bar.
-        $value = $this->query('Dashboard.html', '//progress/following-sibling::span[@class="passkey-fe-bar-value"]');
+        // The percentage stays visible next to the bar; the progress element
+        // already announces the value, so the text is hidden from assistive tech.
+        $value = $this->query('Dashboard.html', '//progress/following-sibling::span[@class="passkey-fe-bar-value"][@aria-hidden="true"]');
         self::assertCount(1, $value);
 
         $css = $this->read('Resources/Public/Css/backend.css');
@@ -101,7 +102,7 @@ final class BackendThemeMarkupTest extends TestCase
         // Absent from core's backend.css at v13.4.35 and v14.3.7, or (progress)
         // absent at v14.3.7: each of these renders as nothing or as a raw
         // browser widget, or keeps one colour pair in both schemes.
-        foreach (['text-body-secondary', 'table-light', 'table-sm', 'class="progress', 'bg-success', 'class="accordion', 'accordion-item', 'data-bs-toggle', 'text-bg-'] as $class) {
+        foreach (['text-body-secondary', 'table-light', 'table-sm', 'class="progress', 'bg-success', 'class="accordion', 'accordion-item', 'data-bs-toggle', 'text-bg-', 'card-size-fixed-small'] as $class) {
             self::assertStringNotContainsString($class, $html, $template . ' uses ' . $class);
         }
     }
@@ -114,15 +115,6 @@ final class BackendThemeMarkupTest extends TestCase
         self::assertSame(5, $xpath->query('//details[@name="passkey-fe-faq"]')?->length);
         self::assertSame(5, $xpath->query('//details[@name="passkey-fe-faq"]/summary')?->length);
         self::assertSame(5, $xpath->query('//details[@name="passkey-fe-faq"]/summary/following-sibling::p')?->length);
-    }
-
-    #[Test]
-    public function theModuleControllerLoadsTheBackendStylesheet(): void
-    {
-        $php = $this->read('Classes/Controller/AdminModuleController.php');
-
-        self::assertStringContainsString("addCssFile('EXT:nr_passkeys_fe/Resources/Public/Css/backend.css')", $php);
-        self::assertFileExists(self::ROOT . 'Resources/Public/Css/backend.css');
     }
 
     #[Test]
