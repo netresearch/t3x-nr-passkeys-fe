@@ -10,10 +10,14 @@
  * media query for it here.
  */
 
-/* Adoption bar in the dashboard's group table.
+/* Adoption bar in the dashboard's group table: a native <progress>, which
+ * carries the progressbar role, its value and its accessible name itself.
  * Core 14.3 ships no .progress/.progress-bar rules, and core's
- * <typo3-backend-progress-bar> cannot carry an accessible name, so the bar
- * is plain markup with role="progressbar" styled from core tokens. */
+ * <typo3-backend-progress-bar> cannot carry an accessible name. Colours come
+ * from core tokens: fill --typo3-component-primary-color, track
+ * --typo3-surface-container-high. Each engine draws the bar through its own
+ * pseudo-elements, so every selector needs a rule of its own: a selector list
+ * with one unknown pseudo-element would drop the whole rule. */
 .passkey-fe-bar-row {
     display: flex;
     align-items: center;
@@ -22,16 +26,28 @@
 }
 
 .passkey-fe-bar {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
     flex-grow: 1;
     min-width: 4rem;
     height: .75rem;
     overflow: hidden;
-    background-color: var(--typo3-surface-container-high);
+    border: 0;
     border-radius: var(--typo3-component-border-radius);
+    background-color: var(--typo3-surface-container-high);
+    color: var(--typo3-component-primary-color);
 }
 
-.passkey-fe-bar-fill {
-    height: 100%;
+.passkey-fe-bar::-webkit-progress-bar {
+    background-color: var(--typo3-surface-container-high);
+}
+
+.passkey-fe-bar::-webkit-progress-value {
+    background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-fe-bar::-moz-progress-bar {
     background-color: var(--typo3-component-primary-color);
 }
 

@@ -82,15 +82,10 @@
                                         <f:if condition="{group.totalUsers} > 0">
                                             <f:then>
                                                 <div class="passkey-fe-bar-row">
-                                                    <div class="passkey-fe-bar"
-                                                         role="progressbar"
-                                                         aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysFe')}: {group.title}"
-                                                         aria-valuenow="{group.adoptionPercentage}"
-                                                         aria-valuemin="0"
-                                                         aria-valuemax="100"
-                                                         aria-valuetext="{group.adoptionPercentage -> f:format.number(decimals: 0)}%">
-                                                        <div class="passkey-fe-bar-fill" style="width: {group.adoptionPercentage}%;"></div>
-                                                    </div>
+                                                    <progress class="passkey-fe-bar"
+                                                              max="100"
+                                                              value="{group.adoptionPercentage}"
+                                                              aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysFe')}: {group.title}"></progress>
                                                     <span class="passkey-fe-bar-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>
                                                 </div>
                                             </f:then>

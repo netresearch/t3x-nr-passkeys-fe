@@ -16,7 +16,6 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use TYPO3\CMS\Core\Imaging\IconProvider\SvgSpriteIconProvider;
 
 /**
  * Pins the backend markup that follows TYPO3's light and dark scheme on
@@ -55,9 +54,9 @@ final class BackendThemeMarkupTest extends TestCase
     }
 
     #[Test]
-    public function theAdoptionBarIsANamedProgressbarDrawnFromCoreTokens(): void
+    public function theAdoptionBarIsANamedNativeProgressDrawnFromCoreTokens(): void
     {
-        $bars = $this->query('Dashboard.html', '//*[@role="progressbar"]');
+        $bars = $this->query('Dashboard.html', '//progress');
 
         self::assertCount(1, $bars);
         $bar = $bars[0];
@@ -67,25 +66,21 @@ final class BackendThemeMarkupTest extends TestCase
             $bar->getAttribute('aria-label'),
         );
         self::assertStringContainsString('{group.title}', $bar->getAttribute('aria-label'));
-        self::assertSame('0', $bar->getAttribute('aria-valuemin'));
-        self::assertSame('100', $bar->getAttribute('aria-valuemax'));
-        self::assertSame('{group.adoptionPercentage}', $bar->getAttribute('aria-valuenow'));
+        self::assertSame('100', $bar->getAttribute('max'));
+        self::assertSame('{group.adoptionPercentage}', $bar->getAttribute('value'));
+        self::assertCount(0, $this->query('Dashboard.html', '//*[@role="progressbar"]'));
 
-        // The fill is a child of the bar; the percentage stays visible next to it.
-        $fill = $this->query('Dashboard.html', '//*[@role="progressbar"]/div[@class="passkey-fe-bar-fill"]');
-        self::assertCount(1, $fill);
-        $value = $this->query('Dashboard.html', '//*[@role="progressbar"]/following-sibling::span[@class="passkey-fe-bar-value"]');
+        // The percentage stays visible next to the bar.
+        $value = $this->query('Dashboard.html', '//progress/following-sibling::span[@class="passkey-fe-bar-value"]');
         self::assertCount(1, $value);
 
         $css = $this->read('Resources/Public/Css/backend.css');
-        self::assertMatchesRegularExpression(
-            '/\.passkey-fe-bar\s*\{[^}]*background-color:\s*var\(--typo3-surface-container-high\);/',
-            $css,
-        );
-        self::assertMatchesRegularExpression(
-            '/\.passkey-fe-bar-fill\s*\{[^}]*background-color:\s*var\(--typo3-component-primary-color\);/',
-            $css,
-        );
+        $track = 'background-color:\s*var\(--typo3-surface-container-high\);';
+        $fill = 'background-color:\s*var\(--typo3-component-primary-color\);';
+        self::assertMatchesRegularExpression('/\.passkey-fe-bar\s*\{[^}]*' . $track . '/', $css);
+        self::assertMatchesRegularExpression('/\.passkey-fe-bar::-webkit-progress-bar\s*\{[^}]*' . $track . '/', $css);
+        self::assertMatchesRegularExpression('/\.passkey-fe-bar::-webkit-progress-value\s*\{[^}]*' . $fill . '/', $css);
+        self::assertMatchesRegularExpression('/\.passkey-fe-bar::-moz-progress-bar\s*\{[^}]*' . $fill . '/', $css);
     }
 
     /**
@@ -162,19 +157,14 @@ final class BackendThemeMarkupTest extends TestCase
         }
     }
 
+    /**
+     * The registration (SvgSpriteIconProvider, sprite path) is pinned by
+     * Tests/Functional/Imaging/BackendIconRegistrationTest through IconFactory.
+     */
     #[Test]
     #[DataProvider('spriteIconProvider')]
-    public function recordAndPluginIconsAreSpritesThatInheritCurrentColor(string $identifier, string $file): void
+    public function recordAndPluginIconsAreSymbolsThatInheritCurrentColor(string $identifier, string $file): void
     {
-        /** @var array<string, array{provider: class-string, sprite?: string, source?: string}> $icons */
-        $icons = require self::ROOT . 'Configuration/Icons.php';
-
-        self::assertSame(SvgSpriteIconProvider::class, $icons[$identifier]['provider']);
-        self::assertSame(
-            'EXT:nr_passkeys_fe/Resources/Public/Icons/' . $file . '#' . $identifier,
-            $icons[$identifier]['sprite'] ?? null,
-        );
-
         $svg = new DOMDocument();
         self::assertTrue($svg->loadXML($this->read('Resources/Public/Icons/' . $file)));
         $xpath = new DOMXPath($svg);
