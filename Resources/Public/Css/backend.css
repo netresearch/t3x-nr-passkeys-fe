@@ -1,0 +1,64 @@
+/**
+ * nr_passkeys_fe - Backend module styles
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Colours come only from TYPO3's own --typo3-* tokens, so every rule follows
+ * the backend colour scheme (light/dark) on TYPO3 13.4 and 14.3. The scheme
+ * is the TYPO3 user setting, not the operating system's, so there is no
+ * media query for it here.
+ */
+
+/* Adoption bar in the dashboard's group table.
+ * Core 14.3 ships no .progress/.progress-bar rules, and core's
+ * <typo3-backend-progress-bar> cannot carry an accessible name, so the bar
+ * is plain markup with role="progressbar" styled from core tokens. */
+.passkey-fe-bar-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 7rem;
+}
+
+.passkey-fe-bar {
+    flex-grow: 1;
+    min-width: 4rem;
+    height: .75rem;
+    overflow: hidden;
+    background-color: var(--typo3-surface-container-high);
+    border-radius: var(--typo3-component-border-radius);
+}
+
+.passkey-fe-bar-fill {
+    height: 100%;
+    background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-fe-bar-value {
+    min-width: 2.5rem;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Help FAQ: native disclosure widgets. Bootstrap's accordion is not part of
+ * the backend CSS of TYPO3 13.4 or 14.3. */
+.passkey-fe-faq {
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: var(--typo3-component-border-radius);
+    padding: .5rem .75rem;
+}
+
+.passkey-fe-faq > summary {
+    display: list-item;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.passkey-fe-faq[open] > summary {
+    margin-bottom: .5rem;
+}
+
+.passkey-fe-faq > p:last-child {
+    margin-bottom: 0;
+}

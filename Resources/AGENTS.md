@@ -47,7 +47,10 @@ Resources/
         Index.html             -> Self-service credential management
         RecoveryCodes.html     -> Recovery code generation/display
   Public/
-    Icons/                     -> SVG icons (extension, passkey, security key)
+    Css/
+      passkey-fe.css           -> Frontend plugin styles
+      backend.css              -> Admin module styles, TYPO3 --typo3-* tokens only (light/dark)
+    Icons/                     -> SVG icons; record/plugin icons are <symbol> sprites (SvgSpriteIconProvider)
     JavaScript/
       PasskeyBanner.js         -> Encourage-stage onboarding banner
       PasskeyEnrollment.js     -> Enrollment ceremony (WebAuthn)

@@ -9,7 +9,7 @@
 
 <f:section name="Content">
     <h1><f:translate key="dashboard.title" extensionName="NrPasskeysFe" /></h1>
-    <p class="text-body-secondary mb-4">
+    <p class="text-variant mb-4">
         <f:translate key="dashboard.description" extensionName="NrPasskeysFe">Overview of passkey adoption across frontend user groups.</f:translate>
     </p>
 
@@ -65,6 +65,7 @@
                                     <td>{group.title -> f:format.htmlspecialchars()}</td>
                                     <td>
                                         <select class="form-select form-select-sm passkey-fe-enforcement-select"
+                                                aria-label="{f:translate(key: 'dashboard.groups.enforcement', extensionName: 'NrPasskeysFe')}: {group.title}"
                                                 data-group-uid="{group.uid}"
                                                 data-original-value="{group.enforcement}">
                                             <f:for each="{enforcementLevels}" as="label" key="value">
@@ -80,18 +81,20 @@
                                     <td>
                                         <f:if condition="{group.totalUsers} > 0">
                                             <f:then>
-                                                <div class="progress" style="min-width: 60px;">
-                                                    <div class="progress-bar bg-success"
+                                                <div class="passkey-fe-bar-row">
+                                                    <div class="passkey-fe-bar"
                                                          role="progressbar"
+                                                         aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysFe')}: {group.title}"
                                                          aria-valuenow="{group.adoptionPercentage}"
                                                          aria-valuemin="0"
                                                          aria-valuemax="100"
-                                                         style="width: {group.adoptionPercentage}%;">
-                                                        <f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%
+                                                         aria-valuetext="{group.adoptionPercentage -> f:format.number(decimals: 0)}%">
+                                                        <div class="passkey-fe-bar-fill" style="width: {group.adoptionPercentage}%;"></div>
                                                     </div>
+                                                    <span class="passkey-fe-bar-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>
                                                 </div>
                                             </f:then>
-                                            <f:else><span class="text-body-secondary">-</span></f:else>
+                                            <f:else><span class="text-variant">-</span></f:else>
                                         </f:if>
                                     </td>
                                 </tr>
@@ -137,7 +140,7 @@
 
                 <!-- Results container (populated by JS) -->
                 <div id="passkey-fe-user-credentials" class="d-none">
-                    <table class="table table-sm table-striped" id="passkey-fe-credentials-table">
+                    <table class="table table-striped" id="passkey-fe-credentials-table">
                         <thead>
                             <tr>
                                 <th scope="col"><f:translate key="dashboard.lookup.column.label" extensionName="NrPasskeysFe" /></th>

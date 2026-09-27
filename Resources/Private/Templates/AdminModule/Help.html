@@ -114,7 +114,7 @@
         </div>
         <div class="card-body">
             <table class="table table-bordered">
-                <thead class="table-light">
+                <thead>
                     <tr>
                         <th scope="col"><f:translate key="help.enforcement.column.level" extensionName="NrPasskeysFe" /></th>
                         <th scope="col"><f:translate key="help.enforcement.column.behaviour" extensionName="NrPasskeysFe" /></th>
@@ -159,104 +159,39 @@
             <h2 class="card-title mb-0"><f:translate key="help.faq.title" extensionName="NrPasskeysFe" /></h2>
         </div>
         <div class="card-body">
-            <div class="accordion" id="faqAccordion">
-
-                <!-- FAQ 1 -->
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeading1">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#faqCollapse1"
-                                aria-expanded="false" aria-controls="faqCollapse1">
-                            <f:translate key="help.faq.question.1" extensionName="NrPasskeysFe" />
-                        </button>
-                    </h3>
-                    <div id="faqCollapse1" class="accordion-collapse collapse"
-                         aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            <p>
-                                <f:translate key="help.faq.answer.1" extensionName="NrPasskeysFe" />
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ 2 -->
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeading2">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#faqCollapse2"
-                                aria-expanded="false" aria-controls="faqCollapse2">
-                            <f:translate key="help.faq.question.2" extensionName="NrPasskeysFe" />
-                        </button>
-                    </h3>
-                    <div id="faqCollapse2" class="accordion-collapse collapse"
-                         aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            <p>
-                                <f:translate key="help.faq.answer.2" extensionName="NrPasskeysFe" />
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ 3 -->
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeading3">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#faqCollapse3"
-                                aria-expanded="false" aria-controls="faqCollapse3">
-                            <f:translate key="help.faq.question.3" extensionName="NrPasskeysFe" />
-                        </button>
-                    </h3>
-                    <div id="faqCollapse3" class="accordion-collapse collapse"
-                         aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            <p>
-                                <f:translate key="help.faq.answer.3" extensionName="NrPasskeysFe" />
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ 4 -->
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeading4">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#faqCollapse4"
-                                aria-expanded="false" aria-controls="faqCollapse4">
-                            <f:translate key="help.faq.question.4" extensionName="NrPasskeysFe" />
-                        </button>
-                    </h3>
-                    <div id="faqCollapse4" class="accordion-collapse collapse"
-                         aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            <p>
-                                <f:translate key="help.faq.answer.4" extensionName="NrPasskeysFe" />
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FAQ 5 -->
-                <div class="accordion-item">
-                    <h3 class="accordion-header" id="faqHeading5">
-                        <button class="accordion-button collapsed" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#faqCollapse5"
-                                aria-expanded="false" aria-controls="faqCollapse5">
-                            <f:translate key="help.faq.question.5" extensionName="NrPasskeysFe" />
-                        </button>
-                    </h3>
-                    <div id="faqCollapse5" class="accordion-collapse collapse"
-                         aria-labelledby="faqHeading5" data-bs-parent="#faqAccordion">
-                        <div class="accordion-body">
-                            <p>
-                                <f:translate key="help.faq.answer.5" extensionName="NrPasskeysFe" />
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- /accordion -->
+            <!-- Native disclosure widgets: Bootstrap's accordion is not part of the
+                 TYPO3 backend CSS (13.4 or 14.3), so its buttons rendered as
+                 unstyled browser buttons. <details> needs no script. -->
+            <details class="passkey-fe-faq mb-2" name="passkey-fe-faq">
+                <summary><f:translate key="help.faq.question.1" extensionName="NrPasskeysFe" /></summary>
+                <p>
+                    <f:translate key="help.faq.answer.1" extensionName="NrPasskeysFe" />
+                </p>
+            </details>
+            <details class="passkey-fe-faq mb-2" name="passkey-fe-faq">
+                <summary><f:translate key="help.faq.question.2" extensionName="NrPasskeysFe" /></summary>
+                <p>
+                    <f:translate key="help.faq.answer.2" extensionName="NrPasskeysFe" />
+                </p>
+            </details>
+            <details class="passkey-fe-faq mb-2" name="passkey-fe-faq">
+                <summary><f:translate key="help.faq.question.3" extensionName="NrPasskeysFe" /></summary>
+                <p>
+                    <f:translate key="help.faq.answer.3" extensionName="NrPasskeysFe" />
+                </p>
+            </details>
+            <details class="passkey-fe-faq mb-2" name="passkey-fe-faq">
+                <summary><f:translate key="help.faq.question.4" extensionName="NrPasskeysFe" /></summary>
+                <p>
+                    <f:translate key="help.faq.answer.4" extensionName="NrPasskeysFe" />
+                </p>
+            </details>
+            <details class="passkey-fe-faq mb-2" name="passkey-fe-faq">
+                <summary><f:translate key="help.faq.question.5" extensionName="NrPasskeysFe" /></summary>
+                <p>
+                    <f:translate key="help.faq.answer.5" extensionName="NrPasskeysFe" />
+                </p>
+            </details>
         </div>
     </div>
 

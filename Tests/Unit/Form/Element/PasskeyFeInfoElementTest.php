@@ -144,6 +144,38 @@ final class PasskeyFeInfoElementTest extends TestCase
     }
 
     #[Test]
+    public function renderMutesCredentialMetadataWithTheCoreVariantTextClass(): void
+    {
+        $this->setUpLanguageService();
+
+        $subject = $this->createSubject([
+            'tableName' => 'fe_users',
+            'databaseRow' => ['uid' => 42],
+            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+        ]);
+
+        $credential = FrontendCredential::fromArray([
+            'uid' => 1,
+            'fe_user' => 42,
+            'label' => 'My iPhone',
+            'credential_id' => 'abc123',
+            'created_at' => 1700000000,
+            'last_used_at' => 0,
+            'revoked_at' => 0,
+            'site_identifier' => 'main',
+        ]);
+
+        $this->credentialRepository->method('findAllByFeUser')->willReturn([$credential]);
+
+        $html = $subject->render()['html'] ?? '';
+
+        // text-variant is core's muted text in both colour schemes (13.4 and
+        // 14.3); Bootstrap's text-body-secondary is not in core's backend CSS.
+        self::assertStringContainsString('<small class="text-variant">', $html);
+        self::assertStringNotContainsString('text-body-secondary', $html);
+    }
+
+    #[Test]
     public function renderShowsRevokedBadgeForRevokedCredential(): void
     {
         $this->setUpLanguageService();
