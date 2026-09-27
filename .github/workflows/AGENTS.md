@@ -21,6 +21,7 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `checks.yml` | push main, PR, merge_group, weekly | Security+quality bundle with `All security checks` gate |
 | `check-template-drift.yml` | push, PR, merge_group | Enforces checks.yml matches the org template |
 | `docs.yml` | push, PR, merge_group, dispatch | Docs render check (typo3-ci-workflows `docs.yml`) |
+| `js-tests.yml` | push main, PR, merge_group, dispatch | Vitest suite (`npm run test:js`) via the shared `node-test.yml`; coverage to Codecov flag `js` |
 | `harness-verify.yml` | push main, PR, dispatch | AGENTS.md/docs consistency (`Build/Scripts/verify-harness.sh`) |
 | `security.yml` | push, PR, schedule | TYPO3 security checks (typo3-ci-workflows `security.yml`) |
 | `codeql.yml` | push, PR, schedule | CodeQL analysis (PHP + JS) |
