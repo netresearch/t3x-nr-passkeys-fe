@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 
-// The @typo3/* imports resolve to Tests/JavaScript/Stubs/typo3-module.js
+// The @typo3/* imports resolve to the stand-ins under Tests/JavaScript/Stubs/
 // (vitest.config.js); rendering the table needs none of them.
 
 let admin;
