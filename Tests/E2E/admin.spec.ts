@@ -70,6 +70,37 @@ test.describe('Backend module', () => {
         }
     });
 
+    test('the passkey lookup lists the stored credentials of a frontend user', async ({ page }) => {
+        // Seeded by e2e_provision_seed: fe_user 2 with one credential,
+        // "E2E lookup key". The route URL TYPO3 issues already carries its
+        // ?token=; the uid has to arrive as a query argument of its own, or
+        // the backend refuses the request (401 on 14.3, a login redirect on
+        // 13.4) and the table never fills.
+        expect(await loginToBackend(page), 'the backend login has to succeed').toBe(true);
+
+        await page.goto(MODULE_URL);
+        await page.waitForLoadState('networkidle');
+        const frame = page.frame('list_frame') ?? page;
+
+        await frame.locator('#passkey-fe-user-uid-input').fill('2');
+        const [response] = await Promise.all([
+            page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/list')),
+            frame.locator('#passkey-fe-load-user').click(),
+        ]);
+
+        expect(response.status(), 'the list request has to succeed').toBe(200);
+        const url = new URL(response.url());
+        expect(url.searchParams.get('feUserUid')).toBe('2');
+        expect(url.searchParams.get('token') ?? '', 'the token must not swallow the uid').not.toContain('?');
+
+        const data = await response.json();
+        expect(data.feUserUid).toBe(2);
+        expect(data.count).toBe(1);
+        expect(data.credentials[0].label).toBe('E2E lookup key');
+
+        await expect(frame.locator('#passkey-fe-credentials-body')).toContainText('E2E lookup key');
+    });
+
     test('the module is not reachable without a backend session', async ({ page }) => {
         await page.context().clearCookies();
 

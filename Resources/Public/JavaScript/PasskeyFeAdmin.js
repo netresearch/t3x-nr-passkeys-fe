@@ -153,8 +153,11 @@ class PasskeyFeAdmin {
     }
 
     try {
-      const url = TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_list + '?feUserUid=' + feUserUid;
-      const response = await new AjaxRequest(url).get();
+      // The route URL already carries its ?token=; appending a second '?'
+      // made the token 'abc?feUserUid=1', which the backend rejects.
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_list)
+        .withQueryArguments({ feUserUid })
+        .get();
       const data = await response.resolve();
 
       this.renderCredentialTable(data.credentials || []);
