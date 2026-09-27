@@ -64,7 +64,8 @@ final readonly class FrontendGroupEnforcementService
         $dataHandler->process_datamap();
 
         if ($dataHandler->errorLog !== []) {
-            throw new RuntimeException(\implode(' ', $dataHandler->errorLog), 1790000001);
+            // errorLog is typed array<string> on 14.3 and plain array on 13.4.
+            throw new RuntimeException(\implode(' ', \array_filter($dataHandler->errorLog, \is_string(...))), 1790000001);
         }
 
         // An empty error log does not prove the write: DataHandler drops a
