@@ -13,12 +13,14 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\AdminController;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\ServerRequest;
 
@@ -31,6 +33,8 @@ final class AdminControllerTest extends TestCase
 
     private RateLimiterService&Stub $rateLimiterService;
 
+    private FrontendGroupEnforcementService&Stub $groupEnforcementService;
+
     private AdminController $subject;
 
     protected function setUp(): void
@@ -40,12 +44,14 @@ final class AdminControllerTest extends TestCase
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
         $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
         $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->groupEnforcementService = $this->createStub(FrontendGroupEnforcementService::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
             $this->userLookupService,
             $this->rateLimiterService,
             new NullLogger(),
+            $this->groupEnforcementService,
         );
     }
 
@@ -57,12 +63,14 @@ final class AdminControllerTest extends TestCase
         ?FrontendCredentialRepository $credentialRepository = null,
         ?FrontendUserLookupService $userLookupService = null,
         ?RateLimiterService $rateLimiterService = null,
+        ?FrontendGroupEnforcementService $groupEnforcementService = null,
     ): AdminController {
         return new AdminController(
             $credentialRepository ?? $this->credentialRepository,
             $userLookupService ?? $this->userLookupService,
             $rateLimiterService ?? $this->rateLimiterService,
             new NullLogger(),
+            $groupEnforcementService ?? $this->groupEnforcementService,
         );
     }
 
@@ -389,5 +397,115 @@ final class AdminControllerTest extends TestCase
             ->withParsedBody(['feUserUid' => 42, 'username' => 'johndoe']);
         $response = $this->subject->unlockAction($request);
         self::assertSame(404, $response->getStatusCode());
+    }
+
+    // ---------------------------------------------------------------
+    // updateEnforcementAction
+    // ---------------------------------------------------------------
+
+    /**
+     * @param array<string, mixed> $body
+     */
+    private function enforcementRequest(array $body): ServerRequest
+    {
+        return (new ServerRequest('/nr-passkeys-fe/admin/update-enforcement', 'POST'))->withParsedBody($body);
+    }
+
+    #[Test]
+    public function updateEnforcementActionReturns403ForANonAdminAndWritesNothing(): void
+    {
+        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 5, 'username' => 'editor'];
+        $backendUser->method('isAdmin')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->expects(self::never())->method('setLevel');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'required']));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function updateEnforcementActionReturns403WithoutABackendUser(): void
+    {
+        $this->unsetBackendUser();
+
+        $response = $this->subject->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'off']));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function updateEnforcementActionRejectsAnInvalidLevelAndWritesNothing(): void
+    {
+        $this->setAdminBackendUser();
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->expects(self::never())->method('setLevel');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'mandatory']));
+
+        self::assertSame(400, $response->getStatusCode());
+        self::assertSame(['error' => 'Invalid enforcement level'], \json_decode((string) $response->getBody(), true));
+    }
+
+    #[Test]
+    public function updateEnforcementActionRejectsAMissingGroup(): void
+    {
+        $this->setAdminBackendUser();
+
+        $response = $this->subject->updateEnforcementAction($this->enforcementRequest(['enforcement' => 'off']));
+
+        self::assertSame(400, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function updateEnforcementActionReturns404ForAnUnknownGroup(): void
+    {
+        $this->setAdminBackendUser();
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->method('groupExists')->willReturn(false);
+        $service->expects(self::never())->method('setLevel');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 99, 'enforcement' => 'off']));
+
+        self::assertSame(404, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function updateEnforcementActionStoresTheLevelAndReportsIt(): void
+    {
+        $this->setAdminBackendUser();
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->method('groupExists')->willReturn(true);
+        $service->expects(self::once())->method('setLevel')->with(3, 'required')->willReturn('required');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => '3', 'enforcement' => 'required']));
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(
+            ['status' => 'ok', 'groupUid' => 3, 'enforcement' => 'required'],
+            \json_decode((string) $response->getBody(), true),
+        );
+    }
+
+    #[Test]
+    public function updateEnforcementActionReports500WhenTheWriteFails(): void
+    {
+        $this->setAdminBackendUser();
+        $service = $this->createStub(FrontendGroupEnforcementService::class);
+        $service->method('groupExists')->willReturn(true);
+        $service->method('setLevel')->willThrowException(new RuntimeException('denied'));
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 3, 'enforcement' => 'required']));
+
+        self::assertSame(500, $response->getStatusCode());
+        self::assertArrayHasKey('error', (array) \json_decode((string) $response->getBody(), true));
     }
 }

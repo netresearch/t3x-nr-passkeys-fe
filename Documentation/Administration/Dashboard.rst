@@ -26,7 +26,8 @@ Per-group breakdown
 
 For each frontend user group with enforcement configured:
 
-- Group name and enforcement level
+- Group name and enforcement level; changing the level in the select
+  saves it immediately and confirms with a notification
 - Number of users in the group with / without passkeys
 - Users in grace period
 

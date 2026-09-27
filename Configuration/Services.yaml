@@ -35,6 +35,9 @@ services:
   Netresearch\NrPasskeysFe\Service\FrontendEnforcementService:
     public: true
 
+  Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService:
+    public: true
+
   Netresearch\NrPasskeysFe\Service\RecoveryCodeService:
     public: true
 

@@ -33,4 +33,9 @@ return [
         'target' => AdminController::class . '::unlockAction',
         'methods' => ['POST'],
     ],
+    'nr_passkeys_fe_admin_update_enforcement' => [
+        'path' => '/nr-passkeys-fe/admin/update-enforcement',
+        'target' => AdminController::class . '::updateEnforcementAction',
+        'methods' => ['POST'],
+    ],
 ];

@@ -273,6 +273,28 @@ Action                   Controller method                    Auth
 ``enrollmentSkip``       EnrollmentController::skipAction     Session
 =======================  ===================================  =========
 
+Backend AJAX routes
+-------------------
+
+The admin module calls these routes through ``TYPO3.settings.ajaxUrls``.
+Each URL carries the route token TYPO3 issues to the backend session, and
+every action answers ``403`` unless the backend user is an administrator.
+
+===========================================  ======  ===========================================
+Route                                        Method  Parameters
+===========================================  ======  ===========================================
+``nr_passkeys_fe_admin_list``                GET     ``feUserUid`` (query argument)
+``nr_passkeys_fe_admin_remove``              POST    ``feUserUid``, ``credentialUid``
+``nr_passkeys_fe_admin_revoke_all``          POST    ``feUserUid``
+``nr_passkeys_fe_admin_unlock``              POST    ``feUserUid``, ``username``
+``nr_passkeys_fe_admin_update_enforcement``  POST    ``groupUid``, ``enforcement``
+===========================================  ======  ===========================================
+
+``nr_passkeys_fe_admin_update_enforcement`` accepts ``off``, ``encourage``,
+``required`` and ``enforced``, answers ``400`` for any other value and
+``404`` for an unknown group, and writes ``fe_groups.passkey_enforcement``
+through DataHandler.
+
 Error responses
 ---------------
 
