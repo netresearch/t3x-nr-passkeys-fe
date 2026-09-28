@@ -369,6 +369,64 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         self::assertSame(200, $result);
     }
 
+    // --- client address: from core's authInfo, not from getIndpEnv() ---
+
+    #[Test]
+    public function getUserChecksTheLockoutForTheAddressCoreDerivedForThisLogin(): void
+    {
+        GeneralUtility::purgeInstances();
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+
+        $service = $this->getMockBuilder(PasskeyFrontendAuthenticationService::class)
+            ->onlyMethods(['fetchUserRecord'])
+            ->getMock();
+        $this->injectLogger($service, $this->logger);
+        $service->login = [
+            'uname' => 'frontend_user',
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+        ];
+        // AbstractUserAuthentication::getAuthInfoArray() fills REMOTE_ADDR
+        // from the request's normalizedParams (14.3) / the server (13.4).
+        $service->authInfo = ['REMOTE_ADDR' => '203.0.113.20'];
+        $service->expects(self::once())->method('fetchUserRecord')->willReturn(['uid' => 42, 'username' => 'frontend_user']);
+
+        $rateLimiterService
+            ->expects(self::once())
+            ->method('checkLockout')
+            ->with('frontend_user', '203.0.113.20');
+
+        self::assertIsArray($service->getUser());
+    }
+
+    #[Test]
+    public function authUserRecordsTheAttemptForTheAddressCoreDerivedForThisLogin(): void
+    {
+        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Test Key');
+
+        GeneralUtility::purgeInstances();
+        $webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
+        GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
+        GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
+        $subject = new PasskeyFrontendAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+        $subject->login = [
+            'uname' => 'frontend_user',
+            'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
+        ];
+        $subject->authInfo = ['REMOTE_ADDR' => '203.0.113.21'];
+
+        $webAuthnService->method('verifyAssertionResponse')->willReturn(['feUserUid' => 42, 'credential' => $credential]);
+        $rateLimiterService->expects(self::once())->method('checkLockout')->with('frontend_user', '203.0.113.21');
+        $rateLimiterService->expects(self::once())->method('recordSuccess')->with('frontend_user', '203.0.113.21');
+
+        self::assertSame(200, $subject->authUser(['uid' => 42, 'username' => 'frontend_user']));
+    }
+
     #[Test]
     public function authUserReturns0OnInvalidAssertion(): void
     {

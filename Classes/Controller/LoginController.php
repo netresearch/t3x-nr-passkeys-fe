@@ -41,6 +41,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 final readonly class LoginController
 {
     use JsonBodyTrait;
+    use RemoteAddressTrait;
 
     /**
      * How long a username-first answer takes, whatever it answers.
@@ -78,8 +79,7 @@ final readonly class LoginController
             ? (string) $body['username']
             : '';
 
-        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
+        $ip = $this->getRemoteAddress($request);
 
         try {
             $this->rateLimiterService->consumeRateLimit('fe_login_options', $ip);
@@ -187,8 +187,7 @@ final readonly class LoginController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
+        $ip = $this->getRemoteAddress($request);
 
         try {
             $this->rateLimiterService->consumeRateLimit('fe_login_verify', $ip);
