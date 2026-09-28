@@ -457,6 +457,8 @@ final class AdminControllerTest extends TestCase
         yield 'negative' => ['-1'];
         yield 'zero' => ['0'];
         yield 'array' => [['1']];
+        yield 'JSON true' => [true];
+        yield 'JSON float' => [1.0];
     }
 
     #[Test]

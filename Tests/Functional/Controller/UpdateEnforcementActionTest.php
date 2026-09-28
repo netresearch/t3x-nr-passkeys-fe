@@ -102,6 +102,22 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
     }
 
     #[Test]
+    public function aWorkspaceWithLiveEditingStillSaves(): void
+    {
+        // A workspace may allow live editing of tables without versioning;
+        // there DataHandler writes the live fe_groups record, so the save is
+        // allowed.
+        $backendUser = $this->actAs(1);
+        $backendUser->workspace = 1;
+        $backendUser->workspaceRec = ['uid' => 1, 'live_edit' => 1];
+
+        $response = $this->post(['groupUid' => 2, 'enforcement' => 'required']);
+
+        self::assertSame(200, $response->getStatusCode(), (string) $response->getBody());
+        self::assertSame('required', $this->storedLevel(2));
+    }
+
+    #[Test]
     public function theServiceReportsADataHandlerErrorAndLeavesTheRecordAlone(): void
     {
         // An editor has no write permission on fe_groups; DataHandler logs that

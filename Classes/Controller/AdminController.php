@@ -215,8 +215,10 @@ final readonly class AdminController
         $body = $this->getJsonBody($request);
         $rawGroupUid = $body['groupUid'] ?? null;
         // Only a plain integer: is_numeric() would let "1.5", "1e2" and " 1"
-        // through as group 1, 100 and 1.
-        $groupUid = MathUtility::canBeInterpretedAsInteger($rawGroupUid) ? (int) $rawGroupUid : 0;
+        // through as group 1, 100 and 1, and canBeInterpretedAsInteger()
+        // accepts the JSON values true and 1.0 as 1.
+        $groupUid = !\is_bool($rawGroupUid) && !\is_float($rawGroupUid)
+            && MathUtility::canBeInterpretedAsInteger($rawGroupUid) ? (int) $rawGroupUid : 0;
         $rawLevel = $body['enforcement'] ?? null;
         $level = \is_string($rawLevel) ? $rawLevel : '';
 
