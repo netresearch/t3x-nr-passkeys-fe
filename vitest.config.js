@@ -17,5 +17,10 @@ export default defineConfig({
     test: {
         environment: 'jsdom',
         include: ['Tests/JavaScript/**/*.test.js'],
+        coverage: {
+            // Every module counts, not only the ones a test happens to load;
+            // the Codecov `js` flag covers the same directory.
+            include: ['Resources/Public/JavaScript/**'],
+        },
     },
 });
