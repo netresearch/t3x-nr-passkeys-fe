@@ -758,6 +758,9 @@
             <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
                 <source>Update failed</source>
             </trans-unit>
+            <trans-unit id="admin.enforcement.error.liveWorkspaceRequired" resname="admin.enforcement.error.liveWorkspaceRequired">
+                <source>Frontend user groups are not versioned in workspaces. Switch to the Live workspace to change the enforcement level.</source>
+            </trans-unit>
             <trans-unit id="js.revoke.confirm" resname="js.revoke.confirm">
                 <source>Revoke this passkey? This cannot be undone.</source>
             </trans-unit>

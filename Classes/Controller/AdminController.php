@@ -20,6 +20,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Utility\MathUtility;
 
 /**
  * Admin API controller for FE passkey management operations.
@@ -212,7 +214,9 @@ final readonly class AdminController
 
         $body = $this->getJsonBody($request);
         $rawGroupUid = $body['groupUid'] ?? null;
-        $groupUid = \is_numeric($rawGroupUid) ? (int) $rawGroupUid : 0;
+        // Only a plain integer: is_numeric() would let "1.5", "1e2" and " 1"
+        // through as group 1, 100 and 1.
+        $groupUid = MathUtility::canBeInterpretedAsInteger($rawGroupUid) ? (int) $rawGroupUid : 0;
         $rawLevel = $body['enforcement'] ?? null;
         $level = \is_string($rawLevel) ? $rawLevel : '';
 
@@ -226,6 +230,20 @@ final readonly class AdminController
 
         if (!$this->groupEnforcementService->groupExists($groupUid)) {
             return new JsonResponse(['error' => 'Frontend user group not found'], 404);
+        }
+
+        // fe_groups has no versioning, so in a workspace DataHandler refuses the
+        // write; the frontend only ever reads the live record anyway.
+        $backendUser = $GLOBALS['BE_USER'];
+        if ($backendUser instanceof BackendUserAuthentication
+            && !$backendUser->workspaceAllowsLiveEditingInTable('fe_groups')
+        ) {
+            return new JsonResponse([
+                'error' => $this->translate(
+                    'admin.enforcement.error.liveWorkspaceRequired',
+                    'Frontend user groups are not versioned in workspaces. Switch to the Live workspace to change the enforcement level.',
+                ),
+            ], 409);
         }
 
         try {
@@ -248,6 +266,19 @@ final readonly class AdminController
         ]);
 
         return new JsonResponse(['status' => 'ok', 'groupUid' => $groupUid, 'enforcement' => $stored]);
+    }
+
+    private function translate(string $key, string $fallback): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $fallback;
     }
 
     /**

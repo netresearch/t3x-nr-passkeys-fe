@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -79,6 +80,7 @@ final class AdminControllerTest extends TestCase
         $backendUser = $this->createStub(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => 'admin', 'realName' => 'Admin'];
         $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->method('workspaceAllowsLiveEditingInTable')->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -429,13 +431,67 @@ final class AdminControllerTest extends TestCase
     }
 
     #[Test]
-    public function updateEnforcementActionReturns403WithoutABackendUser(): void
+    public function updateEnforcementActionReturns403WithoutABackendUserAndWritesNothing(): void
     {
         $this->unsetBackendUser();
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->expects(self::never())->method('setLevel');
 
-        $response = $this->subject->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'off']));
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'off']));
 
         self::assertSame(403, $response->getStatusCode());
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function malformedGroupUidProvider(): iterable
+    {
+        yield 'decimal' => ['1.5'];
+        yield 'exponent' => ['1e2'];
+        yield 'leading space' => [' 1'];
+        yield 'trailing space' => ['1 '];
+        yield 'hex' => ['0x1'];
+        yield 'word' => ['abc'];
+        yield 'negative' => ['-1'];
+        yield 'zero' => ['0'];
+        yield 'array' => [['1']];
+    }
+
+    #[Test]
+    #[DataProvider('malformedGroupUidProvider')]
+    public function updateEnforcementActionRejectsAGroupUidThatIsNotAPlainPositiveInteger(mixed $groupUid): void
+    {
+        $this->setAdminBackendUser();
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->method('groupExists')->willReturn(true);
+        $service->expects(self::never())->method('setLevel');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => $groupUid, 'enforcement' => 'off']));
+
+        self::assertSame(400, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function updateEnforcementActionRefusesAWorkspaceWithoutLiveEditingAndWritesNothing(): void
+    {
+        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'username' => 'admin'];
+        $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->method('workspaceAllowsLiveEditingInTable')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $service = $this->createMock(FrontendGroupEnforcementService::class);
+        $service->method('groupExists')->willReturn(true);
+        $service->expects(self::never())->method('setLevel');
+
+        $response = $this->createSubjectWith(groupEnforcementService: $service)
+            ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 3, 'enforcement' => 'required']));
+
+        self::assertSame(409, $response->getStatusCode());
+        self::assertStringContainsString('Live workspace', (string) $response->getBody());
     }
 
     #[Test]

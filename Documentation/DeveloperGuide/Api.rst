@@ -291,9 +291,12 @@ Route                                        Method  Parameters
 ===========================================  ======  ===========================================
 
 ``nr_passkeys_fe_admin_update_enforcement`` accepts ``off``, ``encourage``,
-``required`` and ``enforced``, answers ``400`` for any other value and
-``404`` for an unknown group, and writes ``fe_groups.passkey_enforcement``
-through DataHandler.
+``required`` and ``enforced``, answers ``400`` for any other value or a
+group uid that is not a plain positive integer, ``404`` for an unknown or
+deleted group, and ``409`` while the administrator works in a workspace
+(``fe_groups`` is not versioned). It writes ``fe_groups.passkey_enforcement``
+through DataHandler, so the change appears in the record history and the
+system log.
 
 Error responses
 ---------------
