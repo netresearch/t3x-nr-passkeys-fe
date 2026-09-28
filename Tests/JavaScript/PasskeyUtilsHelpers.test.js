@@ -3,7 +3,7 @@
  * (window.NrPasskeysFe): base64url conversion, DOM helpers, origin check and
  * eID URL building. The login module itself is tested in PasskeyLogin.test.js.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 // Load the shared utility module so NrPasskeysFe is available
 import '../../Resources/Public/JavaScript/PasskeyUtils.js';
