@@ -1,370 +1,208 @@
 /**
- * Tests for PasskeyLogin.js
+ * Tests for the button flow of the SHIPPED Resources/Public/JavaScript/PasskeyLogin.js.
  *
- * Tests shared utilities from PasskeyUtils.js (base64url encoding/decoding)
- * and PasskeyLogin-specific DOM setup, URL construction, and error handling.
+ * The conditional-UI (autofill) ceremony is covered in
+ * PasskeyLoginConditional.test.js. Here the container is built with
+ * data-discoverable="0" and no conditional mediation, so only the button
+ * ceremony runs: feature detection, the options request, the mapping of
+ * WebAuthn errors, and the Signal API call after the server reports an
+ * unknown credential. Only fetch and the WebAuthn API are stubbed.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { loadModules, settle, jsonResponse, clearBody } from './support/modules.js';
 
-// Load the shared utility module so NrPasskeysFe is available
-import '../../Resources/Public/JavaScript/PasskeyUtils.js';
+const EID_URL = 'https://example.test/?eID=nr_passkeys_fe';
 
-// ---------------------------------------------------------------
-// Helpers — DOM setup
-// ---------------------------------------------------------------
-
-function clearBody() {
-    while (document.body.firstChild) {
-        document.body.removeChild(document.body.firstChild);
-    }
-}
-
-function createLoginContainer({ eidUrl = '/index.php', siteIdentifier = 'test-site', discoverable = '1' } = {}) {
+function createLoginContainer() {
     const container = document.createElement('div');
     container.setAttribute('data-nr-passkeys-fe', 'login');
-    container.dataset.eidUrl = eidUrl;
-    container.dataset.siteIdentifier = siteIdentifier;
-    container.dataset.discoverable = discoverable;
+    container.dataset.eidUrl = EID_URL;
+    container.dataset.siteIdentifier = 'main';
+    container.dataset.discoverable = '0';
 
     const btn = document.createElement('button');
     btn.setAttribute('data-action', 'passkey-login');
-
     const btnText = document.createElement('span');
-    btnText.id = 'nr-passkeys-fe-btn-text';
-    btn.appendChild(btnText);
-
+    btnText.className = 'nr-passkeys-fe-btn__text';
     const btnLoading = document.createElement('span');
-    btnLoading.id = 'nr-passkeys-fe-btn-loading';
-    btnLoading.setAttribute('aria-hidden', 'true');
-    btn.appendChild(btnLoading);
+    btnLoading.className = 'nr-passkeys-fe-btn__loading';
+    btn.append(btnText, btnLoading);
 
     const status = document.createElement('div');
     status.className = 'nr-passkeys-fe-login__status';
-    status.style.display = 'none';
-
     const error = document.createElement('div');
     error.className = 'nr-passkeys-fe-login__error';
     error.style.display = 'none';
-
     const usernameInput = document.createElement('input');
     usernameInput.name = 'nr_passkeys_username';
-    usernameInput.type = 'text';
+    usernameInput.value = 'jdoe';
 
-    container.appendChild(btn);
-    container.appendChild(status);
-    container.appendChild(error);
-    container.appendChild(usernameInput);
+    container.append(btn, status, error, usernameInput);
     document.body.appendChild(container);
-
-    return { container, btn, status, error, usernameInput };
+    return { container, btn, error, usernameInput };
 }
 
-// ---------------------------------------------------------------
-// Shared utility tests (NrPasskeysFe from PasskeyUtils.js)
-// ---------------------------------------------------------------
+function loginOptions() {
+    return {
+        options: { challenge: 'YWJjZGVm', rpId: 'example.test', userVerification: 'required' },
+        challengeToken: 'challenge-token-1',
+    };
+}
 
-describe('NrPasskeysFe — base64url utilities', () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
-    });
+function fakeAssertion() {
+    const buf = new Uint8Array([1, 2, 3, 4]).buffer;
+    return {
+        rawId: buf,
+        type: 'public-key',
+        response: { clientDataJSON: buf, authenticatorData: buf, signature: buf, userHandle: null },
+    };
+}
 
-    it('base64urlToBuffer produces correct ArrayBuffer length', () => {
-        const input = btoa('hello').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        const result = window.NrPasskeysFe.base64urlToBuffer(input);
-        expect(result.byteLength).toBe(5); // 'hello' = 5 bytes
-    });
+/**
+ * WebAuthn without conditional mediation, so no autofill ceremony is armed.
+ */
+function installWebAuthn(getImpl, extra = {}) {
+    window.PublicKeyCredential = Object.assign(function () {}, extra);
+    const get = vi.fn(getImpl);
+    Object.defineProperty(navigator, 'credentials', { value: { get }, configurable: true, writable: true });
+    return get;
+}
 
-    it('bufferToBase64url round-trips correctly', () => {
-        const original = new Uint8Array([1, 2, 3, 255, 0, 127]);
-        const encoded = window.NrPasskeysFe.bufferToBase64url(original.buffer);
-        const decoded = new Uint8Array(window.NrPasskeysFe.base64urlToBuffer(encoded));
+async function clickLogin(btn) {
+    btn.click();
+    await settle(60);
+}
 
-        for (let i = 0; i < original.length; i++) {
-            expect(decoded[i]).toBe(original[i]);
-        }
-    });
-
-    it('bufferToBase64url produces URL-safe characters (no +, /, =)', () => {
-        // Use bytes that produce + and / in standard base64
-        const bytes = new Uint8Array([251, 255, 254]);
-        const encoded = window.NrPasskeysFe.bufferToBase64url(bytes.buffer);
-
-        expect(encoded).not.toContain('+');
-        expect(encoded).not.toContain('/');
-        expect(encoded).not.toContain('=');
-    });
-
-    it('base64urlToBuffer handles empty string', () => {
-        const result = window.NrPasskeysFe.base64urlToBuffer('');
-        expect(result.byteLength).toBe(0);
-    });
+beforeEach(() => {
+    clearBody();
+    sessionStorage.clear();
+    Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true });
 });
 
-describe('NrPasskeysFe — DOM helpers', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
-    });
+afterEach(() => {
+    clearBody();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    delete window.PublicKeyCredential;
+});
 
-    it('showError sets text and shows element', () => {
-        const el = document.createElement('div');
-        el.style.display = 'none';
-        window.NrPasskeysFe.showError(el, 'Test error');
-        expect(el.textContent).toBe('Test error');
-        expect(el.style.display).toBe('');
-    });
+describe('PasskeyLogin — feature detection', () => {
+    it('disables the button and explains when WebAuthn is missing', async () => {
+        delete window.PublicKeyCredential;
+        const { btn, error } = createLoginContainer();
 
-    it('hideError clears text and hides element', () => {
-        const el = document.createElement('div');
-        el.textContent = 'Some error';
-        window.NrPasskeysFe.hideError(el);
-        expect(el.textContent).toBe('');
-        expect(el.style.display).toBe('none');
-    });
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
 
-    it('showStatus sets text and shows element', () => {
-        const el = document.createElement('div');
-        el.style.display = 'none';
-        window.NrPasskeysFe.showStatus(el, 'Loading...');
-        expect(el.textContent).toBe('Loading...');
-        expect(el.style.display).toBe('');
-    });
-
-    it('hideStatus clears text and hides element', () => {
-        const el = document.createElement('div');
-        el.textContent = 'Loading...';
-        window.NrPasskeysFe.hideStatus(el);
-        expect(el.textContent).toBe('');
-        expect(el.style.display).toBe('none');
-    });
-
-    it('setLoading disables button and toggles text/loading visibility', () => {
-        const btn = document.createElement('button');
-        const btnText = document.createElement('span');
-        const btnLoading = document.createElement('span');
-        btnLoading.setAttribute('aria-hidden', 'true');
-
-        window.NrPasskeysFe.setLoading(true, btn, btnText, btnLoading);
         expect(btn.disabled).toBe(true);
-        expect(btnText.style.display).toBe('none');
-        expect(btnLoading.style.display).toBe('');
-
-        window.NrPasskeysFe.setLoading(false, btn, btnText, btnLoading);
-        expect(btn.disabled).toBe(false);
-        expect(btnText.style.display).toBe('');
-        expect(btnLoading.style.display).toBe('none');
+        expect(error.textContent).toContain('does not support Passkeys');
     });
 
-    it('isSameOrigin returns true for same origin', () => {
-        expect(window.NrPasskeysFe.isSameOrigin('/dashboard')).toBe(true);
-    });
+    it('disables the button on an insecure page', async () => {
+        installWebAuthn(async () => fakeAssertion());
+        Object.defineProperty(window, 'isSecureContext', { value: false, configurable: true });
+        const { btn, error } = createLoginContainer();
 
-    it('isSameOrigin returns false for different origin', () => {
-        expect(window.NrPasskeysFe.isSameOrigin('https://evil.example.com/redirect')).toBe(false);
-    });
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
 
-    it('buildEidUrl appends action parameter to eID URL', () => {
-        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'loginOptions'});
-        expect(result).toContain('eID=nr_passkeys_fe');
-        expect(result).toContain('action=loginOptions');
-    });
-
-    it('buildEidUrl does not duplicate query string', () => {
-        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'test'});
-        // Should only have one '?' in the URL
-        const questionMarks = (result.match(/\?/g) || []).length;
-        expect(questionMarks).toBe(1);
-    });
-
-    it('buildEidUrl handles multiple parameters', () => {
-        const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'test', foo: 'bar'});
-        expect(result).toContain('action=test');
-        expect(result).toContain('foo=bar');
-    });
-
-    it('showError handles null element gracefully', () => {
-        // Should not throw
-        window.NrPasskeysFe.showError(null, 'msg');
-    });
-
-    it('hideError handles null element gracefully', () => {
-        window.NrPasskeysFe.hideError(null);
-    });
-
-    it('setLoading handles null elements gracefully', () => {
-        window.NrPasskeysFe.setLoading(true, null, null, null);
+        expect(btn.disabled).toBe(true);
+        expect(error.textContent).toContain('secure connection');
     });
 });
 
-// ---------------------------------------------------------------
-// Feature-detection tests (unit logic, no module loading needed)
-// ---------------------------------------------------------------
-
-describe('PasskeyLogin — feature detection logic', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
-    });
-
-    it('returns false for WebAuthn support when PublicKeyCredential is absent', () => {
-        const supported = typeof window.PublicKeyCredential !== 'undefined';
-        // In a plain jsdom env without the stub, it may or may not exist — just check the type
-        expect(typeof supported).toBe('boolean');
-    });
-});
-
-describe('PasskeyLogin — DOM container setup', () => {
-    afterEach(() => {
-        clearBody();
-    });
-
-    it('createLoginContainer appends button to body', () => {
+describe('PasskeyLogin — button ceremony', () => {
+    it('posts the username and site to loginOptions', async () => {
+        installWebAuthn(() => new Promise(() => {}));
+        const fetchMock = vi.fn(async () => jsonResponse(200, loginOptions()));
+        vi.stubGlobal('fetch', fetchMock);
         const { btn } = createLoginContainer();
-        expect(document.body.contains(btn)).toBe(true);
+
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        const [url, init] = fetchMock.mock.calls[0];
+        expect(url).toContain('eID=nr_passkeys_fe');
+        expect(url).toContain('action=loginOptions');
+        expect(init.method).toBe('POST');
+        expect(init.headers['Content-Type']).toBe('application/json');
+        expect(JSON.parse(init.body)).toMatchObject({ username: 'jdoe', siteIdentifier: 'main' });
     });
 
-    it('error element starts hidden', () => {
-        const { error } = createLoginContainer();
-        expect(error.style.display).toBe('none');
+    it('asks for the username first in the username-first flow', async () => {
+        installWebAuthn(async () => fakeAssertion());
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        const { btn, error, usernameInput } = createLoginContainer();
+        usernameInput.value = '';
+
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(error.textContent).toBe('Please enter your username.');
     });
 
-    it('status element starts hidden', () => {
-        const { status } = createLoginContainer();
-        expect(status.style.display).toBe('none');
-    });
+    it.each([
+        ['NotAllowedError', 'Authentication was cancelled or no passkey found for this site.'],
+        ['SecurityError', 'Security error. Please check your connection and try again.'],
+        ['AbortError', 'Authentication was cancelled.'],
+    ])('maps %s from the authenticator to its message', async (name, message) => {
+        installWebAuthn(async () => {
+            throw Object.assign(new Error('from authenticator'), { name });
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, loginOptions())));
+        const { btn, error } = createLoginContainer();
 
-    it('button is not disabled initially', () => {
-        const { btn } = createLoginContainer();
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(error.textContent).toBe(message);
         expect(btn.disabled).toBe(false);
     });
 });
 
-describe('PasskeyLogin — fetch URL construction', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
-    });
-
-    it('loginOptions URL contains eID and action parameters', () => {
-        // Verify the URL patterns the module would use via buildEidUrl
-        const U = window.NrPasskeysFe;
-        const eidUrl = '/?eID=nr_passkeys_fe';
-        const optionsUrl = U.buildEidUrl(eidUrl, {action: 'loginOptions'});
-        const verifyUrl = U.buildEidUrl(eidUrl, {action: 'loginVerify'});
-
-        expect(optionsUrl).toContain('eID=nr_passkeys_fe');
-        expect(optionsUrl).toContain('action=loginOptions');
-        expect(verifyUrl).toContain('action=loginVerify');
-    });
-
-    it('fetch is called with POST method and JSON content-type for loginOptions', async () => {
-        const fetchMock = vi.fn().mockResolvedValue({
-            ok: false,
-            status: 500,
-            json: async () => ({ error: 'test' }),
-        });
-        window.fetch = fetchMock;
-        window.PublicKeyCredential = {};
-        Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true });
-
-        // Simulate what the module does (directly, without loading the IIFE)
-        await fetch('/index.php?eID=nr_passkeys_fe&action=loginOptions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: '', siteIdentifier: 'test-site' }),
-            credentials: 'same-origin',
-        });
-
-        expect(fetchMock).toHaveBeenCalledWith(
-            expect.stringContaining('action=loginOptions'),
-            expect.objectContaining({
-                method: 'POST',
-                headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
-            }),
-        );
-    });
-});
-
-describe('PasskeyLogin — error handling patterns', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
-    });
-
-    it('NotAllowedError maps to "cancelled" message', () => {
-        const err = Object.assign(new Error('User declined'), { name: 'NotAllowedError' });
-        const errorMessages = {
-            NotAllowedError: 'Authentication was cancelled or no passkey found for this site.',
-            SecurityError: 'Security error. Please check your connection and try again.',
-            AbortError: 'Authentication was cancelled.',
-        };
-        expect(errorMessages[err.name]).toContain('cancelled');
-    });
-
-    it('SecurityError maps to security message', () => {
-        const err = Object.assign(new Error('Security violation'), { name: 'SecurityError' });
-        const errorMessages = {
-            NotAllowedError: 'Authentication was cancelled or no passkey found for this site.',
-            SecurityError: 'Security error. Please check your connection and try again.',
-            AbortError: 'Authentication was cancelled.',
-        };
-        expect(errorMessages[err.name]).toContain('Security error');
-    });
-
-    it('AbortError maps to cancelled message', () => {
-        const err = Object.assign(new Error('Aborted'), { name: 'AbortError' });
-        const errorMessages = {
-            NotAllowedError: 'Authentication was cancelled or no passkey found for this site.',
-            SecurityError: 'Security error. Please check your connection and try again.',
-            AbortError: 'Authentication was cancelled.',
-        };
-        expect(errorMessages[err.name]).toContain('cancelled');
-    });
-});
-
-describe('PasskeyLogin — signalUnknownCredential guard', () => {
-    /**
-     * Mirrors the shipped signalUnknownCredential() guard (which lives inside
-     * the PasskeyLogin.js IIFE): best-effort, feature-detected, never throws,
-     * and only fires with a concrete rpId + credentialId.
-     */
-    function signalUnknownCredential(PKC, rpId, credentialId) {
-        var called = null;
-        try {
-            if (PKC && typeof PKC.signalUnknownCredential === 'function' && rpId && credentialId) {
-                var result = PKC.signalUnknownCredential({ rpId: rpId, credentialId: credentialId });
-                called = { rpId: rpId, credentialId: credentialId };
-                if (result && typeof result.catch === 'function') {
-                    result.catch(function () {});
-                }
-            }
-        } catch (e) {
-            /* best-effort */
-        }
-        return called;
+describe('PasskeyLogin — Signal API after an unknown credential', () => {
+    function rejectingVerify(reason) {
+        return vi.fn(async (url) => (String(url).indexOf('loginOptions') !== -1
+            ? jsonResponse(200, loginOptions())
+            : jsonResponse(401, { error: 'Unknown passkey', reason })));
     }
 
-    it('calls the API with rpId + credentialId when supported', () => {
-        let seen = null;
-        const PKC = { signalUnknownCredential: (arg) => { seen = arg; return Promise.resolve(); } };
-        const called = signalUnknownCredential(PKC, 'example.com', 'CRED123');
-        expect(called).toEqual({ rpId: 'example.com', credentialId: 'CRED123' });
-        expect(seen).toEqual({ rpId: 'example.com', credentialId: 'CRED123' });
+    it('reports the credential to the authenticator when the server does not know it', async () => {
+        const signal = vi.fn(async () => {});
+        installWebAuthn(async () => fakeAssertion(), { signalUnknownCredential: signal });
+        vi.stubGlobal('fetch', rejectingVerify('unknown_credential'));
+        const { btn, error } = createLoginContainer();
+
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(signal).toHaveBeenCalledWith({ rpId: 'example.test', credentialId: 'AQIDBA' });
+        expect(error.textContent).toBe('Unknown passkey');
     });
 
-    it('is a no-op when the Signal API is unavailable', () => {
-        expect(signalUnknownCredential({}, 'example.com', 'CRED123')).toBeNull();
-        expect(signalUnknownCredential(undefined, 'example.com', 'CRED123')).toBeNull();
+    it('reports nothing for other rejections', async () => {
+        const signal = vi.fn(async () => {});
+        installWebAuthn(async () => fakeAssertion(), { signalUnknownCredential: signal });
+        vi.stubGlobal('fetch', rejectingVerify('bad_signature'));
+        const { btn } = createLoginContainer();
+
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(signal).not.toHaveBeenCalled();
     });
 
-    it('is a no-op when rpId or credentialId is missing', () => {
-        const PKC = { signalUnknownCredential: () => Promise.resolve() };
-        expect(signalUnknownCredential(PKC, '', 'CRED123')).toBeNull();
-        expect(signalUnknownCredential(PKC, 'example.com', '')).toBeNull();
-    });
+    it('carries on when the Signal API is missing or rejects', async () => {
+        const signal = vi.fn(() => Promise.reject(new Error('unsupported')));
+        installWebAuthn(async () => fakeAssertion(), { signalUnknownCredential: signal });
+        vi.stubGlobal('fetch', rejectingVerify('unknown_credential'));
+        const { btn, error } = createLoginContainer();
 
-    it('swallows a rejecting promise (best-effort)', () => {
-        const PKC = { signalUnknownCredential: () => Promise.reject(new Error('unsupported')) };
-        expect(() => signalUnknownCredential(PKC, 'example.com', 'CRED123')).not.toThrow();
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(signal).toHaveBeenCalledTimes(1);
+        expect(error.textContent).toBe('Unknown passkey');
+        expect(btn.disabled).toBe(false);
     });
 });

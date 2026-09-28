@@ -182,7 +182,9 @@
       removeBtn.className = 'nr-passkeys-fe-btn nr-passkeys-fe-btn--danger nr-passkeys-fe-btn--sm';
       removeBtn.dataset.action = 'remove-credential';
       removeBtn.dataset.uid = cred.uid;
-      removeBtn.dataset.label = escapeAttr(cred.label || U.t('js.management.label.unnamed', 'Unnamed'));
+      // A dataset value is an attribute value, not HTML: it needs no escaping,
+      // and escaping it put "&amp;" into the removal question.
+      removeBtn.dataset.label = cred.label || U.t('js.management.label.unnamed', 'Unnamed');
       removeBtn.textContent = U.t('js.management.action.remove', 'Remove');
       actionsCell.appendChild(removeBtn);
 
@@ -304,10 +306,6 @@
   function sanitizeForDialog(text) {
     // Strip control characters that could confuse dialog display
     return String(text).replace(/[\x00-\x1f]/g, '');
-  }
-
-  function escapeAttr(text) {
-    return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
   }
 
   if (document.readyState === 'loading') {

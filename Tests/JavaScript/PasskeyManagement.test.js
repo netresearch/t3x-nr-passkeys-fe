@@ -1,263 +1,250 @@
 /**
- * Tests for PasskeyManagement.js
+ * Tests for the SHIPPED Resources/Public/JavaScript/PasskeyManagement.js.
  *
- * Tests management-specific behavior. Shared utilities are tested
- * in PasskeyLogin.test.js via PasskeyUtils.js.
+ * Each test builds a management container, imports PasskeyUtils.js and the
+ * module afresh (it initialises on load) and drives it through the DOM:
+ * the registered event, the rename and remove buttons. Only fetch and
+ * window.confirm are stubbed.
  */
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { loadModules, settle, jsonResponse, clearBody } from './support/modules.js';
 
-// Load the shared utility module so NrPasskeysFe is available
-import '../../Resources/Public/JavaScript/PasskeyUtils.js';
-
-function clearBody() {
-    while (document.body.firstChild) {
-        document.body.removeChild(document.body.firstChild);
-    }
-}
+const LIST_URL = '/list';
+const RENAME_URL = '/rename';
+const REMOVE_URL = '/remove';
 
 function createManagementContainer() {
     const container = document.createElement('div');
     container.setAttribute('data-nr-passkeys-fe', 'management');
-    container.dataset.eidUrl = '/index.php';
+    container.dataset.listUrl = LIST_URL;
+    container.dataset.renameUrl = RENAME_URL;
+    container.dataset.removeUrl = REMOVE_URL;
 
     const table = document.createElement('table');
     const tbody = document.createElement('tbody');
     tbody.id = 'nr-passkeys-fe-credential-body';
     table.appendChild(tbody);
-    container.appendChild(table);
 
-    const emptyEl = document.createElement('div');
-    emptyEl.className = 'nr-passkeys-fe-management__empty';
-    container.appendChild(emptyEl);
+    const empty = document.createElement('div');
+    empty.className = 'nr-passkeys-fe-management__empty';
+    const warning = document.createElement('div');
+    warning.className = 'nr-passkeys-fe-management__warning';
+    const error = document.createElement('div');
+    error.className = 'nr-passkeys-fe-management__error';
+    error.style.display = 'none';
+    const status = document.createElement('div');
+    status.className = 'nr-passkeys-fe-management__status';
+    status.style.display = 'none';
+    const registerBtn = document.createElement('button');
+    registerBtn.setAttribute('data-action', 'register-passkey');
 
-    const errorEl = document.createElement('div');
-    errorEl.className = 'nr-passkeys-fe-management__error';
-    container.appendChild(errorEl);
-
-    const statusEl = document.createElement('div');
-    statusEl.className = 'nr-passkeys-fe-management__status';
-    container.appendChild(statusEl);
-
+    container.append(table, empty, warning, error, status, registerBtn);
     document.body.appendChild(container);
-    return { container, tbody, emptyEl, errorEl, statusEl };
+    return { container, table, tbody, empty, warning, error, status, registerBtn };
 }
 
-// ---------------------------------------------------------------
-// Render list helper (mirrors PasskeyManagement.js renderList)
-// ---------------------------------------------------------------
+const CREDENTIALS = [
+    { uid: 1, label: 'iPhone', createdAt: 1700000000, lastUsedAt: 0 },
+    { uid: 2, label: '', createdAt: 0, lastUsedAt: 1700000500 },
+];
 
-function renderCredentialRow(cred, tbody) {
-    const row = document.createElement('tr');
-    row.className = 'nr-passkeys-fe-management__row';
-    row.dataset.uid = cred.uid;
-
-    const labelCell = document.createElement('td');
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'nr-passkeys-fe-management__label';
-    labelSpan.dataset.uid = cred.uid;
-    labelSpan.textContent = cred.label || 'Unnamed';
-    labelCell.appendChild(labelSpan);
-    row.appendChild(labelCell);
-
-    const renameBtn = document.createElement('button');
-    renameBtn.type = 'button';
-    renameBtn.dataset.action = 'rename-credential';
-    renameBtn.dataset.uid = cred.uid;
-    renameBtn.textContent = 'Rename';
-
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.dataset.action = 'remove-credential';
-    removeBtn.dataset.uid = cred.uid;
-    removeBtn.dataset.label = cred.label || 'Unnamed';
-    removeBtn.textContent = 'Remove';
-
-    const actionsCell = document.createElement('td');
-    actionsCell.appendChild(renameBtn);
-    actionsCell.appendChild(removeBtn);
-    row.appendChild(actionsCell);
-
-    tbody.appendChild(row);
-    return row;
+/**
+ * Load the module and render the list through its own refresh path, which the
+ * enrollment module triggers with the nr-passkeys-fe:registered event.
+ */
+async function renderWith(parts, credentials) {
+    await loadModules('PasskeyUtils.js', 'PasskeyManagement.js');
+    fetch.mockResolvedValueOnce(jsonResponse(200, { credentials }));
+    parts.container.dispatchEvent(new CustomEvent('nr-passkeys-fe:registered'));
+    await settle();
 }
 
-// ---------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------
+beforeEach(() => {
+    clearBody();
+    window.PublicKeyCredential = function () {};
+    vi.stubGlobal('fetch', vi.fn());
+});
 
-describe('PasskeyManagement — list rendering from JSON', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
+afterEach(() => {
+    clearBody();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+    delete window.PublicKeyCredential;
+});
+
+describe('PasskeyManagement — list rendering', () => {
+    it('renders one row per credential with its label, and "Unnamed" for an empty one', async () => {
+        const parts = createManagementContainer();
+
+        await renderWith(parts, CREDENTIALS);
+
+        expect(fetch).toHaveBeenCalledWith(LIST_URL, expect.objectContaining({ method: 'GET' }));
+        const rows = parts.tbody.querySelectorAll('tr.nr-passkeys-fe-management__row');
+        expect(rows).toHaveLength(2);
+        expect(rows[0].dataset.uid).toBe('1');
+        expect(rows[0].querySelector('.nr-passkeys-fe-management__label').textContent).toBe('iPhone');
+        expect(rows[1].querySelector('.nr-passkeys-fe-management__label').textContent).toBe('Unnamed');
+        expect(rows[0].children[2].textContent).toBe('Never');
+        expect(rows[1].children[1].textContent).toBe('—');
+        expect(parts.empty.style.display).toBe('none');
+        expect(parts.warning.style.display).toBe('none');
     });
 
-    it('renders a row for each credential', () => {
-        const { tbody } = createManagementContainer();
-        const credentials = [
-            { uid: 1, label: 'Key 1', createdAt: 1700000000, lastUsedAt: 0, aaguid: '' },
-            { uid: 2, label: 'Key 2', createdAt: 1700000001, lastUsedAt: 1700000100, aaguid: '' },
-        ];
+    it('renders the label as text, never as markup', async () => {
+        const parts = createManagementContainer();
 
-        credentials.forEach((c) => renderCredentialRow(c, tbody));
+        await renderWith(parts, [{ uid: 7, label: '<img src=x onerror=alert(1)>', createdAt: 0, lastUsedAt: 0 }]);
 
-        expect(tbody.querySelectorAll('tr').length).toBe(2);
+        const label = parts.tbody.querySelector('.nr-passkeys-fe-management__label');
+        expect(label.textContent).toBe('<img src=x onerror=alert(1)>');
+        expect(label.querySelector('img')).toBeNull();
     });
 
-    it('renders credential label as text content', () => {
-        const { tbody } = createManagementContainer();
-        renderCredentialRow({ uid: 1, label: 'My YubiKey' }, tbody);
+    it('gives every row a rename and a remove button for its uid', async () => {
+        const parts = createManagementContainer();
 
-        const labelSpan = tbody.querySelector('.nr-passkeys-fe-management__label');
-        expect(labelSpan.textContent).toBe('My YubiKey');
+        await renderWith(parts, CREDENTIALS);
+
+        const rename = parts.tbody.querySelector('[data-action="rename-credential"]');
+        const remove = parts.tbody.querySelector('[data-action="remove-credential"]');
+        expect(rename.dataset.uid).toBe('1');
+        expect(remove.dataset.uid).toBe('1');
+        expect(remove.dataset.label).toBe('iPhone');
     });
 
-    it('uses "Unnamed" for credential with empty label', () => {
-        const { tbody } = createManagementContainer();
-        renderCredentialRow({ uid: 1, label: '' }, tbody);
+    it('warns when only one passkey is left', async () => {
+        const parts = createManagementContainer();
 
-        const labelSpan = tbody.querySelector('.nr-passkeys-fe-management__label');
-        expect(labelSpan.textContent).toBe('Unnamed');
+        await renderWith(parts, [CREDENTIALS[0]]);
+
+        expect(parts.warning.style.display).toBe('');
     });
 
-    it('stores uid in data-uid attribute on row', () => {
-        const { tbody } = createManagementContainer();
-        renderCredentialRow({ uid: 42, label: 'Key' }, tbody);
+    it('shows the empty message and hides the table when no passkey is left', async () => {
+        const parts = createManagementContainer();
 
-        const row = tbody.querySelector('tr');
-        expect(row.dataset.uid).toBe('42');
+        await renderWith(parts, []);
+
+        expect(parts.empty.style.display).toBe('');
+        expect(parts.table.style.display).toBe('none');
     });
 
-    it('renders rename and remove buttons with correct data-action', () => {
-        const { tbody } = createManagementContainer();
-        renderCredentialRow({ uid: 1, label: 'Key' }, tbody);
+    it('keeps the register button usable only where WebAuthn exists', async () => {
+        delete window.PublicKeyCredential;
+        const parts = createManagementContainer();
 
-        const renameBtn = tbody.querySelector('[data-action="rename-credential"]');
-        const removeBtn = tbody.querySelector('[data-action="remove-credential"]');
+        await loadModules('PasskeyUtils.js', 'PasskeyManagement.js');
 
-        expect(renameBtn).not.toBeNull();
-        expect(removeBtn).not.toBeNull();
+        expect(parts.registerBtn.disabled).toBe(true);
     });
 });
 
-describe('PasskeyManagement — rename API call', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
+describe('PasskeyManagement — rename', () => {
+    async function startRename(parts) {
+        await renderWith(parts, CREDENTIALS);
+        parts.tbody.querySelector('[data-action="rename-credential"]').click();
+        return parts.tbody.querySelector('.nr-passkeys-fe-management__rename-input');
+    }
+
+    it('posts the uid and the trimmed new label and shows it on success', async () => {
+        const parts = createManagementContainer();
+        const input = await startRename(parts);
+        expect(input.value).toBe('iPhone');
+
+        fetch.mockResolvedValueOnce(jsonResponse(200, { status: 'ok' }));
+        input.value = '  Work phone  ';
+        input.dispatchEvent(new Event('blur'));
+        await settle();
+
+        const [url, init] = fetch.mock.calls.at(-1);
+        expect(url).toBe(RENAME_URL);
+        expect(JSON.parse(init.body)).toEqual({ uid: '1', label: 'Work phone' });
+        expect(parts.tbody.querySelector('.nr-passkeys-fe-management__label').textContent).toBe('Work phone');
+        expect(parts.status.textContent).toBe('Passkey renamed successfully.');
     });
 
-    it('sends uid and label to rename endpoint', async () => {
-        const fetchMock = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({ status: 'ok' }),
-        });
-        window.fetch = fetchMock;
+    it('restores the old label and shows the error when the server refuses', async () => {
+        const parts = createManagementContainer();
+        const input = await startRename(parts);
 
-        await fetch('/index.php?eID=nr_passkeys_fe&action=manageRename', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid: '5', label: 'New Name' }),
-            credentials: 'same-origin',
-        });
+        fetch.mockResolvedValueOnce(jsonResponse(400, { error: 'Label too long' }));
+        input.value = 'Something else';
+        input.dispatchEvent(new Event('blur'));
+        await settle();
 
-        expect(fetchMock).toHaveBeenCalledWith(
-            expect.stringContaining('action=manageRename'),
-            expect.objectContaining({ method: 'POST' }),
-        );
-        const callBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-        expect(callBody.uid).toBe('5');
-        expect(callBody.label).toBe('New Name');
+        expect(parts.tbody.querySelector('.nr-passkeys-fe-management__label').textContent).toBe('iPhone');
+        expect(parts.error.textContent).toBe('Label too long');
     });
 
-    it('reverts label on rename failure', async () => {
-        const { tbody } = createManagementContainer();
-        renderCredentialRow({ uid: 1, label: 'Original Label' }, tbody);
+    it('sends nothing for an unchanged label or after Escape', async () => {
+        const parts = createManagementContainer();
+        const input = await startRename(parts);
+        const callsBefore = fetch.mock.calls.length;
 
-        const labelSpan = tbody.querySelector('.nr-passkeys-fe-management__label');
-        const currentLabel = labelSpan.textContent;
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        input.dispatchEvent(new Event('blur'));
+        await settle();
 
-        // Simulate failed rename — revert
-        labelSpan.textContent = currentLabel;
-        expect(labelSpan.textContent).toBe('Original Label');
-    });
-});
-
-describe('PasskeyManagement — remove with confirmation', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
-    });
-
-    it('does not call fetch when user cancels confirmation', async () => {
-        const fetchMock = vi.fn();
-        window.fetch = fetchMock;
-        window.confirm = vi.fn().mockReturnValue(false);
-
-        const confirmed = window.confirm('Remove this passkey?');
-        if (confirmed) {
-            await fetch('/remove');
-        }
-
-        expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it('calls remove endpoint when user confirms', async () => {
-        const fetchMock = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => ({ status: 'ok' }),
-        });
-        window.fetch = fetchMock;
-        window.confirm = vi.fn().mockReturnValue(true);
-
-        const confirmed = window.confirm('Remove this passkey?');
-        if (confirmed) {
-            await fetch('/index.php?eID=nr_passkeys_fe&action=manageRemove', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: '3' }),
-                credentials: 'same-origin',
-            });
-        }
-
-        expect(fetchMock).toHaveBeenCalledWith(
-            expect.stringContaining('action=manageRemove'),
-            expect.objectContaining({ method: 'POST' }),
-        );
-    });
-
-    it('removes DOM row on successful delete', () => {
-        const { tbody, container } = createManagementContainer();
-        renderCredentialRow({ uid: 7, label: 'Delete Me' }, tbody);
-
-        expect(tbody.querySelectorAll('tr').length).toBe(1);
-
-        // Simulate successful removal
-        const row = container.querySelector('.nr-passkeys-fe-management__row[data-uid="7"]');
-        if (row && row.parentNode) {
-            row.parentNode.removeChild(row);
-        }
-
-        expect(tbody.querySelectorAll('tr').length).toBe(0);
+        expect(fetch.mock.calls.length).toBe(callsBefore);
+        expect(parts.tbody.querySelector('.nr-passkeys-fe-management__label').textContent).toBe('iPhone');
     });
 });
 
-describe('PasskeyManagement — nr-passkeys-fe:registered event', () => {
-    afterEach(() => {
-        clearBody();
-        vi.restoreAllMocks();
+describe('PasskeyManagement — remove', () => {
+    it('asks first and sends nothing when the user cancels', async () => {
+        const parts = createManagementContainer();
+        await renderWith(parts, CREDENTIALS);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        const callsBefore = fetch.mock.calls.length;
+
+        parts.tbody.querySelector('[data-action="remove-credential"]').click();
+        await settle();
+
+        expect(confirmSpy).toHaveBeenCalledTimes(1);
+        expect(fetch.mock.calls.length).toBe(callsBefore);
     });
 
-    it('listens for registration event on container and document', () => {
-        const { container } = createManagementContainer();
-        const containerHandler = vi.fn();
-        const documentHandler = vi.fn();
+    it('names the passkey in the question exactly as it is labelled', async () => {
+        // The label is shown as plain text in a dialog: it must not arrive
+        // HTML-escaped ("A &amp; B").
+        const parts = createManagementContainer();
+        await renderWith(parts, [{ uid: 3, label: 'Work & "home" key', createdAt: 0, lastUsedAt: 0 }]);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-        container.addEventListener('nr-passkeys-fe:registered', containerHandler);
-        document.addEventListener('nr-passkeys-fe:registered', documentHandler);
+        parts.tbody.querySelector('[data-action="remove-credential"]').click();
 
-        const event = new CustomEvent('nr-passkeys-fe:registered', { bubbles: true, detail: { credentialUid: 1 } });
-        container.dispatchEvent(event);
+        expect(confirmSpy.mock.calls[0][0]).toBe('Remove passkey "Work & "home" key"? This cannot be undone.');
+    });
 
-        expect(containerHandler).toHaveBeenCalledTimes(1);
-        expect(documentHandler).toHaveBeenCalledTimes(1); // bubbles to document
+    it('removes the row after the server confirms and reloads the list', async () => {
+        const parts = createManagementContainer();
+        await renderWith(parts, CREDENTIALS);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        fetch
+            .mockResolvedValueOnce(jsonResponse(200, { status: 'ok' }))
+            .mockResolvedValueOnce(jsonResponse(200, { credentials: [CREDENTIALS[1]] }));
+
+        parts.tbody.querySelector('[data-action="remove-credential"][data-uid="1"]').click();
+        await settle(60);
+
+        const removeCall = fetch.mock.calls.find((c) => c[0] === REMOVE_URL);
+        expect(JSON.parse(removeCall[1].body)).toEqual({ uid: '1' });
+        expect(parts.tbody.querySelector('tr[data-uid="1"]')).toBeNull();
+        expect(parts.tbody.querySelectorAll('tr')).toHaveLength(1);
+        expect(parts.warning.style.display).toBe('');
+    });
+
+    it('keeps the row and shows the error when the server refuses', async () => {
+        const parts = createManagementContainer();
+        await renderWith(parts, CREDENTIALS);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        fetch.mockResolvedValueOnce(jsonResponse(409, { error: 'Last passkey' }));
+
+        parts.tbody.querySelector('[data-action="remove-credential"][data-uid="1"]').click();
+        await settle(60);
+
+        expect(parts.tbody.querySelector('tr[data-uid="1"]')).not.toBeNull();
+        expect(parts.error.textContent).toBe('Last passkey');
     });
 });
