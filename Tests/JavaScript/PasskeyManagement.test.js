@@ -177,11 +177,24 @@ describe('PasskeyManagement — rename', () => {
         expect(parts.error.textContent).toBe('Label too long');
     });
 
-    it('sends nothing for an unchanged label or after Escape', async () => {
+    it('sends nothing for an unchanged label', async () => {
         const parts = createManagementContainer();
         const input = await startRename(parts);
         const callsBefore = fetch.mock.calls.length;
 
+        input.dispatchEvent(new Event('blur'));
+        await settle();
+
+        expect(fetch.mock.calls.length).toBe(callsBefore);
+        expect(parts.tbody.querySelector('.nr-passkeys-fe-management__label').textContent).toBe('iPhone');
+    });
+
+    it('discards an edited label on Escape without a request', async () => {
+        const parts = createManagementContainer();
+        const input = await startRename(parts);
+        const callsBefore = fetch.mock.calls.length;
+
+        input.value = 'Edited but abandoned';
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         input.dispatchEvent(new Event('blur'));
         await settle();
@@ -217,7 +230,28 @@ describe('PasskeyManagement — remove', () => {
         expect(confirmSpy.mock.calls[0][0]).toBe('Remove passkey "Work & "home" key"? This cannot be undone.');
     });
 
-    it('removes the row after the server confirms and reloads the list', async () => {
+    it('removes the row as soon as the server confirms, without waiting for the list reload', async () => {
+        const parts = createManagementContainer();
+        await renderWith(parts, CREDENTIALS);
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        // The follow-up list reload fails, so only the delete handler can
+        // have removed the row.
+        fetch
+            .mockResolvedValueOnce(jsonResponse(200, { status: 'ok' }))
+            .mockResolvedValueOnce(jsonResponse(500, {}));
+
+        parts.tbody.querySelector('[data-action="remove-credential"][data-uid="1"]').click();
+        await settle(60);
+
+        const removeCall = fetch.mock.calls.find((c) => c[0] === REMOVE_URL);
+        expect(JSON.parse(removeCall[1].body)).toEqual({ uid: '1' });
+        expect(parts.tbody.querySelector('tr[data-uid="1"]')).toBeNull();
+        expect(parts.tbody.querySelector('tr[data-uid="2"]')).not.toBeNull();
+        expect(parts.status.textContent).toBe('Passkey removed successfully.');
+    });
+
+    it('reloads the list after a removal', async () => {
         const parts = createManagementContainer();
         await renderWith(parts, CREDENTIALS);
         vi.spyOn(window, 'confirm').mockReturnValue(true);
@@ -228,11 +262,19 @@ describe('PasskeyManagement — remove', () => {
         parts.tbody.querySelector('[data-action="remove-credential"][data-uid="1"]').click();
         await settle(60);
 
-        const removeCall = fetch.mock.calls.find((c) => c[0] === REMOVE_URL);
-        expect(JSON.parse(removeCall[1].body)).toEqual({ uid: '1' });
-        expect(parts.tbody.querySelector('tr[data-uid="1"]')).toBeNull();
+        expect(fetch.mock.calls.at(-1)[0]).toBe(LIST_URL);
         expect(parts.tbody.querySelectorAll('tr')).toHaveLength(1);
         expect(parts.warning.style.display).toBe('');
+    });
+
+    it('strips control characters from the label in the question', async () => {
+        const parts = createManagementContainer();
+        await renderWith(parts, [{ uid: 4, label: 'Key\u0000one\u0007\u001f', createdAt: 0, lastUsedAt: 0 }]);
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+        parts.tbody.querySelector('[data-action="remove-credential"]').click();
+
+        expect(confirmSpy.mock.calls[0][0]).toBe('Remove passkey "Keyone"? This cannot be undone.');
     });
 
     it('keeps the row and shows the error when the server refuses', async () => {

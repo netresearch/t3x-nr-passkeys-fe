@@ -142,15 +142,15 @@ describe('NrPasskeysFe — DOM helpers', () => {
     });
 
     it('showError handles null element gracefully', () => {
-        // Should not throw
-        window.NrPasskeysFe.showError(null, 'msg');
+        expect(() => window.NrPasskeysFe.showError(null, 'msg')).not.toThrow();
     });
 
     it('hideError handles null element gracefully', () => {
-        window.NrPasskeysFe.hideError(null);
+        expect(() => window.NrPasskeysFe.hideError(null)).not.toThrow();
     });
 
     it('setLoading handles null elements gracefully', () => {
-        window.NrPasskeysFe.setLoading(true, null, null, null);
+        expect(() => window.NrPasskeysFe.setLoading(true, null, null, null)).not.toThrow();
+        expect(() => window.NrPasskeysFe.setLoading(false, null, null, null)).not.toThrow();
     });
 });

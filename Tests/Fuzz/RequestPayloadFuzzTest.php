@@ -134,6 +134,7 @@ final class RequestPayloadFuzzTest extends TestCase
         yield 'null bytes' => ["\x00\x01\x02\x03"];
         yield 'extra proto fields' => ['{"username":"admin","__proto__":{"polluted":true}}'];
         yield 'path traversal' => ['{"username":"../../etc/passwd"}'];
+        yield 'code without username' => ['{"code":"ABCD-1234"}'];
     }
 
     #[Test]
@@ -162,8 +163,9 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('malformedJsonProvider')]
     public function recoveryVerifyHandlesMalformedJson(string $body): void
     {
-        // The real RecoveryController: none of these bodies carries a code, so
-        // every one is refused as incomplete before any lookup.
+        // The real RecoveryController: none of these bodies carries both a
+        // username and a code, so every one is refused as incomplete before
+        // any lookup.
         GeneralUtility::addInstance(RecoveryController::class, $this->realRecoveryController());
 
         $request = $this->createRequestWithAction('recoveryVerify', $body);

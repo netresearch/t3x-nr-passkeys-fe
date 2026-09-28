@@ -192,7 +192,20 @@ describe('PasskeyLogin — Signal API after an unknown credential', () => {
         expect(signal).not.toHaveBeenCalled();
     });
 
-    it('carries on when the Signal API is missing or rejects', async () => {
+    it('carries on when the Signal API is missing', async () => {
+        installWebAuthn(async () => fakeAssertion());
+        expect(window.PublicKeyCredential.signalUnknownCredential).toBeUndefined();
+        vi.stubGlobal('fetch', rejectingVerify('unknown_credential'));
+        const { btn, error } = createLoginContainer();
+
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+        await clickLogin(btn);
+
+        expect(error.textContent).toBe('Unknown passkey');
+        expect(btn.disabled).toBe(false);
+    });
+
+    it('carries on when the Signal API rejects', async () => {
         const signal = vi.fn(() => Promise.reject(new Error('unsupported')));
         installWebAuthn(async () => fakeAssertion(), { signalUnknownCredential: signal });
         vi.stubGlobal('fetch', rejectingVerify('unknown_credential'));

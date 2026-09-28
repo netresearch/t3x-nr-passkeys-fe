@@ -130,25 +130,26 @@ final class EnforcementFuzzTest extends TestCase
 
     /**
      * Resolve the status of frontend user 1, who belongs to one group per
-     * given level, on a site at $siteLevel.
+     * given level (each with $graceDays grace days), on a site at $siteLevel;
+     * $graceStart is the user's grace-period start timestamp.
      *
      * @param list<string> $groupLevels
      */
-    private function statusFor(string $siteLevel, array $groupLevels): FrontendEnforcementStatus
+    private function statusFor(string $siteLevel, array $groupLevels, int $graceDays = 0, int $graceStart = 0): FrontendEnforcementStatus
     {
         $siteConfiguration = $this->createStub(SiteConfigurationService::class);
         $siteConfiguration->method('getEnforcementLevel')->willReturn($siteLevel);
 
         $groups = [];
         foreach (\array_values($groupLevels) as $index => $level) {
-            $groups[] = ['uid' => $index + 1, 'passkey_enforcement' => $level, 'passkey_grace_period_days' => 0];
+            $groups[] = ['uid' => $index + 1, 'passkey_enforcement' => $level, 'passkey_grace_period_days' => $graceDays];
         }
 
         $userResult = $this->createStub(Result::class);
         $userResult->method('fetchAssociative')->willReturn([
             'uid' => 1,
             'usergroup' => \implode(',', \array_column($groups, 'uid')),
-            'passkey_grace_period_start' => 0,
+            'passkey_grace_period_start' => $graceStart,
         ]);
         $groupResult = $this->createStub(Result::class);
         $groupResult->method('fetchAllAssociative')->willReturn($groups);
@@ -223,23 +224,29 @@ final class EnforcementFuzzTest extends TestCase
     }
 
     #[Test]
-    public function enforcedLevelNeverAllowsGracePeriodByConvention(): void
+    public function anEnforcedGroupGrantsNoGracePeriodEvenWithGraceDaysConfigured(): void
     {
-        // Business rule: 'enforced' means hard requirement, no grace period applies
-        // We verify this invariant at the DTO level when grace period = false
-        $status = new FrontendEnforcementStatus(
-            effectiveLevel: 'enforced',
-            siteLevel: 'enforced',
-            groupLevel: 'enforced',
-            passkeyCount: 0,
-            inGracePeriod: false,
-            graceDeadline: null,
-            recoveryCodesRemaining: 0,
-        );
+        // Business rule: 'enforced' is a hard requirement. The group carries
+        // 14 grace days and the user started a grace period yesterday; the
+        // service must still grant none.
+        $status = $this->statusFor('off', ['enforced'], graceDays: 14, graceStart: \time() - 86_400);
 
+        self::assertSame('enforced', $status->effectiveLevel);
         self::assertFalse($status->inGracePeriod);
         self::assertNull($status->graceDeadline);
-        self::assertSame('enforced', $status->effectiveLevel);
+        self::assertSame(0, $status->graceDays);
+    }
+
+    #[Test]
+    public function aRequiredGroupWithTheSameGraceDataIsInItsGracePeriod(): void
+    {
+        // Control for the case above: the same fixture at 'required' does
+        // produce a grace period, so the enforced case cannot pass vacuously.
+        $status = $this->statusFor('off', ['required'], graceDays: 14, graceStart: \time() - 86_400);
+
+        self::assertSame('required', $status->effectiveLevel);
+        self::assertTrue($status->inGracePeriod);
+        self::assertSame(14, $status->graceDays);
     }
 
     #[Test]

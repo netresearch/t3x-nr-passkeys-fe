@@ -211,15 +211,34 @@ describe('PasskeyEnrollment — registration', () => {
         expect(excluded[0].transports).toEqual(['internal']);
     });
 
-    it('follows a same-origin redirect and ignores a foreign one', async () => {
+    it('follows a same-origin redirect instead of showing the inline success', async () => {
         installWebAuthn(async () => fakeCredential());
-        stubFetch(jsonResponse(200, registrationOptions()), jsonResponse(200, { status: 'ok', redirectUrl: 'https://evil.example/' }));
-        const { registerBtn, success } = createEnrollmentContainer();
+        // Same origin, only the fragment differs: jsdom performs that navigation.
+        const target = window.location.origin + window.location.pathname + '#enrolled';
+        stubFetch(jsonResponse(200, registrationOptions()), jsonResponse(200, { status: 'ok', redirectUrl: target }));
+        const { container, registerBtn, success } = createEnrollmentContainer();
+        const registered = vi.fn();
+        container.addEventListener('nr-passkeys-fe:registered', registered);
 
         await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
         await register(registerBtn);
 
-        // The foreign URL is not followed; the inline success shows instead.
+        expect(window.location.hash).toBe('#enrolled');
+        expect(success.style.display).toBe('none');
+        expect(registered).not.toHaveBeenCalled();
+        window.location.hash = '';
+    });
+
+    it('ignores a redirect to another origin and shows the inline success', async () => {
+        installWebAuthn(async () => fakeCredential());
+        stubFetch(jsonResponse(200, registrationOptions()), jsonResponse(200, { status: 'ok', redirectUrl: 'https://evil.example/' }));
+        const { registerBtn, success } = createEnrollmentContainer();
+        const hrefBefore = window.location.href;
+
+        await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
+        await register(registerBtn);
+
+        expect(window.location.href).toBe(hrefBefore);
         expect(success.style.display).toBe('');
     });
 });

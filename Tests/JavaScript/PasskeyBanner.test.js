@@ -8,7 +8,7 @@
  * module sets its dismiss cookie with the Secure flag, which a browser (and
  * jsdom) drops on a plain-http page.
  */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { loadModules, clearBody } from './support/modules.js';
 
 const DISMISS_COOKIE = 'nr_passkeys_fe_banner_dismissed';
@@ -80,6 +80,31 @@ describe('PasskeyBanner — encourage level', () => {
         expect(banner.style.display).toBe('none');
         expect(banner.getAttribute('hidden')).toBe('true');
         expect(dismissCookie()).toBe('1');
+    });
+
+    it('remembers the dismissal for 30 days, site-wide and only over https', async () => {
+        // document.cookie does not report the attributes back, so the string
+        // the module writes is read at the setter.
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+        const written = [];
+        const setter = vi.spyOn(Document.prototype, 'cookie', 'set');
+        setter.mockImplementation(function (value) {
+            written.push(value);
+        });
+        const { dismissBtn } = createBanner('encourage');
+
+        await loadModules('PasskeyBanner.js');
+        dismissBtn.click();
+        setter.mockRestore();
+        vi.useRealTimers();
+
+        const cookie = written.find((c) => c.startsWith(DISMISS_COOKIE + '=1'));
+        expect(cookie).toBeDefined();
+        expect(cookie).toContain('; expires=' + new Date('2026-01-31T00:00:00Z').toUTCString());
+        expect(cookie).toContain('; path=/');
+        expect(cookie).toContain('; SameSite=Lax');
+        expect(cookie).toContain('; Secure');
     });
 
     it('keeps a dismissed banner hidden on the next page', async () => {
