@@ -53,25 +53,25 @@ its :guilabel:`Plugin` tab:
     The page with the password login, usually a felogin plugin. It is
     linked only when all of these hold, and ignored otherwise:
 
-    - the page is a standard page (doktype 1), or a shortcut that TYPO3's own
-      shortcut resolution leads to a standard page. External-URL and link
-      pages, folders, spacers, mount points and every other page type are
-      ignored, so no URL an editor types reaches the plugin. A "random
-      subpage" shortcut is ignored as well;
+    - the page is a standard page (doktype 1), or shortcuts lead to one.
+      External-URL and link pages, folders, spacers, mount points and every
+      other page type are ignored, so no URL an editor types reaches the
+      plugin. A shortcut is followed as TYPO3 follows it for the visitor
+      (target page, first subpage the visitor may see, parent page); a
+      "random subpage" shortcut anywhere in the chain is ignored, because
+      the page it leads to is not known when the link is built;
     - that standard page belongs to the site the plugin is rendered on;
-    - a visitor who is not logged in may see it: the page is unrestricted or
-      set to "Hide at login", and so is every page above it that has
-      "Extend to subpages" set;
+    - TYPO3 grants a visitor who is not logged in access to it, with the
+      same checks as for a page request: the page itself (hidden, start
+      and end time, access groups) and every page above it that has
+      "Extend to subpages" set, in the current workspace and language. In
+      practice the page and those pages are unrestricted or set to "Hide at
+      login";
     - the link TYPO3 built stays on the site: a path, or an ``http``/``https``
       URL whose scheme, host and port are those of the site's base or of one
       of its languages. A link containing a backslash, a space or a control
       character is refused as well, because browsers remove or reinterpret
       those characters.
-
-    A shortcut is judged by the page it leads to, under the same access rule
-    as a page chosen directly. One difference between the TYPO3 versions
-    remains: a shortcut to a link page that points to a page of this site
-    is resolved to that page on TYPO3 14.3 and ignored on 13.4.
 
 ..  confval:: settings.redirectAfterLogin
 
@@ -82,11 +82,13 @@ its :guilabel:`Plugin` tab:
     form posts to it, so the one-time login token only ever goes to a URL
     that passed these checks. The rules of
     :confval:`settings.passwordLoginPage` apply, with one difference in
-    access: the page, and every page above it that has "Extend to subpages"
-    set, may be unrestricted or restricted to "Show at any login"
-    (``fe_group`` ``-2``), which is linked although the anonymous visitor
-    cannot see it yet. A page for a user group, "Hide at login" or a
-    combination is ignored, because the login does not necessarily grant it.
+    access: TYPO3 has to grant access to a visitor holding "Show at any
+    login" (``fe_group`` ``-2``) and no other group, so the page may be
+    linked although the anonymous visitor cannot see it yet. A page, or a
+    page above it that extends its access to subpages, restricted to a user
+    group or to "Hide at login" is ignored, because the login does not
+    necessarily grant it; "Show at any login" combined with a group is
+    accepted, because TYPO3 grants either.
     Where felogin sits on the same page, the login is completed through
     felogin's form and felogin's own redirect settings apply instead.
 

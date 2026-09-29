@@ -12,15 +12,13 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 use ArrayObject;
 use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController;
+use Netresearch\NrPasskeysFe\Service\LinkablePageResolver;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use ReflectionClass;
-use RuntimeException;
-use TYPO3\CMS\Core\Domain\Repository\PageRepository;
-use TYPO3\CMS\Core\Error\Http\ShortcutTargetPageNotFoundException;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
@@ -40,7 +38,7 @@ final class LoginPluginControllerTest extends TestCase
     #[Test]
     public function isInstantiable(): void
     {
-        $subject = new LoginPluginController($this->createStub(SiteFinder::class), $this->createStub(PageRepository::class));
+        $subject = new LoginPluginController($this->createStub(SiteFinder::class), $this->createStub(LinkablePageResolver::class));
         self::assertInstanceOf(LoginPluginController::class, $subject);
     }
 
@@ -206,30 +204,13 @@ final class LoginPluginControllerTest extends TestCase
         self::assertNull($vars['passwordFallbackUrl']);
     }
 
-    /**
-     * Only a standard page is linked. Every other doktype is refused before a
-     * link is built, whatever link TYPO3 would build for it: the URL of an
-     * external-URL or link page is typed by an editor.
-     *
-     * @return iterable<string, array{int}>
-     */
-    public static function doktypesThatAreNoStandardPage(): iterable
-    {
-        yield 'external URL / link page (3)' => [3];
-        yield 'mount point (7)' => [7];
-        yield 'spacer (199)' => [199];
-        yield 'folder (254)' => [254];
-        yield 'backend user section (6)' => [6];
-    }
-
     #[Test]
-    #[DataProvider('doktypesThatAreNoStandardPage')]
-    public function aPageThatIsNoStandardPageIsIgnored(int $doktype): void
+    public function aPageTheResolverRefusesIsIgnored(): void
     {
-        // The built link is on-site, so only the doktype can refuse it.
+        // The link TYPO3 would build is on-site, so only the resolver refuses.
         $vars = $this->renderWithSettings(
             ['redirectAfterLogin' => '17', 'passwordLoginPage' => '17'],
-            targets: [17 => ['site' => 'main', 'uri' => '/member', 'doktype' => $doktype]],
+            targets: [17 => ['site' => 'main', 'uri' => '/member', 'linkable' => false]],
         );
 
         self::assertNull($vars['redirectUrl']);
@@ -237,12 +218,13 @@ final class LoginPluginControllerTest extends TestCase
     }
 
     #[Test]
-    public function aShortcutToAStandardPageLinksItsTarget(): void
+    public function thePageTheResolverReachesIsLinked(): void
     {
+        // A shortcut: the resolver answers with the page it leads to.
         $vars = $this->renderWithSettings(
             ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
             targets: [
-                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 11],
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'resolvesTo' => 11],
                 11 => ['site' => 'main', 'uri' => '/member'],
             ],
         );
@@ -251,75 +233,32 @@ final class LoginPluginControllerTest extends TestCase
         self::assertSame('/member', $vars['passwordFallbackUrl']);
     }
 
-    /**
-     * @return iterable<string, array{array<int, array<string, mixed>>}>
-     */
-    public static function shortcutsThatLeadNowhereLinkable(): iterable
-    {
-        yield 'to an external URL page' => [[
-            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 17],
-            17 => ['site' => 'main', 'uri' => '/member', 'doktype' => 3],
-        ]];
-        yield 'to a page of another site' => [[
-            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 51],
-            51 => ['site' => 'other', 'uri' => '/other-page'],
-        ]];
-        yield 'to itself' => [[
-            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 22],
-        ]];
-        yield 'to a page core cannot resolve' => [[
-            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 99],
-        ]];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $targets
-     */
     #[Test]
-    #[DataProvider('shortcutsThatLeadNowhereLinkable')]
-    public function aShortcutThatLeadsNowhereLinkableIsIgnored(array $targets): void
+    public function aReachedPageOfAnotherSiteIsIgnored(): void
     {
-        $vars = $this->renderWithSettings(['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'], targets: $targets);
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'resolvesTo' => 51],
+                51 => ['site' => 'other', 'uri' => '/other-page'],
+            ],
+        );
 
         self::assertNull($vars['redirectUrl']);
         self::assertNull($vars['passwordFallbackUrl']);
     }
 
-    /**
-     * @return iterable<string, array{string}>
-     */
-    public static function restrictionsOtherThanAnyLoggedInUser(): iterable
-    {
-        yield 'a user group' => ['5'];
-        yield 'hide at login' => ['-1'];
-        yield 'any login or a group' => ['-2,5'];
-    }
-
     #[Test]
-    #[DataProvider('restrictionsOtherThanAnyLoggedInUser')]
-    public function aLoginTargetWithAnotherRestrictionIsNotLinked(string $feGroup): void
+    public function theResolverJudgesEachPageForTheVisitorWhoFollowsIt(): void
     {
-        // Only "any logged-in user" (-2) is known to be visible after the
-        // login. A "hide at login" page (-1) is one typolink does link for
-        // the anonymous visitor, so the controller has to refuse it itself.
-        $vars = $this->renderWithSettings(
-            ['redirectAfterLogin' => '18'],
-            targets: [18 => ['main', '/restricted', $feGroup]],
+        $calls = new ArrayObject();
+        $this->renderWithSettings(
+            ['redirectAfterLogin' => '11', 'passwordLoginPage' => '10'],
+            targets: [11 => ['main', '/member'], 10 => ['main', '/login']],
+            resolverCalls: $calls,
         );
 
-        self::assertNull($vars['redirectUrl']);
-    }
-
-    #[Test]
-    public function aHideAtLoginPageIsStillAPasswordLink(): void
-    {
-        // The password link is followed before the login, where -1 is visible.
-        $vars = $this->renderWithSettings(
-            ['passwordLoginPage' => '18'],
-            targets: [18 => ['main', '/login', '-1']],
-        );
-
-        self::assertSame('/login', $vars['passwordFallbackUrl']);
+        self::assertEqualsCanonicalizing([[11, true], [10, false]], $calls->getArrayCopy());
     }
 
     #[Test]
@@ -335,72 +274,6 @@ final class LoginPluginControllerTest extends TestCase
         );
 
         self::assertNull($vars['redirectUrl']);
-    }
-
-    /**
-     * Pages under an ancestor that extends its fe_group to subpages, the
-     * target itself unrestricted. 30 is the parent, 31 the grandparent.
-     *
-     * @return iterable<string, array{array<int, array<string, mixed>>, bool, bool}>
-     */
-    public static function inheritedRestrictions(): iterable
-    {
-        $tree = static fn(string $parentGroup, int $extend, array $grandparent = []): array => [
-            18 => ['site' => 'main', 'uri' => '/tree/child', 'pid' => 30],
-            30 => ['site' => 'main', 'uri' => '/tree', 'pid' => $grandparent === [] ? 1 : 31, 'fe_group' => $parentGroup, 'extendToSubpages' => $extend],
-        ] + ($grandparent === [] ? [] : [31 => ['site' => 'main', 'uri' => '/', 'pid' => 1] + $grandparent]);
-
-        // [pages, linked as the login target, linked as the password page]
-        yield 'a group, extended' => [$tree('8', 1), false, false];
-        yield 'hide at login, extended' => [$tree('-1', 1), false, true];
-        yield 'any login, extended' => [$tree('-2', 1), true, false];
-        yield 'a group, not extended' => [$tree('8', 0), true, true];
-        yield 'a group on the grandparent, extended' => [$tree('', 0, ['fe_group' => '8', 'extendToSubpages' => 1]), false, false];
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $targets
-     */
-    #[Test]
-    #[DataProvider('inheritedRestrictions')]
-    public function anInheritedRestrictionCountsAsTheTargetsOwn(array $targets, bool $asLoginTarget, bool $asPasswordPage): void
-    {
-        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18', 'passwordLoginPage' => '18'], targets: $targets);
-
-        self::assertSame($asLoginTarget ? '/tree/child' : null, $vars['redirectUrl']);
-        self::assertSame($asPasswordPage ? '/tree/child' : null, $vars['passwordFallbackUrl']);
-    }
-
-    #[Test]
-    public function aShortcutToAPageForAnyLoginIsJudgedLikeThatPage(): void
-    {
-        // Core's own group check would drop the -2 target for the anonymous
-        // visitor; the shortcut is resolved without it and judged here.
-        $vars = $this->renderWithSettings(
-            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
-            targets: [
-                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 18],
-                18 => ['site' => 'main', 'uri' => '/members-only', 'fe_group' => '-2'],
-            ],
-        );
-
-        self::assertSame('/members-only', $vars['redirectUrl']);
-        self::assertNull($vars['passwordFallbackUrl']);
-    }
-
-    #[Test]
-    public function aRandomSubpageShortcutIsIgnored(): void
-    {
-        $vars = $this->renderWithSettings(
-            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
-            targets: [
-                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 11, 'shortcut_mode' => 2],
-                11 => ['site' => 'main', 'uri' => '/member'],
-            ],
-        );
-
-        self::assertNull($vars['redirectUrl']);
-        self::assertNull($vars['passwordFallbackUrl']);
     }
 
     #[Test]
@@ -502,6 +375,7 @@ final class LoginPluginControllerTest extends TestCase
         array $targets = [],
         array $languageBases = [],
         string $siteBase = 'https://main.example',
+        ?ArrayObject $resolverCalls = null,
     ): array {
         $targets = \array_map($this->normalizeTarget(...), $targets);
         $siteFinder = $this->createStub(SiteFinder::class);
@@ -515,40 +389,22 @@ final class LoginPluginControllerTest extends TestCase
             },
         );
 
-        // getPage(), getRawRecord() and resolveShortcutPage() as core answers
-        // them for the records described in $targets.
-        $pageRepository = $this->createStub(PageRepository::class);
-        $pageRepository->method('getPage')->willReturnCallback(
-            static fn(int $uid): array => isset($targets[$uid]) ? self::pageRecord($uid, $targets[$uid]) : [],
-        );
-        $pageRepository->method('getRawRecord')->willReturnCallback(
-            static fn(string $table, int $uid): ?array => isset($targets[$uid]) ? self::pageRecord($uid, $targets[$uid]) : null,
-        );
-        $pageRepository->method('resolveShortcutPage')->willReturnCallback(
-            // 13.4 takes ($page, $resolveRandomSubpages, $disableGroupAccessCheck),
-            // 14.3 ($page, $disableGroupAccessCheck): the group flag comes last.
-            static function (array $page, bool ...$flags) use ($targets): array {
-                $target = $targets[$page['uid']]['shortcut'] ?? null;
-                $groupChecked = $flags === [] || !\end($flags);
-                if (
-                    $target === null
-                    || !isset($targets[$target])
-                    // With the group check, core resolves only to pages the
-                    // anonymous visitor may see.
-                    || ($groupChecked && !\in_array($targets[$target]['fe_group'], ['', '0', '-1'], true))
-                ) {
-                    throw new ShortcutTargetPageNotFoundException('Shortcut target not accessible', 1);
+        // The resolver admits a page described in $targets unless it is
+        // marked not linkable, and answers with the page it resolves to. What
+        // it decides against real pages is LinkablePageResolverTest's subject.
+        $resolverCalls ??= new ArrayObject();
+        $resolver = $this->createStub(LinkablePageResolver::class);
+        $resolver->method('resolve')->willReturnCallback(
+            static function (int $uid, bool $afterLogin) use ($targets, $resolverCalls): ?int {
+                $resolverCalls[] = [$uid, $afterLogin];
+                if (!isset($targets[$uid]) || !$targets[$uid]['linkable']) {
+                    return null;
                 }
 
-                if ($target === $page['uid']) {
-                    // What 13.4 throws for a loop; 14.3 throws a subclass.
-                    throw new RuntimeException('Page shortcuts were looping in uids: ' . $target, 1294587212);
-                }
-
-                return self::pageRecord($target, $targets[$target]);
+                return $targets[$uid]['resolvesTo'] ?? $uid;
             },
         );
-        $subject = $this->buildController($siteFinder, $pageRepository);
+        $subject = $this->buildController($siteFinder, $resolver);
 
         // The builder links the page last passed to setTargetPageUid(), and a
         // page only for logged-in users only when restricted pages are linked,
@@ -610,12 +466,11 @@ final class LoginPluginControllerTest extends TestCase
 
     /**
      * A target is [site identifier, URI typolink builds, fe_group] or an
-     * array with the keys site, uri, fe_group, doktype, shortcut,
-     * shortcut_mode, pid and extendToSubpages.
+     * array with the keys site, uri, fe_group, linkable and resolvesTo.
      *
      * @param array<int|string, mixed> $target
      *
-     * @return array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int, shortcut_mode: int, pid: int, extendToSubpages: int}
+     * @return array{site: string, uri: string, fe_group: string, linkable: bool, resolvesTo: ?int}
      */
     private function normalizeTarget(array $target): array
     {
@@ -623,36 +478,16 @@ final class LoginPluginControllerTest extends TestCase
             'site' => (string) ($target['site'] ?? $target[0]),
             'uri' => (string) ($target['uri'] ?? $target[1] ?? ''),
             'fe_group' => (string) ($target['fe_group'] ?? $target[2] ?? ''),
-            'doktype' => (int) ($target['doktype'] ?? PageRepository::DOKTYPE_DEFAULT),
-            'shortcut' => isset($target['shortcut']) ? (int) $target['shortcut'] : null,
-            'shortcut_mode' => (int) ($target['shortcut_mode'] ?? 0),
-            'pid' => (int) ($target['pid'] ?? 1),
-            'extendToSubpages' => (int) ($target['extendToSubpages'] ?? 0),
+            'linkable' => (bool) ($target['linkable'] ?? true),
+            'resolvesTo' => isset($target['resolvesTo']) ? (int) $target['resolvesTo'] : null,
         ];
     }
 
-    /**
-     * @param array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int, shortcut_mode: int, pid: int, extendToSubpages: int} $target
-     *
-     * @return array<string, int|string>
-     */
-    private static function pageRecord(int $uid, array $target): array
-    {
-        return [
-            'uid' => $uid,
-            'pid' => $target['pid'],
-            'doktype' => $target['doktype'],
-            'fe_group' => $target['fe_group'],
-            'shortcut_mode' => $target['shortcut_mode'],
-            'extendToSubpages' => $target['extendToSubpages'],
-        ];
-    }
-
-    private function buildController(?SiteFinder $siteFinder = null, ?PageRepository $pageRepository = null): LoginPluginController
+    private function buildController(?SiteFinder $siteFinder = null, ?LinkablePageResolver $resolver = null): LoginPluginController
     {
         $subject = new LoginPluginController(
             $siteFinder ?? $this->createStub(SiteFinder::class),
-            $pageRepository ?? $this->createStub(PageRepository::class),
+            $resolver ?? $this->createStub(LinkablePageResolver::class),
         );
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());

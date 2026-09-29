@@ -1,0 +1,6 @@
+"pages"
+,"uid","pid","title","doktype","fe_group","extendToSubpages","slug","is_siteroot","t3ver_wsid","t3ver_oid","t3ver_state"
+,1,0,"Root",1,"",0,"/",1,0,0,0
+,100,1,"Parent, open live",1,"",0,"/ws-parent",0,0,0,0
+,101,100,"Child",1,"",0,"/ws-parent/child",0,0,0,0
+,102,1,"Parent, workspace version extending group 8",1,"8",1,"/ws-parent",0,1,100,0

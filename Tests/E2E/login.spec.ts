@@ -179,6 +179,9 @@ test.describe('Passkey login plugin', () => {
         ['/login-plugin-refused-208', 'a shortcut to an external-URL page'],
         ['/login-plugin-group-tree', 'a page below a parent for a group'],
         ['/login-plugin-shortcut-random', 'a "random subpage" shortcut'],
+        ['/login-plugin-chain-random', 'a shortcut to a "random subpage" shortcut'],
+        ['/login-plugin-hidden-tree', 'a page below a hidden parent that extends to its subpages'],
+        ['/login-plugin-future-tree', 'a page below a parent that extends a future start time'],
     ];
     for (const [path, what] of refusedTargets) {
         test(`${what} is neither the login target nor the password link`, async ({ page }) => {

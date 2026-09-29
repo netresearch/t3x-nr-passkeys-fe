@@ -35,6 +35,9 @@ services:
   Netresearch\NrPasskeysFe\Service\FrontendEnforcementService:
     public: true
 
+  Netresearch\NrPasskeysFe\Service\LinkablePageResolver:
+    public: true
+
   Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService:
     public: true
 
