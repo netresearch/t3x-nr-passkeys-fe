@@ -26,8 +26,7 @@
      data-nr-passkeys-fe="enrollment"
      data-eid-url="{eidUrl}"
      data-register-options-url="{registerOptionsUrl}"
-     data-register-verify-url="{registerVerifyUrl}"
-     data-enforcement="{enforcementLevel}">
+     data-register-verify-url="{registerVerifyUrl}">
 
     <h1 class="nr-passkeys-fe-enrollment__title">
         <f:translate key="enrollment.title" extensionName="nr_passkeys_fe" />
@@ -43,6 +42,12 @@
             <li><f:translate key="enrollment.benefit.biometric" extensionName="nr_passkeys_fe" /></li>
         </ul>
     </div>
+
+    <f:if condition="{enrollmentRequired}">
+        <div class="nr-passkeys-fe-enrollment__required">
+            <f:translate key="banner.enforced.description" extensionName="nr_passkeys_fe" />
+        </div>
+    </f:if>
 
     <f:if condition="{gracePeriodDaysRemaining}">
         <div class="nr-passkeys-fe-enrollment__grace-period">

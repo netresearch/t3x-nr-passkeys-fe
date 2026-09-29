@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 
 use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -30,7 +31,7 @@ final class EnrollmentPluginControllerTest extends TestCase
     #[Test]
     public function isInstantiable(): void
     {
-        $subject = new EnrollmentPluginController();
+        $subject = new EnrollmentPluginController($this->enforcementServiceWithoutState());
         self::assertInstanceOf(EnrollmentPluginController::class, $subject);
     }
 
@@ -71,15 +72,27 @@ final class EnrollmentPluginControllerTest extends TestCase
         self::assertSame('test-site', $assignedVars['siteIdentifier']);
         self::assertStringContainsString('action=registrationOptions', $assignedVars['registerOptionsUrl']);
         self::assertStringContainsString('action=registrationVerify', $assignedVars['registerVerifyUrl']);
-        self::assertSame('off', $assignedVars['enforcementLevel']);
+        // No frontend user on the request: nothing to enforce, no grace period.
+        // The functional EnrollmentPluginControllerTest covers a logged-in user.
+        self::assertFalse($assignedVars['enrollmentRequired']);
+        self::assertSame(0, $assignedVars['gracePeriodDaysRemaining']);
     }
 
     private function buildController(): EnrollmentPluginController
     {
-        $subject = new EnrollmentPluginController();
+        $subject = new EnrollmentPluginController($this->enforcementServiceWithoutState());
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
         return $subject;
+    }
+
+    /**
+     * The service is final and never reached without a frontend user, so an
+     * uninitialised instance satisfies the constructor.
+     */
+    private function enforcementServiceWithoutState(): FrontendEnforcementService
+    {
+        return (new ReflectionClass(FrontendEnforcementService::class))->newInstanceWithoutConstructor();
     }
 
     private function buildExtbaseRequest(string $siteIdentifier, string $baseUrl): Request

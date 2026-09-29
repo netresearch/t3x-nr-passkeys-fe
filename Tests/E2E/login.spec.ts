@@ -302,6 +302,11 @@ test.describe('Passkey tab in the felogin form', () => {
         // The eID controllers take the site from the request; the attribute
         // that carried the RP ID under this name is gone.
         await expect(panel).not.toHaveAttribute('data-site-identifier');
+        // One registration of the login script, the classic one the template
+        // makes; a second one under another identifier would run the module twice.
+        const loginScripts = page.locator('script[src*="PasskeyLogin.js"]');
+        await expect(loginScripts).toHaveCount(1);
+        await expect(loginScripts).not.toHaveAttribute('type', 'module');
         await expect(page.locator(stylesheet)).toHaveCount(1);
     });
 

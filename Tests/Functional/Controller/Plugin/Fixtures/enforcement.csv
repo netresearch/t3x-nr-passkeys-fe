@@ -1,0 +1,12 @@
+fe_groups
+,uid,pid,title,hidden,deleted,passkey_enforcement,passkey_grace_period_days
+,1,1,Required with grace,0,0,required,14
+,2,1,Enforced,0,0,enforced,0
+,3,1,Off,0,0,off,0
+fe_users
+,uid,pid,username,password,usergroup,disable,deleted,passkey_grace_period_start,passkey_nudge_until
+,1,1,in_grace,x,"1",0,0,0,0
+,2,1,enforced,x,"2",0,0,0,0
+,3,1,grace_not_started,x,"1",0,0,0,0
+,4,1,grace_expired,x,"1",0,0,0,0
+,5,1,not_enforced,x,"3",0,0,0,0

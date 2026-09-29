@@ -614,6 +614,7 @@
   margin-bottom: 0.25rem;
 }
 
+.nr-passkeys-fe-enrollment__required,
 .nr-passkeys-fe-enrollment__grace-period {
   color: #664d03;
   background-color: #fff3cd;

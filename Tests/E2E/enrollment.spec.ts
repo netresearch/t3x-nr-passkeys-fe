@@ -50,6 +50,34 @@ test.describe('Passkey enrollment plugin', () => {
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
+    test('a user in a grace period sees how many days are left', async ({ page }) => {
+        // e2e_grace is four days into a fourteen-day grace period (runTests.conf).
+        await loginWithPassword(page, 'e2e_grace');
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        await expect(plugin.getByText('You have 10 days remaining to set up your passkey.')).toBeVisible();
+        await expect(plugin.getByText('Passkey enrollment is required to continue accessing your account.')).toHaveCount(0);
+    });
+
+    test('a user whose group enforces passkeys is told enrollment is required', async ({ page }) => {
+        await loginWithPassword(page, 'e2e_enforced');
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        await expect(plugin.getByText('Passkey enrollment is required to continue accessing your account.')).toBeVisible();
+        await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);
+    });
+
+    test('a user with nothing enforced sees neither notice', async ({ page }) => {
+        await loginWithPassword(page);
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        await expect(plugin).toBeVisible();
+        await expect(plugin.getByText(/required to continue|days remaining/)).toHaveCount(0);
+    });
+
     test('the status endpoint answers for a logged-in user', async ({ page }) => {
         await loginWithPassword(page);
 
