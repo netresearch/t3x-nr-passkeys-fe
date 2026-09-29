@@ -383,6 +383,7 @@
    Generic form elements (BEM pattern fallback)
    ============================================================ */
 
+.nr-passkeys-fe-login__input,
 .nr-passkeys-fe-recovery__input,
 .nr-passkeys-fe-management__input,
 .nr-passkeys-fe-enrollment__input,
@@ -401,6 +402,7 @@
   box-sizing: border-box;
 }
 
+.nr-passkeys-fe-login__input:focus,
 .nr-passkeys-fe-recovery__input:focus,
 .nr-passkeys-fe-management__input:focus,
 .nr-passkeys-fe-enrollment__input:focus,
@@ -411,6 +413,7 @@
   box-shadow: 0 0 0 0.2rem var(--nr-passkeys-fe-primary-focus);
 }
 
+.nr-passkeys-fe-login__label,
 .nr-passkeys-fe-recovery__label,
 .nr-passkeys-fe-enrollment__label,
 .nr-passkeys-fe-enrollment-form__label {
@@ -419,6 +422,7 @@
   font-weight: 500;
 }
 
+.nr-passkeys-fe-login__field,
 .nr-passkeys-fe-recovery__field,
 .nr-passkeys-fe-enrollment-form__field {
   margin-bottom: 1rem;

@@ -36,6 +36,7 @@ final class PluginFlexFormTest extends AbstractPasskeyFunctionalTestCase
         yield 'login' => ['nrpasskeysfe_passkeylogin', [
             'settings.discoverableEnabled' => 'check',
             'settings.showPasswordFallback' => 'check',
+            'settings.passwordLoginPage' => 'group',
             'settings.redirectAfterLogin' => 'group',
             'settings.cssClass' => 'input',
         ]];

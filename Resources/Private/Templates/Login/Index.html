@@ -39,7 +39,7 @@
          data-nr-passkeys-fe="login"
          data-eid-url="{eidUrl}"
          data-site-identifier="{siteIdentifier}"
-         data-discoverable="1">
+         data-discoverable="{f:if(condition: discoverableEnabled, then: '1', else: '0')}">
 
         <!--
             The form that carries the verified login token into TYPO3.
@@ -52,8 +52,12 @@
             ceremony succeeds, the page reloads and the visitor stays anonymous.
             This form is that page's equivalent.
         -->
+        <f:if condition="{redirectUrl}">
+            <f:then><f:variable name="tokenFormAction" value="{redirectUrl}" /></f:then>
+            <f:else><f:variable name="tokenFormAction" value="{f:uri.page()}" /></f:else>
+        </f:if>
         <f:form id="nr-passkeys-fe-token-form"
-                actionUri="{f:uri.page()}"
+                actionUri="{tokenFormAction}"
                 method="post"
                 requestToken="{loginRequestToken}"
                 fieldNamePrefix=""
@@ -67,6 +71,22 @@
         <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 
         <div class="nr-passkeys-fe-passkey-content">
+            <f:if condition="{showUsernameField}">
+                <div class="nr-passkeys-fe-login__field">
+                    <label class="nr-passkeys-fe-login__label" for="nr-passkeys-fe-login-username">
+                        <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
+                    </label>
+                    <input type="text"
+                           id="nr-passkeys-fe-login-username"
+                           name="nr_passkeys_username"
+                           class="nr-passkeys-fe-login__input"
+                           autocomplete="username"
+                           autocorrect="off"
+                           autocapitalize="none"
+                           spellcheck="false" />
+                </div>
+            </f:if>
+
             <button type="button"
                     id="nr-passkeys-fe-login-btn"
                     class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey nr-passkeys-fe-btn--fullwidth"
@@ -84,6 +104,13 @@
             </button>
 
             <nav class="nr-passkeys-fe-links" aria-label="Authentication options">
+                <f:if condition="{passwordFallbackUrl}">
+                    <a href="{passwordFallbackUrl}"
+                       class="nr-passkeys-fe-link">
+                        <f:translate key="login.link.usePassword" extensionName="nr_passkeys_fe" />
+                    </a>
+                    <span class="nr-passkeys-fe-links__separator" aria-hidden="true">|</span>
+                </f:if>
                 <a href="#nr-passkeys-fe-recovery"
                    class="nr-passkeys-fe-link"
                    data-action="show-recovery">

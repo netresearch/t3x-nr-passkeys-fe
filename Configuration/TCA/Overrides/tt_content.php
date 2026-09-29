@@ -29,7 +29,7 @@ use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 $addPluginFlexForm = static function (string $cType, string $flexForm): void {
     if ((new Typo3Version())->getMajorVersion() >= 14) {
         $GLOBALS['TCA']['tt_content']['types'][$cType]['columnsOverrides']['pi_flexform']['config']['ds'] = $flexForm;
-    } else {
+    } elseif (\is_array($GLOBALS['TCA']['tt_content']['columns']['pi_flexform']['config']['ds'] ?? null)) {
         $GLOBALS['TCA']['tt_content']['columns']['pi_flexform']['config']['ds']['*,' . $cType] = $flexForm;
     }
 
