@@ -280,15 +280,30 @@ The admin module calls these routes through ``TYPO3.settings.ajaxUrls``.
 Each URL carries the route token TYPO3 issues to the backend session, and
 every action answers ``403`` unless the backend user is an administrator.
 
-===========================================  ======  ===========================================
-Route                                        Method  Parameters
-===========================================  ======  ===========================================
-``nr_passkeys_fe_admin_list``                GET     ``feUserUid`` (query argument)
-``nr_passkeys_fe_admin_remove``              POST    ``feUserUid``, ``credentialUid``
-``nr_passkeys_fe_admin_revoke_all``          POST    ``feUserUid``
-``nr_passkeys_fe_admin_unlock``              POST    ``feUserUid``, ``username``
-``nr_passkeys_fe_admin_update_enforcement``  POST    ``groupUid``, ``enforcement``
-===========================================  ======  ===========================================
+..  list-table::
+    :header-rows: 1
+
+    *   - Route
+        - Method
+        - Parameters
+    *   - ``nr_passkeys_fe_admin_list``
+        - GET
+        - ``feUserUid`` (query argument)
+    *   - ``nr_passkeys_fe_admin_remove``
+        - POST
+        - ``feUserUid``, ``credentialUid``
+    *   - ``nr_passkeys_fe_admin_revoke_all``
+        - POST
+        - ``feUserUid``
+    *   - ``nr_passkeys_fe_admin_unlock``
+        - POST
+        - ``feUserUid``, ``username``
+    *   - ``nr_passkeys_fe_admin_update_enforcement``
+        - POST
+        - ``groupUid``, ``enforcement``
+    *   - ``nr_passkeys_fe_admin_reset_grace_period``
+        - POST
+        - ``feUserUid``
 
 ``nr_passkeys_fe_admin_update_enforcement`` accepts ``off``, ``encourage``,
 ``required`` and ``enforced``, answers ``400`` for any other value or a
@@ -297,6 +312,12 @@ deleted group, and ``409`` while the administrator works in a workspace
 without live editing (``fe_groups`` is not versioned). It writes
 ``fe_groups.passkey_enforcement`` through DataHandler, so the change appears
 in the record history and the system log.
+
+``nr_passkeys_fe_admin_reset_grace_period`` sets
+``fe_users.passkey_grace_period_start`` of the user to ``0``, so the next
+request the enrollment interstitial handles under ``required`` starts a new
+grace period. It answers ``400`` without a ``feUserUid`` and ``404`` for an
+unknown user.
 
 Error responses
 ---------------

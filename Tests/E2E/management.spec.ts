@@ -26,6 +26,8 @@ test.describe('Passkey management plugin', () => {
         const plugin = page.locator('[data-nr-passkeys-fe="management"]');
         await expect(plugin).toBeVisible();
         await expect(plugin).toHaveAttribute('data-list-url', /eID=nr_passkeys_fe/);
+        // css.includeDefault = 0 for this page (runTests.conf, ts-constants).
+        await expect(page.locator('link[rel="stylesheet"][href*="passkey-fe.css"]')).toHaveCount(0);
     });
 
     test('a registered credential appears in the list, can be renamed and removed', async ({ page }) => {

@@ -5,10 +5,8 @@ plugin.tx_nrpasskeysfe {
         layoutRootPaths.0 = EXT:nr_passkeys_fe/Resources/Private/Layouts/
     }
     settings {
-        loginPage = {$plugin.tx_nrpasskeysfe.settings.loginPageUid}
-        managementPage = {$plugin.tx_nrpasskeysfe.settings.managementPageUid}
-        enrollmentPage = {$plugin.tx_nrpasskeysfe.settings.enrollmentPageUid}
-        css.includeDefault = 1
+        discoverableEnabled = {$plugin.tx_nrpasskeysfe.settings.discoverableEnabled}
+        css.includeDefault = {$plugin.tx_nrpasskeysfe.settings.css.includeDefault}
     }
 }
 
@@ -16,3 +14,14 @@ plugin.tx_nrpasskeysfe {
 # This adds the passkey button inline within the felogin form.
 # Integrators can disable this by removing the templateRootPaths override.
 plugin.tx_felogin_login.view.templateRootPaths.100 = EXT:nr_passkeys_fe/Resources/Private/Templates/Felogin/
+# The override renders the partial it shares with the login plugin
+# (Partials/NrPasskeysFe/LoginAssets.html). The high key keeps it clear of the
+# keys integrators usually give their own felogin partials.
+plugin.tx_felogin_login.view.partialRootPaths.1700000000 = EXT:nr_passkeys_fe/Resources/Private/Partials/
+
+# The overridden felogin templates read the same constants through felogin's
+# own settings, the only settings a felogin template receives.
+plugin.tx_felogin_login.settings.passkeys {
+    discoverableEnabled = {$plugin.tx_nrpasskeysfe.settings.discoverableEnabled}
+    css.includeDefault = {$plugin.tx_nrpasskeysfe.settings.css.includeDefault}
+}

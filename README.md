@@ -59,10 +59,6 @@ vendor/bin/typo3 database:updateschema
    ```typoscript
    @import 'EXT:nr_passkeys_fe/Configuration/TypoScript/setup.typoscript'
    @import 'EXT:nr_passkeys_fe/Configuration/TypoScript/constants.typoscript'
-
-   plugin.tx_nrpasskeysfe.settings.loginPageUid = 42
-   plugin.tx_nrpasskeysfe.settings.managementPageUid = 43
-   plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = 44
    ```
 
 2. **Add plugins** to your pages:

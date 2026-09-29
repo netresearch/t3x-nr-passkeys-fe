@@ -40,8 +40,12 @@ Revoke all credentials
     or stolen.
 
 Reset grace period
-    Reset the grace period start date to give a user more time to
-    enroll (for ``required`` enforcement only).
+    Clear the user's grace period start
+    (``fe_users.passkey_grace_period_start`` set to 0). While the user is
+    under ``required`` enforcement without a passkey, the next page request
+    starts a new grace period of the configured length. Changing the
+    enforcement level or the grace period days does not restart a grace
+    period; this action does.
 
 Unlock account
     If the user's account is locked due to too many failed attempts,

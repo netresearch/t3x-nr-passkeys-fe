@@ -38,6 +38,18 @@ test.describe('Passkey login plugin', () => {
         await expect(plugin.getByRole('link', { name: 'Use password instead' })).toHaveCount(0);
     });
 
+    test('a plugin that chose discoverable login keeps it when the constant is off', async ({ page }) => {
+        // The constant is 0 for this page; its FlexForm stores an explicit "on".
+        await page.goto('/login-plugin-discoverable', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="login"]');
+        await expect(plugin).toHaveAttribute('data-discoverable', '1');
+        await expect(plugin.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
+    });
+
+    // The FlexForm of /login-plugin-username stores "use the site setting", and
+    // the constant is 0 there (runTests.conf): the username field comes from the
+    // constant, not from the content element.
     test('with discoverable login off the plugin asks for the username first', async ({ page }) => {
         // 'load' runs after DOMContentLoaded, where PasskeyLogin.js binds the button.
         await page.goto('/login-plugin-username', { waitUntil: 'load' });
@@ -54,6 +66,18 @@ test.describe('Passkey login plugin', () => {
         await page.locator('#nr-passkeys-fe-login-btn').click();
         await expect(plugin.locator('.nr-passkeys-fe-login__error')).toHaveText('Please enter your username.');
         await expect(username).toBeFocused();
+    });
+
+    test('the default CSS follows its constant', async ({ page }) => {
+        const stylesheet = 'link[rel="stylesheet"][href*="passkey-fe.css"]';
+
+        await page.goto('/login-plugin');
+        await expect(page.locator(stylesheet)).toHaveCount(1);
+
+        // css.includeDefault = 0 for this page (runTests.conf, ts-constants).
+        await page.goto('/login-plugin-username');
+        await expect(page.locator('[data-nr-passkeys-fe="login"]')).toBeAttached();
+        await expect(page.locator(stylesheet)).toHaveCount(0);
     });
 
     test('the password fallback links to the configured page when it is switched on', async ({ page }) => {
@@ -275,5 +299,43 @@ test.describe('Passkey login plugin', () => {
         expect(unknownBody.length > 0).toBe(knownBody.length > 0);
         expect(unknownBody.toLowerCase()).not.toContain('unknown');
         expect(unknownBody.toLowerCase()).not.toContain('not found');
+    });
+});
+
+test.describe('Passkey tab in the felogin form', () => {
+    const stylesheet = 'link[rel="stylesheet"][href*="passkey-fe.css"]';
+
+    test('it logs in discoverably by default, with the default CSS', async ({ page }) => {
+        await page.goto('/login', { waitUntil: 'load' });
+
+        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        await expect(panel).toHaveAttribute('data-discoverable', '1');
+        await expect(panel.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
+        // The eID controllers take the site from the request; the attribute
+        // that carried the RP ID under this name is gone.
+        await expect(panel).not.toHaveAttribute('data-site-identifier');
+        // One registration of the login script, the classic one the template
+        // makes; a second one under another identifier would run the module twice.
+        const loginScripts = page.locator('script[src*="PasskeyLogin.js"]');
+        await expect(loginScripts).toHaveCount(1);
+        await expect(loginScripts).not.toHaveAttribute('type', 'module');
+        await expect(page.locator(stylesheet)).toHaveCount(1);
+    });
+
+    test('it follows the constants: username first and no default CSS', async ({ page }) => {
+        // Both constants are 0 for this page (runTests.conf, ts-constants).
+        await page.goto('/login-username', { waitUntil: 'load' });
+
+        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        await expect(panel).toHaveAttribute('data-discoverable', '0');
+        await expect(page.locator(stylesheet)).toHaveCount(0);
+
+        const username = panel.getByRole('textbox', { name: 'Username' });
+        await expect(username).toBeVisible();
+        await expect(username).toHaveAttribute('name', 'nr_passkeys_username');
+
+        await page.locator('#nr-passkeys-fe-felogin-login-btn').click();
+        await expect(panel.locator('.nr-passkeys-fe-login__error')).toHaveText('Please enter your username.');
+        await expect(username).toBeFocused();
     });
 });

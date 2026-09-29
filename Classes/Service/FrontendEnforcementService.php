@@ -40,6 +40,8 @@ final class FrontendEnforcementService
         'enforced' => 3,
     ];
 
+    private const SECONDS_PER_DAY = 86400;
+
     /** @var array<string, FrontendEnforcementStatus> */
     private array $statusCache = [];
 
@@ -115,11 +117,13 @@ final class FrontendEnforcementService
         $graceDeadline = null;
 
         if ($effectiveGraceDays > 0 && $gracePeriodStart > 0) {
+            // A grace day is 24 hours. Counted in local calendar days, a
+            // period across a daylight-saving change would be an hour longer
+            // or shorter, and could end at a local time that does not exist.
             $deadline = (new DateTimeImmutable())
-                ->setTimestamp($gracePeriodStart)
-                ->modify('+' . $effectiveGraceDays . ' days');
+                ->setTimestamp($gracePeriodStart + $effectiveGraceDays * self::SECONDS_PER_DAY);
 
-            if ($deadline !== false && $deadline > new DateTimeImmutable()) {
+            if ($deadline > new DateTimeImmutable()) {
                 $inGracePeriod = true;
                 $graceDeadline = $deadline;
             }
@@ -134,6 +138,7 @@ final class FrontendEnforcementService
             graceDeadline: $graceDeadline,
             recoveryCodesRemaining: $recoveryCodesRemaining,
             graceDays: $effectiveGraceDays,
+            gracePeriodStarted: $gracePeriodStart > 0,
         );
 
         $this->statusCache[$cacheKey] = $status;
@@ -142,18 +147,50 @@ final class FrontendEnforcementService
     }
 
     /**
-     * Start the grace period for a frontend user by recording the current timestamp.
+     * Start the grace period for a frontend user by recording the current
+     * timestamp, unless one was started before.
+     *
+     * A status without a grace deadline means either "never started" or
+     * "already over"; only the stored start tells them apart. Writing only
+     * where it is still 0 keeps an expired grace period expired instead of
+     * granting a fresh one on the next request.
+     *
+     * @return bool whether a grace period was started now
      */
-    public function startGracePeriod(int $feUserUid): void
+    public function startGracePeriod(int $feUserUid): bool
     {
         $connection = $this->connectionPool->getConnectionForTable('fe_users');
-        $connection->update(
+        $started = $connection->update(
             'fe_users',
             ['passkey_grace_period_start' => \time()],
+            ['uid' => $feUserUid, 'passkey_grace_period_start' => 0],
+        ) > 0;
+
+        $this->forgetStatusOf($feUserUid);
+
+        return $started;
+    }
+
+    /**
+     * Clear a frontend user's grace period start, so the next request the
+     * enrollment interstitial handles under Required starts a new one.
+     */
+    public function resetGracePeriod(int $feUserUid): void
+    {
+        $this->connectionPool->getConnectionForTable('fe_users')->update(
+            'fe_users',
+            ['passkey_grace_period_start' => 0],
             ['uid' => $feUserUid],
         );
 
-        // Invalidate cached status for this user across all sites
+        $this->forgetStatusOf($feUserUid);
+    }
+
+    /**
+     * Invalidate the cached status of a user across all sites.
+     */
+    private function forgetStatusOf(int $feUserUid): void
+    {
         foreach (\array_keys($this->statusCache) as $key) {
             if (\str_starts_with($key, $feUserUid . '|')) {
                 unset($this->statusCache[$key]);

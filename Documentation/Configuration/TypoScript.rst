@@ -5,8 +5,8 @@
 TypoScript Reference
 ====================
 
-The extension provides TypoScript constants and setup for configuring
-plugin paths and page UIDs for redirects.
+The extension provides TypoScript constants and setup for the plugin view
+paths, the default of the discoverable login switch and the default CSS.
 
 Constants
 ---------
@@ -14,35 +14,33 @@ Constants
 ..  code-block:: typoscript
     :caption: Available TypoScript constants
 
-    plugin.tx_nrpasskeysfe.settings.loginPageUid = 0
-    plugin.tx_nrpasskeysfe.settings.managementPageUid = 0
-    plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = 0
+    plugin.tx_nrpasskeysfe.settings.discoverableEnabled = 1
+    plugin.tx_nrpasskeysfe.settings.css.includeDefault = 1
 
-..  confval:: plugin.tx_nrpasskeysfe.settings.loginPageUid
+..  confval:: plugin.tx_nrpasskeysfe.settings.discoverableEnabled
 
-   :type: int
-   :Default: ``0``
+   :type: boolean
+   :Default: ``1``
 
-   Page UID of the page containing the NrPasskeysFe:Login plugin.
-   Used for redirect after logout and for the enrollment interstitial
-   "back to login" link.
+   Discoverable (usernameless) login. The login plugin follows it where
+   its FlexForm field is set to *Use the site setting* (see
+   :confval:`settings.discoverableEnabled`); an element set to *On* or
+   *Off* keeps its own value. The felogin integration always follows it:
+   with ``0`` the passkey tab of the felogin form shows a username field and
+   asks for the username before a passkey is accepted.
 
-..  confval:: plugin.tx_nrpasskeysfe.settings.managementPageUid
+..  confval:: plugin.tx_nrpasskeysfe.settings.css.includeDefault
 
-   :type: int
-   :Default: ``0``
+   :type: boolean
+   :Default: ``1``
 
-   Page UID of the page containing the NrPasskeysFe:Management plugin.
-   Used for redirect after successful enrollment.
+   Load :file:`passkey-fe.css` with the login, management and enrollment
+   plugins and with the felogin integration. See
+   :ref:`typoscript-disabling-css`.
 
-..  confval:: plugin.tx_nrpasskeysfe.settings.enrollmentPageUid
-
-   :type: int
-   :Default: ``0``
-
-   Page UID of the page containing the NrPasskeysFe:Enrollment plugin.
-   Required when enforcement is active. After login, users without a
-   passkey are redirected here.
+The enrollment page the post-login interstitial redirects to is a site
+setting (:confval:`nr_passkeys_fe.enrollmentPageUrl`), not a TypoScript
+constant.
 
 Setup
 -----
@@ -59,12 +57,34 @@ The setup configures view paths for the Fluid templates:
             layoutRootPaths.0 = EXT:nr_passkeys_fe/Resources/Private/Layouts/
         }
         settings {
-            loginPage = {$plugin.tx_nrpasskeysfe.settings.loginPageUid}
-            managementPage = {$plugin.tx_nrpasskeysfe.settings.managementPageUid}
-            enrollmentPage = {$plugin.tx_nrpasskeysfe.settings.enrollmentPageUid}
-            css.includeDefault = 1
+            discoverableEnabled = {$plugin.tx_nrpasskeysfe.settings.discoverableEnabled}
+            css.includeDefault = {$plugin.tx_nrpasskeysfe.settings.css.includeDefault}
         }
     }
+
+    plugin.tx_felogin_login.view.templateRootPaths.100 = EXT:nr_passkeys_fe/Resources/Private/Templates/Felogin/
+    plugin.tx_felogin_login.view.partialRootPaths.1700000000 = EXT:nr_passkeys_fe/Resources/Private/Partials/
+
+    plugin.tx_felogin_login.settings.passkeys {
+        discoverableEnabled = {$plugin.tx_nrpasskeysfe.settings.discoverableEnabled}
+        css.includeDefault = {$plugin.tx_nrpasskeysfe.settings.css.includeDefault}
+    }
+
+The felogin template override receives only felogin's own settings, so the
+two constants are handed to it under ``plugin.tx_felogin_login.settings.passkeys``.
+
+..  _typoscript-felogin-partials:
+
+felogin partial path
+--------------------
+
+The felogin override renders the partial ``NrPasskeysFe/LoginAssets`` it
+shares with the login plugin. felogin finds it through the partial path key
+``1700000000``, chosen high so that it does not collide with the keys a site
+usually gives its own felogin partials. A site that sets
+``plugin.tx_felogin_login.view.partialRootPaths.1700000000`` itself replaces
+this path and must provide ``NrPasskeysFe/LoginAssets.html`` there, for
+example as a copy of the extension's partial.
 
 Overriding templates
 --------------------
@@ -82,10 +102,13 @@ To override a template, add a custom path at a higher index:
 Then create the template in the same directory structure, e.g.:
 :file:`EXT:my_site/Resources/Private/Templates/NrPasskeysFe/Login/Index.html`
 
+..  _typoscript-disabling-css:
+
 Disabling default CSS
 ---------------------
 
-To include your own styles instead of the extension's default CSS:
+To include your own styles instead of the extension's default CSS, set the
+constant, which covers the plugins and the felogin integration:
 
 ..  code-block:: typoscript
 

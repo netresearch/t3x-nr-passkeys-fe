@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\AdminController;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -36,6 +37,8 @@ final class AdminControllerTest extends TestCase
 
     private FrontendGroupEnforcementService&Stub $groupEnforcementService;
 
+    private FrontendEnforcementService&Stub $enforcementService;
+
     private AdminController $subject;
 
     protected function setUp(): void
@@ -46,6 +49,7 @@ final class AdminControllerTest extends TestCase
         $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
         $this->rateLimiterService = $this->createStub(RateLimiterService::class);
         $this->groupEnforcementService = $this->createStub(FrontendGroupEnforcementService::class);
+        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
@@ -53,6 +57,7 @@ final class AdminControllerTest extends TestCase
             $this->rateLimiterService,
             new NullLogger(),
             $this->groupEnforcementService,
+            $this->enforcementService,
         );
     }
 
@@ -65,6 +70,7 @@ final class AdminControllerTest extends TestCase
         ?FrontendUserLookupService $userLookupService = null,
         ?RateLimiterService $rateLimiterService = null,
         ?FrontendGroupEnforcementService $groupEnforcementService = null,
+        ?FrontendEnforcementService $enforcementService = null,
     ): AdminController {
         return new AdminController(
             $credentialRepository ?? $this->credentialRepository,
@@ -72,6 +78,7 @@ final class AdminControllerTest extends TestCase
             $rateLimiterService ?? $this->rateLimiterService,
             new NullLogger(),
             $groupEnforcementService ?? $this->groupEnforcementService,
+            $enforcementService ?? $this->enforcementService,
         );
     }
 
@@ -565,5 +572,64 @@ final class AdminControllerTest extends TestCase
 
         self::assertSame(500, $response->getStatusCode());
         self::assertArrayHasKey('error', (array) \json_decode((string) $response->getBody(), true));
+    }
+
+    // ---------------------------------------------------------------
+    // resetGracePeriodAction
+    // ---------------------------------------------------------------
+
+    #[Test]
+    public function resetGracePeriodActionReturns403WhenNotAuthenticated(): void
+    {
+        $enforcementService = $this->createMock(FrontendEnforcementService::class);
+        $enforcementService->expects(self::never())->method('resetGracePeriod');
+
+        $this->unsetBackendUser();
+        $request = (new ServerRequest('/nr-passkeys-fe/admin/reset-grace-period', 'POST'))
+            ->withParsedBody(['feUserUid' => 42]);
+        $response = $this->createSubjectWith(enforcementService: $enforcementService)->resetGracePeriodAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function resetGracePeriodActionReturns400WhenFeUserUidMissing(): void
+    {
+        $this->setAdminBackendUser();
+        $request = (new ServerRequest('/nr-passkeys-fe/admin/reset-grace-period', 'POST'))
+            ->withParsedBody([]);
+
+        self::assertSame(400, $this->subject->resetGracePeriodAction($request)->getStatusCode());
+    }
+
+    #[Test]
+    public function resetGracePeriodActionReturns404ForAnUnknownUser(): void
+    {
+        $this->setAdminBackendUser();
+        $enforcementService = $this->createMock(FrontendEnforcementService::class);
+        $enforcementService->expects(self::never())->method('resetGracePeriod');
+        $this->userLookupService->method('findFeUserByUid')->willReturn(null);
+
+        $request = (new ServerRequest('/nr-passkeys-fe/admin/reset-grace-period', 'POST'))
+            ->withParsedBody(['feUserUid' => 42]);
+        $response = $this->createSubjectWith(enforcementService: $enforcementService)->resetGracePeriodAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function resetGracePeriodActionResetsTheUsersGracePeriod(): void
+    {
+        $this->setAdminBackendUser();
+        $enforcementService = $this->createMock(FrontendEnforcementService::class);
+        $enforcementService->expects(self::once())->method('resetGracePeriod')->with(42);
+        $this->userLookupService->method('findFeUserByUid')->willReturn(['uid' => 42, 'username' => 'johndoe']);
+
+        $request = (new ServerRequest('/nr-passkeys-fe/admin/reset-grace-period', 'POST'))
+            ->withParsedBody(['feUserUid' => 42]);
+        $response = $this->createSubjectWith(enforcementService: $enforcementService)->resetGracePeriodAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(['status' => 'ok'], \json_decode((string) $response->getBody(), true));
     }
 }

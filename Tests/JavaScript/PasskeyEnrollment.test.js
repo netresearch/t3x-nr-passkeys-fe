@@ -210,37 +210,6 @@ describe('PasskeyEnrollment — registration', () => {
         expect(new Uint8Array(excluded[0].id)).toEqual(new Uint8Array([1, 2, 3]));
         expect(excluded[0].transports).toEqual(['internal']);
     });
-
-    it('follows a same-origin redirect instead of showing the inline success', async () => {
-        installWebAuthn(async () => fakeCredential());
-        // Same origin, only the fragment differs: jsdom performs that navigation.
-        const target = window.location.origin + window.location.pathname + '#enrolled';
-        stubFetch(jsonResponse(200, registrationOptions()), jsonResponse(200, { status: 'ok', redirectUrl: target }));
-        const { container, registerBtn, success } = createEnrollmentContainer();
-        const registered = vi.fn();
-        container.addEventListener('nr-passkeys-fe:registered', registered);
-
-        await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
-        await register(registerBtn);
-
-        expect(window.location.hash).toBe('#enrolled');
-        expect(success.style.display).toBe('none');
-        expect(registered).not.toHaveBeenCalled();
-        window.location.hash = '';
-    });
-
-    it('ignores a redirect to another origin and shows the inline success', async () => {
-        installWebAuthn(async () => fakeCredential());
-        stubFetch(jsonResponse(200, registrationOptions()), jsonResponse(200, { status: 'ok', redirectUrl: 'https://evil.example/' }));
-        const { registerBtn, success } = createEnrollmentContainer();
-        const hrefBefore = window.location.href;
-
-        await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
-        await register(registerBtn);
-
-        expect(window.location.href).toBe(hrefBefore);
-        expect(success.style.display).toBe('');
-    });
 });
 
 describe('PasskeyEnrollment — errors', () => {

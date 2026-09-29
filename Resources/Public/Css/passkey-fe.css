@@ -211,19 +211,6 @@
   color: #fff;
 }
 
-.nr-passkeys-fe-btn--warning {
-  background-color: #ffc107;
-  border-color: #ffc107;
-  color: #000;
-}
-
-.nr-passkeys-fe-btn--warning:hover,
-.nr-passkeys-fe-btn--warning:focus {
-  background-color: #ffca2c;
-  border-color: #ffc720;
-  color: #000;
-}
-
 .nr-passkeys-fe-btn--ghost {
   background-color: transparent;
   border-color: currentColor;
@@ -368,8 +355,7 @@
   font-size: 0.9rem;
 }
 
-.nr-passkeys-fe-management__warning,
-.nr-passkeys-fe-recovery-codes__warning {
+.nr-passkeys-fe-management__warning {
   color: #664d03;
   background-color: #fff3cd;
   border: 1px solid #ffecb5;
@@ -386,8 +372,7 @@
 .nr-passkeys-fe-login__input,
 .nr-passkeys-fe-recovery__input,
 .nr-passkeys-fe-management__input,
-.nr-passkeys-fe-enrollment__input,
-.nr-passkeys-fe-enrollment-form__input {
+.nr-passkeys-fe-enrollment__input {
   display: block;
   width: 100%;
   padding: 0.5rem 0.75rem;
@@ -405,8 +390,7 @@
 .nr-passkeys-fe-login__input:focus,
 .nr-passkeys-fe-recovery__input:focus,
 .nr-passkeys-fe-management__input:focus,
-.nr-passkeys-fe-enrollment__input:focus,
-.nr-passkeys-fe-enrollment-form__input:focus {
+.nr-passkeys-fe-enrollment__input:focus {
   border-color: var(--nr-passkeys-fe-primary);
   outline: 2px solid var(--nr-passkeys-fe-primary);
   outline-offset: -2px;
@@ -415,16 +399,14 @@
 
 .nr-passkeys-fe-login__label,
 .nr-passkeys-fe-recovery__label,
-.nr-passkeys-fe-enrollment__label,
-.nr-passkeys-fe-enrollment-form__label {
+.nr-passkeys-fe-enrollment__label {
   display: inline-block;
   margin-bottom: 0.25rem;
   font-weight: 500;
 }
 
 .nr-passkeys-fe-login__field,
-.nr-passkeys-fe-recovery__field,
-.nr-passkeys-fe-enrollment-form__field {
+.nr-passkeys-fe-recovery__field {
   margin-bottom: 1rem;
 }
 
@@ -443,24 +425,12 @@
   color: var(--nr-passkeys-fe-text);
 }
 
-.nr-passkeys-fe-recovery__description {
-  color: var(--nr-passkeys-fe-text-light);
-  margin-bottom: 1.5rem;
-}
-
 .nr-passkeys-fe-recovery__input--code {
   font-family: monospace;
   font-size: 1.25rem;
   letter-spacing: 0.1em;
   text-align: center;
   max-width: 180px;
-}
-
-.nr-passkeys-fe-recovery__hint {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--nr-passkeys-fe-text-light);
-  margin-top: 0.25rem;
 }
 
 .nr-passkeys-fe-recovery__back {
@@ -644,6 +614,7 @@
   margin-bottom: 0.25rem;
 }
 
+.nr-passkeys-fe-enrollment__required,
 .nr-passkeys-fe-enrollment__grace-period {
   color: #664d03;
   background-color: #fff3cd;
@@ -663,20 +634,6 @@
   gap: 0.75rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
-}
-
-.nr-passkeys-fe-enrollment__unsupported {
-  margin-top: 1rem;
-}
-
-.nr-passkeys-fe-enrollment__link {
-  font-size: 0.875rem;
-  color: var(--nr-passkeys-fe-text-light);
-  text-decoration: none;
-}
-
-.nr-passkeys-fe-enrollment__link:hover {
-  text-decoration: underline;
 }
 
 /* ============================================================
@@ -701,13 +658,9 @@
 }
 
 .nr-passkeys-fe-enrollment-success__message {
+  display: block;
   color: var(--nr-passkeys-fe-text-light);
   margin-bottom: 1.5rem;
-}
-
-.nr-passkeys-fe-enrollment-success__actions {
-  display: flex;
-  justify-content: center;
 }
 
 /* ============================================================
@@ -716,25 +669,6 @@
 
 .nr-passkeys-fe-recovery-codes {
   max-width: 560px;
-}
-
-.nr-passkeys-fe-recovery-codes__title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-}
-
-.nr-passkeys-fe-recovery-codes__warning {
-  color: var(--nr-passkeys-fe-error);
-  background-color: var(--nr-passkeys-fe-error-bg);
-  border: 1px solid var(--nr-passkeys-fe-error-border);
-  border-radius: var(--nr-passkeys-fe-radius-sm);
-  padding: 0.75rem 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.nr-passkeys-fe-recovery-codes__warning p {
-  margin: 0.25rem 0 0;
 }
 
 .nr-passkeys-fe-recovery-codes__grid {
@@ -760,56 +694,13 @@
   color: #212529;
 }
 
-.nr-passkeys-fe-recovery-codes__remaining {
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.nr-passkeys-fe-recovery-codes__actions {
-  margin-bottom: 1.5rem;
-}
-
-.nr-passkeys-fe-recovery-codes__generate {
-  border-top: 1px solid var(--nr-passkeys-fe-border);
-  padding-top: 1.25rem;
-  margin-top: 1.25rem;
-}
-
-.nr-passkeys-fe-recovery-codes__subtitle {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.nr-passkeys-fe-recovery-codes__generate-hint {
-  color: var(--nr-passkeys-fe-text-light);
-  font-size: 0.875rem;
-  margin-bottom: 0.75rem;
-}
-
-.nr-passkeys-fe-recovery-codes__nav {
-  margin-top: 1.5rem;
-}
-
-.nr-passkeys-fe-recovery-codes__back {
-  font-size: 0.875rem;
-  color: var(--nr-passkeys-fe-text-light);
-  text-decoration: none;
-}
-
-.nr-passkeys-fe-recovery-codes__back:hover {
-  text-decoration: underline;
-}
-
 .nr-passkeys-fe-tab:focus-visible {
   outline: 2px solid var(--nr-passkeys-fe-primary);
   outline-offset: 2px;
 }
 
 .nr-passkeys-fe-link:focus-visible,
-.nr-passkeys-fe-recovery__back:focus-visible,
-.nr-passkeys-fe-enrollment__link:focus-visible,
-.nr-passkeys-fe-recovery-codes__back:focus-visible {
+.nr-passkeys-fe-recovery__back:focus-visible {
   outline: 2px solid var(--nr-passkeys-fe-primary);
   outline-offset: 2px;
 }

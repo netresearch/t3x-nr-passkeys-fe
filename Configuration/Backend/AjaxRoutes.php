@@ -38,4 +38,9 @@ return [
         'target' => AdminController::class . '::updateEnforcementAction',
         'methods' => ['POST'],
     ],
+    'nr_passkeys_fe_admin_reset_grace_period' => [
+        'path' => '/nr-passkeys-fe/admin/reset-grace-period',
+        'target' => AdminController::class . '::resetGracePeriodAction',
+        'methods' => ['POST'],
+    ],
 ];

@@ -7,6 +7,7 @@
  *  - Single-credential revocation
  *  - Revoke-all for a user
  *  - Unlock (reset rate-limiter) for a user
+ *  - Reset the grace period of a user
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,6 +30,7 @@ class PasskeyFeAdmin {
     this.bindUserLookup();
     this.bindRevokeAll();
     this.bindUnlockUser();
+    this.bindResetGrace();
   }
 
   // ---------------------------------------------------------------------------
@@ -429,6 +431,66 @@ class PasskeyFeAdmin {
       }
       const message = await this.extractErrorMessage(error);
       Notification.error(this.translate('js.unlock.failed', 'Reset failed'), message);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reset grace period
+  // ---------------------------------------------------------------------------
+
+  bindResetGrace() {
+    const btn = document.getElementById('passkey-fe-reset-grace');
+    if (btn) {
+      btn.addEventListener('click', () => this.handleResetGrace());
+    }
+  }
+
+  async handleResetGrace() {
+    if (!this.currentFeUserUid) {
+      return;
+    }
+
+    const confirmed = await this.confirm(
+      this.translate('js.admin.resetGrace.title', 'Reset grace period'),
+      this.translate(
+        'js.resetGrace.confirm',
+        'Reset the grace period of this user? A new grace period starts on the next page the user visits while passkeys are required.',
+      ),
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    const btn = document.getElementById('passkey-fe-reset-grace');
+    if (btn) {
+      btn.disabled = true;
+    }
+
+    try {
+      const response = await new AjaxRequest(
+        TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_reset_grace_period,
+      ).post({ feUserUid: this.currentFeUserUid });
+      const data = await response.resolve();
+
+      if (data.status === 'ok') {
+        Notification.success(
+          this.translate('js.resetGrace.success', 'Grace period reset'),
+          this.translate('js.resetGrace.message', 'The grace period starts again on the next visit.'),
+        );
+      } else {
+        Notification.error(
+          this.translate('js.resetGrace.failed', 'Reset failed'),
+          data.error || this.translate('js.error.unknown', 'Unknown error.'),
+        );
+      }
+    } catch (error) {
+      const message = await this.extractErrorMessage(error);
+      Notification.error(this.translate('js.resetGrace.failed', 'Reset failed'), message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+      }
     }
   }
 

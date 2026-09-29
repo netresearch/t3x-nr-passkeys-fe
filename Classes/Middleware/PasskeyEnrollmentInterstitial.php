@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
-use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -101,17 +100,16 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // 5-9. Check enforcement status
         $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
-        $effectiveLevel = $status->effectiveLevel;
 
-        // Off → pass through
-        if ($effectiveLevel === 'off') {
+        // Off and Encourage → pass through (the banner handles Encourage)
+        if ($status->effectiveLevel === 'off' || $status->effectiveLevel === 'encourage') {
             return $handler->handle($request);
         }
 
-        // Encourage → pass through (banner handles it via InjectPasskeyBanner)
-        if ($effectiveLevel === 'encourage') {
-            return $handler->handle($request);
-        }
+        // A due grace period starts on this request, before any pass-through
+        // below (no enrollment URL, the enrollment page itself): the banner
+        // and the enrollment plugin render later and must both see it.
+        $status = $this->withDueGracePeriodStarted($feUserUid, $siteIdentifier, $site, $status);
 
         // Required or Enforced: check for redirect necessity
         $enrollmentUrl = $this->resolveEnrollmentUrl($request, $site);
@@ -123,46 +121,47 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         // Avoid redirect loops: if we're already on the enrollment page, pass through
         $requestPath = $request->getUri()->getPath();
         $enrollmentPath = \parse_url($enrollmentUrl, PHP_URL_PATH);
-        if (\is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath) {
+        $onEnrollmentPage = \is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath;
+
+        // Required within the grace period may be skipped for the session;
+        // an expired grace period and Enforced may not. The skip signal
+        // previously appended as ?canSkip=1 is intentionally omitted: no
+        // template or JS module consumes it.
+        if (
+            $onEnrollmentPage
+            || ($status->effectiveLevel === 'required' && $status->inGracePeriod && $this->hasSkippedEnrollment($feUser))
+        ) {
             return $handler->handle($request);
         }
 
-        // Session data for skip logic
-        $sessionData = $feUser->getKey('ses', self::SESSION_KEY);
-        $sessionArray = \is_array($sessionData) ? $sessionData : [];
+        return new RedirectResponse($enrollmentUrl, 303);
+    }
 
-        if ($effectiveLevel === 'required') {
-            // If grace period has started and user is still within it, allow skip
-            if ($status->inGracePeriod) {
-                // Check session skip flag
-                if (($sessionArray['enrollment_skipped'] ?? false) === true) {
-                    return $handler->handle($request);
-                }
-
-                // Redirect to enrollment page. The skip signal previously
-                // appended as ?canSkip=1 is intentionally omitted: no
-                // template or JS module currently consumes it, so emitting
-                // it would only add a dead query parameter to the URL.
-                // Re-introduce a documented signal when the JS-driven skip
-                // flow (POST to enrollmentSkip) is actually wired up.
-                return new RedirectResponse($enrollmentUrl, 303);
-            }
-
-            // Grace period expired or not started → start grace period if not started
-            if (!$status->graceDeadline instanceof DateTimeImmutable && $this->hasGracePeriodConfigured($status)) {
-                $this->enforcementService->startGracePeriod($feUserUid);
-                // After starting, allow skip this first time
-                if (($sessionArray['enrollment_skipped'] ?? false) === true) {
-                    return $handler->handle($request);
-                }
-            }
-
-            // Grace expired → redirect, no skip
-            return new RedirectResponse($enrollmentUrl, 303);
+    /**
+     * Start the grace period of a Required user who has none yet, and return
+     * the status as it is now. It is read again whether or not this request
+     * wrote the start: another request may have written it in between.
+     */
+    private function withDueGracePeriodStarted(
+        int $feUserUid,
+        string $siteIdentifier,
+        SiteInterface $site,
+        FrontendEnforcementStatus $status,
+    ): FrontendEnforcementStatus {
+        if ($status->effectiveLevel !== 'required' || !$this->isGracePeriodDue($status)) {
+            return $status;
         }
 
-        // Enforced → redirect, no skip
-        return new RedirectResponse($enrollmentUrl, 303);
+        $this->enforcementService->startGracePeriod($feUserUid);
+
+        return $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
+    }
+
+    private function hasSkippedEnrollment(FrontendUserAuthentication $feUser): bool
+    {
+        $sessionData = $feUser->getKey('ses', self::SESSION_KEY);
+
+        return \is_array($sessionData) && ($sessionData['enrollment_skipped'] ?? false) === true;
     }
 
     private function resolveFrontendUser(ServerRequestInterface $request): ?FrontendUserAuthentication
@@ -200,13 +199,12 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     }
 
     /**
-     * Check if the status indicates a grace period is configured (days > 0) but
-     * not yet started (graceDeadline is null and not in grace period).
+     * A grace period is configured (days > 0) and no start is stored. A
+     * grace period that is over has a start and is not started again, so
+     * such a user costs neither a write nor a second status read.
      */
-    private function hasGracePeriodConfigured(FrontendEnforcementStatus $status): bool
+    private function isGracePeriodDue(FrontendEnforcementStatus $status): bool
     {
-        return !$status->inGracePeriod
-            && !$status->graceDeadline instanceof DateTimeImmutable
-            && $status->graceDays > 0;
+        return $status->graceDays > 0 && !$status->gracePeriodStarted;
     }
 }

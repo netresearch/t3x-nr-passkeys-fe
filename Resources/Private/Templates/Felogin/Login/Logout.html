@@ -1,6 +1,9 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
 
-<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:comment>Compared with == '0' so an unset setting keeps the default CSS.</f:comment>
+<f:if condition="{settings.passkeys.css.includeDefault} == '0'">
+    <f:else><f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" /></f:else>
+</f:if>
 
 <f:form action="login" target="_top" fieldNamePrefix="">
     <div class="card-header d-flex align-items-center justify-content-between py-2 px-3 rounded-top"

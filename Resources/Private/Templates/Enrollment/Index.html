@@ -2,7 +2,10 @@
 <f:layout name="Default" />
 
 <f:section name="Content">
-<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:comment>Compared with == '0' so an unset setting keeps the default CSS.</f:comment>
+<f:if condition="{settings.css.includeDefault} == '0'">
+    <f:else><f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" /></f:else>
+</f:if>
 <f:asset.script identifier="nr-passkeys-fe-utils" priority="true" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" />
 <f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" />
 
@@ -23,8 +26,7 @@
      data-nr-passkeys-fe="enrollment"
      data-eid-url="{eidUrl}"
      data-register-options-url="{registerOptionsUrl}"
-     data-register-verify-url="{registerVerifyUrl}"
-     data-enforcement="{enforcementLevel}">
+     data-register-verify-url="{registerVerifyUrl}">
 
     <h1 class="nr-passkeys-fe-enrollment__title">
         <f:translate key="enrollment.title" extensionName="nr_passkeys_fe" />
@@ -41,6 +43,12 @@
         </ul>
     </div>
 
+    <f:if condition="{enrollmentRequired}">
+        <div class="nr-passkeys-fe-enrollment__required">
+            <f:translate key="banner.enforced.description" extensionName="nr_passkeys_fe" />
+        </div>
+    </f:if>
+
     <f:if condition="{gracePeriodDaysRemaining}">
         <div class="nr-passkeys-fe-enrollment__grace-period">
             <f:translate key="enrollment.gracePeriod.remaining"
@@ -51,6 +59,22 @@
 
     <div class="nr-passkeys-fe-enrollment__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
     <div class="nr-passkeys-fe-enrollment__error" role="alert" style="display:none"></div>
+
+    <div class="nr-passkeys-fe-enrollment__success nr-passkeys-fe-enrollment-success" style="display:none">
+        <div class="nr-passkeys-fe-enrollment-success__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+        </div>
+        <h2 class="nr-passkeys-fe-enrollment-success__title">
+            <f:translate key="enrollment.success.title" extensionName="nr_passkeys_fe" />
+        </h2>
+        <f:comment>output carries the status role natively, so the message is announced.</f:comment>
+        <output class="nr-passkeys-fe-enrollment-success__message">
+            <f:translate key="enrollment.success.message" extensionName="nr_passkeys_fe" />
+        </output>
+    </div>
 
     <div class="nr-passkeys-fe-enrollment__field">
         <label class="nr-passkeys-fe-enrollment__label"
@@ -78,13 +102,6 @@
             </span>
         </button>
 
-    </div>
-
-    <div class="nr-passkeys-fe-enrollment__unsupported">
-        <a class="nr-passkeys-fe-enrollment__link"
-           href="{noSupportUrl}">
-            <f:translate key="enrollment.link.noSupport" extensionName="nr_passkeys_fe" />
-        </a>
     </div>
 </div>
 </f:section>

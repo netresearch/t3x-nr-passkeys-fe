@@ -10,20 +10,15 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\EventListener;
 
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
-use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
-use TYPO3\CMS\Core\Page\AssetCollector;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
 /**
- * Injects passkey login fields into the felogin form view.
+ * Hands the felogin template override the eID URL of its passkey tab.
  *
  * Listens to felogin's ModifyLoginFormViewEvent (when ext:felogin is installed)
- * and injects JavaScript configuration and the passkey button partial into the
- * login form. Gracefully does nothing when felogin is not installed.
- *
- * The JavaScript module is loaded via AssetCollector to ensure it is only
- * included once per page render.
+ * and does nothing when felogin is not installed. The template override loads
+ * the passkey scripts itself, through the partial it shares with the login
+ * plugin (Partials/NrPasskeysFe/LoginAssets.html).
  */
 final readonly class InjectPasskeyLoginFields
 {
@@ -35,9 +30,7 @@ final readonly class InjectPasskeyLoginFields
     private const FELOGIN_EVENT_CLASS = ModifyLoginFormViewEvent::class;
 
     public function __construct(
-        private SiteConfigurationService $siteConfigurationService,
         private FrontendConfiguration $frontendConfiguration,
-        private AssetCollector $assetCollector,
     ) {}
 
     /**
@@ -62,45 +55,7 @@ final readonly class InjectPasskeyLoginFields
             return;
         }
 
-        $request = $event->getRequest();
-        $site = $request->getAttribute('site');
-
-        $rpId = '';
-        $origin = '';
-
-        if ($site instanceof SiteInterface) {
-            $rpId = $this->siteConfigurationService->getRpId($site);
-            $origin = $this->siteConfigurationService->getOrigin($site);
-        }
-
-        // Build configuration for the JavaScript module
-        $passkeyConfig = [
-            'eIdUrl' => '?eID=nr_passkeys_fe',
-            'rpId' => $rpId,
-            'origin' => $origin,
-        ];
-
-        // Inject configuration as a JSON script tag
-        $configJson = \json_encode($passkeyConfig, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP);
-        $this->assetCollector->addInlineJavaScript(
-            'nr-passkeys-fe-config',
-            'window.NrPasskeysFeConfig = ' . $configJson . ';',
-            ['type' => 'text/javascript'],
-            ['priority' => true],
-        );
-
-        // Load the passkey login JavaScript module
-        $this->assetCollector->addJavaScript(
-            'nr-passkeys-fe-login',
-            'EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyLogin.js',
-            ['type' => 'module'],
-            ['priority' => false],
-        );
-
-        // Add passkey button to the login form via view variable
-        $view = $event->getView();
-        $view->assign('passkeyLoginEnabled', true);
-        $view->assign('passkeyRpId', $rpId);
-        $view->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
+        // The felogin template override reads the eID URL for its passkey tab.
+        $event->getView()->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
     }
 }

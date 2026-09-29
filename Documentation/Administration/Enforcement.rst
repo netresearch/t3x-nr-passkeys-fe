@@ -86,10 +86,19 @@ Grace period tracking
 ---------------------
 
 Grace periods are tracked per user in the ``fe_users`` table via the
-``passkey_grace_period_start`` column (unix timestamp of the first login
-without a passkey after enforcement was enabled). The enforcement
-middleware computes the expiry from
-``passkey_grace_period_start + gracePeriodDays``.
+``passkey_grace_period_start`` column: the unix timestamp of the user's
+first frontend request under ``required`` enforcement without a passkey,
+whatever page it is for. The enrollment interstitial writes it, so it is
+only written while post-login enrollment is enabled (the default). The start is
+written once. Changing the enforcement level or the grace period days later
+does not refresh it, and an expired grace period stays expired; an
+administrator starts a new one with :guilabel:`Reset grace period` (see
+:ref:`administration-user-management`).
+
+The grace period ends ``gracePeriodDays`` × 24 hours after the start. The
+banner and the enrollment page show the remaining days as started 24-hour
+periods, so a 14-day grace period shows 14 days at its start and 1 day
+during its last 24 hours.
 
 Per-group grace period days are stored in ``fe_groups.passkey_grace_period_days``.
 The shortest grace period across all applicable groups wins.

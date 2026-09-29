@@ -89,10 +89,6 @@
                 <source>Recovery code</source>
                 <target>Code de récupération</target>
             </trans-unit>
-            <trans-unit id="recovery.code.hint" resname="recovery.code.hint">
-                <source>Format: XXXX-XXXX</source>
-                <target>Format : XXXX-XXXX</target>
-            </trans-unit>
             <trans-unit id="recovery.button.verify" resname="recovery.button.verify">
                 <source>Verify code</source>
                 <target>Vérifier le code</target>
@@ -225,30 +221,6 @@
             </trans-unit>
 
             <!-- Management — enrollment form (inline) -->
-            <trans-unit id="management.enrollment.title" resname="management.enrollment.title">
-                <source>Register passkey</source>
-                <target>Enregistrer un passkey</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.label" resname="management.enrollment.label">
-                <source>Device name</source>
-                <target>Nom de l'appareil</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.placeholder" resname="management.enrollment.placeholder">
-                <source>e.g. "MacBook", "Android Phone"</source>
-                <target>par ex. « MacBook », « Téléphone Android »</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.register" resname="management.enrollment.register">
-                <source>Register passkey</source>
-                <target>Enregistrer le passkey</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.registering" resname="management.enrollment.registering">
-                <source>Registering...</source>
-                <target>Enregistrement...</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.success" resname="management.enrollment.success">
-                <source>Passkey registered successfully.</source>
-                <target>Passkey enregistré avec succès.</target>
-            </trans-unit>
 
             <!-- Management — recovery codes -->
             <trans-unit id="management.recovery.title" resname="management.recovery.title">
@@ -267,45 +239,13 @@
                 <source>Manage recovery codes</source>
                 <target>Gérer les codes de récupération</target>
             </trans-unit>
-            <trans-unit id="management.recovery.codes.title" resname="management.recovery.codes.title">
-                <source>Recovery codes</source>
-                <target>Codes de récupération</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.warning.title" resname="management.recovery.codes.warning.title">
-                <source>Save these codes now!</source>
-                <target>Enregistrez ces codes maintenant !</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.warning.text" resname="management.recovery.codes.warning.text">
-                <source>These codes will not be shown again. Store them in a safe place (password manager, printed copy). Each code can be used once to regain access.</source>
-                <target>Ces codes ne seront plus affichés. Conservez-les en lieu sûr (gestionnaire de mots de passe, copie imprimée). Chaque code peut être utilisé une fois pour retrouver l'accès.</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.remaining" resname="management.recovery.codes.remaining">
-                <source>Remaining codes</source>
-                <target>Codes restants</target>
-            </trans-unit>
             <trans-unit id="management.recovery.codes.download" resname="management.recovery.codes.download">
                 <source>Download codes as text file</source>
                 <target>Télécharger les codes en fichier texte</target>
             </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.title" resname="management.recovery.codes.generate.title">
-                <source>Generate new recovery codes</source>
-                <target>Générer de nouveaux codes de récupération</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.hint" resname="management.recovery.codes.generate.hint">
-                <source>Generating new codes will invalidate all existing recovery codes.</source>
-                <target>La génération de nouveaux codes invalidera tous les codes de récupération existants.</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.button" resname="management.recovery.codes.generate.button">
-                <source>Generate new codes</source>
-                <target>Générer de nouveaux codes</target>
-            </trans-unit>
             <trans-unit id="management.recovery.codes.generate.generating" resname="management.recovery.codes.generate.generating">
                 <source>Generating...</source>
                 <target>Génération...</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.back" resname="management.recovery.codes.back">
-                <source>Back to passkey management</source>
-                <target>Retour à la gestion des passkeys</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -355,10 +295,6 @@
                 <source>Skip for now</source>
                 <target>Passer pour l'instant</target>
             </trans-unit>
-            <trans-unit id="enrollment.link.noSupport" resname="enrollment.link.noSupport">
-                <source>My device doesn't support passkeys</source>
-                <target>Mon appareil ne prend pas en charge les passkeys</target>
-            </trans-unit>
             <trans-unit id="enrollment.error.unsupported" resname="enrollment.error.unsupported">
                 <source>Your browser does not support Passkeys (WebAuthn). Please update your browser or use a different device.</source>
                 <target>Votre navigateur ne prend pas en charge les passkeys (WebAuthn). Veuillez mettre à jour votre navigateur ou utiliser un autre appareil.</target>
@@ -384,10 +320,6 @@
             <trans-unit id="enrollment.success.message" resname="enrollment.success.message">
                 <source>You can now sign in with your passkey. You can manage your passkeys in your account settings.</source>
                 <target>Vous pouvez maintenant vous connecter avec votre passkey. Vous pouvez gérer vos passkeys dans les paramètres de votre compte.</target>
-            </trans-unit>
-            <trans-unit id="enrollment.success.continue" resname="enrollment.success.continue">
-                <source>Continue</source>
-                <target>Continuer</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -574,6 +506,14 @@
             <trans-unit id="dashboard.lookup.unlock_user_tooltip" resname="dashboard.lookup.unlock_user_tooltip">
                 <source>Clear rate-limiter lockout for this user</source>
                 <target>Réinitialiser le verrouillage de connexion pour cet utilisateur</target>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace" resname="dashboard.lookup.reset_grace">
+                <source>Reset grace period</source>
+                <target>Réinitialiser le délai de grâce</target>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace_tooltip" resname="dashboard.lookup.reset_grace_tooltip">
+                <source>Clear the grace period start, so a new grace period starts on the next visit</source>
+                <target>Effacer le début du délai de grâce ; un nouveau délai commence à la prochaine visite</target>
             </trans-unit>
 
             <!-- Help page -->
@@ -878,6 +818,26 @@
             <trans-unit id="js.unlock.done" resname="js.unlock.done">
                 <source>Reset</source>
                 <target>Réinitialisé</target>
+            </trans-unit>
+            <trans-unit id="js.admin.resetGrace.title" resname="js.admin.resetGrace.title">
+                <source>Reset grace period</source>
+                <target>Réinitialiser le délai de grâce</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.confirm" resname="js.resetGrace.confirm">
+                <source>Reset the grace period of this user? A new grace period starts on the next page the user visits while passkeys are required.</source>
+                <target>Réinitialiser le délai de grâce de cet utilisateur ? Un nouveau délai commence à la prochaine page visitée tant que les passkeys sont exigées.</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.success" resname="js.resetGrace.success">
+                <source>Grace period reset</source>
+                <target>Délai de grâce réinitialisé</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.message" resname="js.resetGrace.message">
+                <source>The grace period starts again on the next visit.</source>
+                <target>Le délai de grâce recommence à la prochaine visite.</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.failed" resname="js.resetGrace.failed">
+                <source>Reset failed</source>
+                <target>Échec de la réinitialisation</target>
             </trans-unit>
 
             <!-- JS: Login module -->

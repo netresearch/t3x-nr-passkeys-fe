@@ -1,7 +1,8 @@
 plugin.tx_nrpasskeysfe {
     settings {
-        loginPageUid =
-        managementPageUid =
-        enrollmentPageUid =
+        # cat=plugin.tx_nrpasskeysfe//a; type=boolean; label=Discoverable login: Log in without a username, the passkey identifies the user. Used by login plugins whose FlexForm says "Use the site setting" and by the felogin integration. Off shows a username field.
+        discoverableEnabled = 1
+        # cat=plugin.tx_nrpasskeysfe//b; type=boolean; label=Include the default CSS: Load passkey-fe.css with the plugins and the felogin integration.
+        css.includeDefault = 1
     }
 }

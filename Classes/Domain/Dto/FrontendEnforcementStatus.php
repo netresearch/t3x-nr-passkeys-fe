@@ -39,5 +39,29 @@ final readonly class FrontendEnforcementStatus
         public int $recoveryCodesRemaining,
         /** Configured grace period in days (0 means no grace period configured) */
         public int $graceDays = 0,
+        /**
+         * Whether a grace period start is stored for the user, running or
+         * over. Without it "over" and "never started" look the same.
+         */
+        public bool $gracePeriodStarted = false,
     ) {}
+
+    /**
+     * Days left in a running grace period, counted as started 24-hour
+     * periods until the deadline; 0 outside a grace period.
+     *
+     * The deadline lies whole 24-hour periods after the start
+     * (FrontendEnforcementService), so the count starts at the configured
+     * number of days and drops by one every 24 hours, across a
+     * daylight-saving change too. The banner and the enrollment page both use
+     * it.
+     */
+    public function graceDaysRemaining(DateTimeImmutable $now): int
+    {
+        $secondsLeft = $this->inGracePeriod && $this->graceDeadline instanceof DateTimeImmutable
+            ? $this->graceDeadline->getTimestamp() - $now->getTimestamp()
+            : 0;
+
+        return $secondsLeft > 0 ? \intdiv($secondsLeft + 86399, 86400) : 0;
+    }
 }

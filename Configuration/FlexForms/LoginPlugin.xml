@@ -7,16 +7,25 @@
                 <type>array</type>
                 <el>
                     <settings.discoverableEnabled>
-                        <label>Enable discoverable login (no username required)</label>
+                        <label>Discoverable login (no username required)</label>
                         <config>
-                            <type>check</type>
-                            <renderType>checkboxToggle</renderType>
+                            <type>select</type>
+                            <renderType>selectSingle</renderType>
                             <items type="array">
                                 <numIndex index="0" type="array">
-                                    <label></label>
+                                    <label>Use the site setting (TypoScript constant)</label>
+                                    <value></value>
+                                </numIndex>
+                                <numIndex index="1" type="array">
+                                    <label>On</label>
+                                    <value>1</value>
+                                </numIndex>
+                                <numIndex index="2" type="array">
+                                    <label>Off</label>
+                                    <value>0</value>
                                 </numIndex>
                             </items>
-                            <default>1</default>
+                            <default></default>
                         </config>
                     </settings.discoverableEnabled>
                     <settings.showPasswordFallback>
