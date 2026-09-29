@@ -1,9 +1,16 @@
 coverage:
   status:
     project:
+      # PHP flags only: the JavaScript modules have their own component
+      # status below, and mixing them in here compares different
+      # populations whenever one of them starts or stops uploading.
       default:
         target: auto
         threshold: 5%
+        flags:
+          - unit
+          - functional
+          - fuzz
     patch:
       default:
         target: auto
