@@ -60,28 +60,37 @@ test.describe('Backend module', () => {
         const select = row.locator('select.passkey-fe-enforcement-select');
         await expect(select).toHaveValue('off');
 
-        const [response] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/update-enforcement')),
-            select.selectOption('encourage'),
-        ]);
-        expect(response.status(), 'the save has to succeed').toBe(200);
-        expect(await response.json()).toMatchObject({ status: 'ok', enforcement: 'encourage' });
-        await expect(page.locator('typo3-notification-message').first()).toBeVisible();
+        try {
+            const [response] = await Promise.all([
+                page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/update-enforcement')),
+                select.selectOption('encourage'),
+            ]);
+            expect(response.status(), 'the save has to succeed').toBe(200);
+            expect(await response.json()).toMatchObject({ status: 'ok', enforcement: 'encourage' });
+            await expect(page.locator('typo3-notification-message').first()).toBeVisible();
 
-        // The level survives a reload: it was written, not only shown.
-        await page.goto(MODULE_URL);
-        await page.waitForLoadState('networkidle');
-        frame = page.frame('list_frame') ?? page;
-        const reloaded = frame.locator('#passkey-fe-groups-table tbody tr', { hasText: 'E2E group' })
-            .locator('select.passkey-fe-enforcement-select');
-        await expect(reloaded).toHaveValue('encourage');
-
-        // Put the seed back for a rerun against the same instance.
-        const [restore] = await Promise.all([
-            page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/update-enforcement')),
-            reloaded.selectOption('off'),
-        ]);
-        expect(restore.status()).toBe(200);
+            // The level survives a reload: it was written, not only shown.
+            await page.goto(MODULE_URL);
+            await page.waitForLoadState('networkidle');
+            frame = page.frame('list_frame') ?? page;
+            const reloaded = frame.locator('#passkey-fe-groups-table tbody tr', { hasText: 'E2E group' })
+                .locator('select.passkey-fe-enforcement-select');
+            await expect(reloaded).toHaveValue('encourage');
+        } finally {
+            // Put the seed back even when an assertion above failed: the seed
+            // runs once per provisioned instance, and a Playwright retry would
+            // otherwise start from "encourage" and fail its first assertion.
+            // Group uid 1 is the "E2E group" e2e_provision_seed inserts.
+            await page.goto(MODULE_URL);
+            await page.waitForLoadState('networkidle');
+            const restoreStatus = await (page.frame('list_frame') ?? page).evaluate(async () => {
+                const url = (window as unknown as { TYPO3: { settings: { ajaxUrls: Record<string, string> } } })
+                    .TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_update_enforcement;
+                const body = new URLSearchParams({ groupUid: '1', enforcement: 'off' });
+                return (await fetch(url, { method: 'POST', body })).status;
+            });
+            expect(restoreStatus, 'restoring the seeded level has to succeed').toBe(200);
+        }
     });
 
     test('the enforcement route refuses a level the select does not offer', async ({ page }) => {
