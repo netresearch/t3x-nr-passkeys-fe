@@ -98,6 +98,50 @@ final class AdminModuleControllerTest extends TestCase
         self::assertInstanceOf(ResponseInterface::class, $response);
     }
 
+    #[Test]
+    public function dashboardActionLoadsTheBackendStylesheet(): void
+    {
+        $this->moduleTemplateFactory->method('create')->willReturn($this->buildModuleTemplateStub());
+        $this->adoptionStatsService->method('getStats')->willReturn(new FrontendAdoptionStats(
+            totalUsers: 0,
+            usersWithPasskeys: 0,
+            adoptionPercentage: 0.0,
+            perGroupStats: [],
+        ));
+
+        $this->subject = $this->subjectExpectingTheBackendStylesheet();
+        $this->subject->dashboardAction(new ServerRequest('https://example.com/typo3/module', 'GET'));
+    }
+
+    #[Test]
+    public function helpActionLoadsTheBackendStylesheet(): void
+    {
+        $this->moduleTemplateFactory->method('create')->willReturn($this->buildModuleTemplateStub());
+        $this->uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('https://example.com/typo3/module'));
+
+        $this->subject = $this->subjectExpectingTheBackendStylesheet();
+        $this->subject->helpAction(new ServerRequest('https://example.com/typo3/module/help', 'GET'));
+    }
+
+    /**
+     * The adoption bar and the help FAQ are drawn by backend.css; each view
+     * has to load it itself.
+     */
+    private function subjectExpectingTheBackendStylesheet(): AdminModuleController
+    {
+        $pageRenderer = $this->createMock(PageRenderer::class);
+        $pageRenderer->expects(self::once())
+            ->method('addCssFile')
+            ->with('EXT:nr_passkeys_fe/Resources/Public/Css/backend.css');
+
+        return new AdminModuleController(
+            $this->moduleTemplateFactory,
+            $this->adoptionStatsService,
+            $pageRenderer,
+            $this->uriBuilder,
+        );
+    }
+
     private function buildModuleTemplateStub(): ModuleTemplate&Stub
     {
         $menuItem = $this->createStub(MenuItem::class);

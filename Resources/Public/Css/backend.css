@@ -1,0 +1,80 @@
+/**
+ * nr_passkeys_fe - Backend module styles
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Colours come only from TYPO3's own --typo3-* tokens, so every rule follows
+ * the backend colour scheme (light/dark) on TYPO3 13.4 and 14.3. The scheme
+ * is the TYPO3 user setting, not the operating system's, so there is no
+ * media query for it here.
+ */
+
+/* Adoption bar in the dashboard's group table: a native <progress>, which
+ * carries the progressbar role, its value and its accessible name itself.
+ * Core 14.3 ships no .progress/.progress-bar rules, and core's
+ * <typo3-backend-progress-bar> cannot carry an accessible name. Colours come
+ * from core tokens: fill --typo3-component-primary-color, track
+ * --typo3-surface-container-high. Each engine draws the bar through its own
+ * pseudo-elements, so every selector needs a rule of its own: a selector list
+ * with one unknown pseudo-element would drop the whole rule. */
+.passkey-fe-bar-row {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-width: 7rem;
+}
+
+.passkey-fe-bar {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    flex-grow: 1;
+    min-width: 4rem;
+    height: .75rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: var(--typo3-component-border-radius);
+    background-color: var(--typo3-surface-container-high);
+    color: var(--typo3-component-primary-color);
+}
+
+.passkey-fe-bar::-webkit-progress-bar {
+    background-color: var(--typo3-surface-container-high);
+}
+
+.passkey-fe-bar::-webkit-progress-value {
+    background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-fe-bar::-moz-progress-bar {
+    background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-fe-bar-value {
+    min-width: 2.5rem;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Help FAQ: native disclosure widgets. Bootstrap's accordion is not part of
+ * the backend CSS of TYPO3 13.4 or 14.3. */
+.passkey-fe-faq {
+    border: 1px solid var(--typo3-component-border-color);
+    border-radius: var(--typo3-component-border-radius);
+    padding: .5rem .75rem;
+}
+
+.passkey-fe-faq > summary {
+    display: list-item;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.passkey-fe-faq[open] > summary {
+    margin-bottom: .5rem;
+}
+
+.passkey-fe-faq > p:last-child {
+    margin-bottom: 0;
+}

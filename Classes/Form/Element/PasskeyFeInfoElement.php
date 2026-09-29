@@ -118,7 +118,7 @@ final class PasskeyFeInfoElement extends AbstractFormElement
                 $siteLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.site', 'Site'));
                 $aaguidLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.aaguid', 'AAGUID'));
 
-                $childHtml[] = '<br><small class="text-body-secondary">';
+                $childHtml[] = '<br><small class="text-variant">';
                 $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? \htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
                 $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? \htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
                 if ($siteIdentifier !== '') {

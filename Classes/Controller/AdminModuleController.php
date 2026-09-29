@@ -48,6 +48,7 @@ final readonly class AdminModuleController
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $moduleTemplate->setTitle($this->translate('module.title', 'FE Passkey Management'));
         $this->buildDocHeaderMenu($moduleTemplate, 'dashboard');
+        $this->addBackendStyles();
 
         $stats = $this->adoptionStatsService->getStats();
 
@@ -96,12 +97,22 @@ final readonly class AdminModuleController
             . $this->translate('module.help', 'Help'),
         );
         $this->buildDocHeaderMenu($moduleTemplate, 'help');
+        $this->addBackendStyles();
 
         $moduleTemplate->assignMultiple([
             'dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('nr_passkeys_fe'),
         ]);
 
         return $moduleTemplate->renderResponse('AdminModule/Help');
+    }
+
+    /**
+     * Load the module stylesheet: the adoption bar and the help FAQ, drawn
+     * from TYPO3's --typo3-* tokens so they follow the backend colour scheme.
+     */
+    private function addBackendStyles(): void
+    {
+        $this->pageRenderer->addCssFile('EXT:nr_passkeys_fe/Resources/Public/Css/backend.css');
     }
 
     /**

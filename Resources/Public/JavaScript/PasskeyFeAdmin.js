@@ -191,37 +191,40 @@ class PasskeyFeAdmin {
       const row = tbody.insertRow();
       const cell = row.insertCell();
       cell.colSpan = 6;
-      cell.className = 'text-body-secondary text-center';
+      cell.className = 'text-variant text-center';
       cell.textContent = this.translate('js.admin.lookup.noCredentials', 'No credentials found.');
       return;
     }
 
     credentials.forEach((cred) => {
       const row = tbody.insertRow();
-      if (cred.isRevoked) {
-        row.classList.add('text-body-secondary');
-      }
 
       const formatDate = (ts) => ts > 0
         ? new Date(ts * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
         : '—';
 
-      // Label
-      row.insertCell().textContent = cred.label || this.translate('js.admin.lookup.unlabelled', '(unlabelled)');
+      // Text cells. A revoked credential is muted on the leaf cells: core's
+      // text-variant mixes with currentColor on TYPO3 14, so it must not be
+      // set on the row as well as on anything inside it.
+      const addTextCell = (text) => {
+        const cell = row.insertCell();
+        cell.textContent = text;
+        if (cred.isRevoked) {
+          cell.className = 'text-variant';
+        }
+      };
 
-      // Site
-      row.insertCell().textContent = cred.siteIdentifier;
-
-      // Created
-      row.insertCell().textContent = formatDate(cred.createdAt);
-
-      // Last used
-      row.insertCell().textContent = formatDate(cred.lastUsedAt);
+      addTextCell(cred.label || this.translate('js.admin.lookup.unlabelled', '(unlabelled)'));
+      addTextCell(cred.siteIdentifier);
+      addTextCell(formatDate(cred.createdAt));
+      addTextCell(formatDate(cred.lastUsedAt));
 
       // Status badge
       const statusCell = row.insertCell();
       const badge = document.createElement('span');
-      badge.className = cred.isRevoked ? 'badge text-bg-secondary' : 'badge text-bg-success';
+      // Core badge variants follow the backend colour scheme; Bootstrap's
+      // background utilities keep one fixed colour pair in both schemes.
+      badge.className = cred.isRevoked ? 'badge badge-default' : 'badge badge-success';
       badge.textContent = cred.isRevoked
         ? this.translate('js.admin.lookup.status.revoked', 'Revoked')
         : this.translate('js.admin.lookup.status.active', 'Active');
