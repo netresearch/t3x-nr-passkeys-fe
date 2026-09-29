@@ -819,6 +819,10 @@
                 <source>Update failed</source>
                 <target>Mise à jour échouée</target>
             </trans-unit>
+            <trans-unit id="admin.enforcement.error.liveWorkspaceRequired" resname="admin.enforcement.error.liveWorkspaceRequired">
+                <source>Frontend user groups are not versioned in workspaces. Switch to the Live workspace to change the enforcement level.</source>
+                <target>Les groupes d'utilisateurs frontend ne sont pas versionnés dans les espaces de travail. Passez à l'espace de travail LIVE pour modifier le niveau d'application.</target>
+            </trans-unit>
             <trans-unit id="js.revoke.confirm" resname="js.revoke.confirm">
                 <source>Revoke this passkey? This cannot be undone.</source>
                 <target>Révoquer ce passkey ? Cette action est irréversible.</target>

@@ -99,9 +99,10 @@ class PasskeyFeAdmin {
 
       if (data.status === 'ok') {
         select.dataset.originalValue = enforcement;
+        const label = select.selectedOptions[0] ? select.selectedOptions[0].textContent.trim() : enforcement;
         Notification.success(
           this.translate('js.enforcement.updated', 'Enforcement updated'),
-          this.translate('js.enforcement.setTo', 'Group enforcement set to "%s".').replace('%s', enforcement),
+          this.translate('js.enforcement.setTo', 'Group enforcement set to "%s".').replace('%s', label),
         );
       } else {
         select.value = originalValue;

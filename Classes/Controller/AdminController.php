@@ -12,18 +12,23 @@ namespace Netresearch\NrPasskeysFe\Controller;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Utility\MathUtility;
 
 /**
  * Admin API controller for FE passkey management operations.
  *
  * Provides AJAX endpoints for listing, revoking, and unlocking
- * frontend user passkeys. All endpoints require a backend admin session.
+ * frontend user passkeys, and for setting a frontend user group's
+ * enforcement level. All endpoints require a backend admin session.
  */
 final readonly class AdminController
 {
@@ -34,6 +39,7 @@ final readonly class AdminController
         private FrontendUserLookupService $userLookupService,
         private RateLimiterService $rateLimiterService,
         private LoggerInterface $logger,
+        private FrontendGroupEnforcementService $groupEnforcementService,
     ) {}
 
     /**
@@ -188,6 +194,93 @@ final readonly class AdminController
         ]);
 
         return new JsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Set the passkey enforcement level of a frontend user group.
+     *
+     * POST /nr-passkeys-fe/admin/update-enforcement
+     * Body: { "groupUid": 3, "enforcement": "required" }
+     *
+     * The route token that TYPO3 adds to every backend AJAX URL is the CSRF
+     * protection; the request never reaches this action without it.
+     */
+    public function updateEnforcementAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $adminUid = $this->requireAdminUid();
+        if ($adminUid === null) {
+            return new JsonResponse(['error' => 'Unauthorized'], 403);
+        }
+
+        $body = $this->getJsonBody($request);
+        $rawGroupUid = $body['groupUid'] ?? null;
+        // Only a plain integer: is_numeric() would let "1.5", "1e2" and " 1"
+        // through as group 1, 100 and 1, and canBeInterpretedAsInteger()
+        // accepts the JSON values true and 1.0 as 1.
+        $groupUid = !\is_bool($rawGroupUid) && !\is_float($rawGroupUid)
+            && MathUtility::canBeInterpretedAsInteger($rawGroupUid) ? (int) $rawGroupUid : 0;
+        $rawLevel = $body['enforcement'] ?? null;
+        $level = \is_string($rawLevel) ? $rawLevel : '';
+
+        if ($groupUid <= 0) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!FrontendGroupEnforcementService::isValidLevel($level)) {
+            return new JsonResponse(['error' => 'Invalid enforcement level'], 400);
+        }
+
+        if (!$this->groupEnforcementService->groupExists($groupUid)) {
+            return new JsonResponse(['error' => 'Frontend user group not found'], 404);
+        }
+
+        // fe_groups has no versioning, so in a workspace DataHandler refuses the
+        // write; the frontend only ever reads the live record anyway.
+        $backendUser = $GLOBALS['BE_USER'];
+        if ($backendUser instanceof BackendUserAuthentication
+            && !$backendUser->workspaceAllowsLiveEditingInTable('fe_groups')
+        ) {
+            return new JsonResponse([
+                'error' => $this->translate(
+                    'admin.enforcement.error.liveWorkspaceRequired',
+                    'Frontend user groups are not versioned in workspaces. Switch to the Live workspace to change the enforcement level.',
+                ),
+            ], 409);
+        }
+
+        try {
+            $stored = $this->groupEnforcementService->setLevel($groupUid, $level);
+        } catch (RuntimeException $exception) {
+            $this->logger->error('Updating the FE group enforcement failed', [
+                'admin_uid' => $adminUid,
+                'fe_group_uid' => $groupUid,
+                'enforcement' => $level,
+                'reason' => $exception->getMessage(),
+            ]);
+
+            return new JsonResponse(['error' => 'The enforcement level could not be saved'], 500);
+        }
+
+        $this->logger->info('Admin changed FE group enforcement', [
+            'admin_uid' => $adminUid,
+            'fe_group_uid' => $groupUid,
+            'enforcement' => $stored,
+        ]);
+
+        return new JsonResponse(['status' => 'ok', 'groupUid' => $groupUid, 'enforcement' => $stored]);
+    }
+
+    private function translate(string $key, string $fallback): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $fallback;
     }
 
     /**
