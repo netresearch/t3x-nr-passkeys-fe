@@ -657,6 +657,7 @@
 }
 
 .nr-passkeys-fe-enrollment-success__message {
+  display: block;
   color: var(--nr-passkeys-fe-text-light);
   margin-bottom: 1.5rem;
 }

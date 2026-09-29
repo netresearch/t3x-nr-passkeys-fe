@@ -35,7 +35,7 @@ test.describe('Passkey enrollment plugin', () => {
 
         await page.goto('/enrollment', { waitUntil: 'load' });
         const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
-        const success = plugin.getByRole('status').filter({ hasText: 'Passkey set up successfully!' });
+        const success = plugin.getByRole('status').filter({ hasText: 'You can now sign in with your passkey.' });
         await expect(success).toBeHidden();
 
         await page.locator('#nr-passkeys-fe-enroll-btn').click();
@@ -43,6 +43,7 @@ test.describe('Passkey enrollment plugin', () => {
         // The page stays where it is and says the passkey exists; before, it
         // hid the status line and showed nothing at all.
         await expect(success).toBeVisible({ timeout: 15_000 });
+        await expect(plugin.getByRole('heading', { name: 'Passkey set up successfully!' })).toBeVisible();
         await expect(page).toHaveURL(/\/enrollment$/);
 
         await removeAllCredentials(page);

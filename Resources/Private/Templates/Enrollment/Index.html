@@ -55,7 +55,7 @@
     <div class="nr-passkeys-fe-enrollment__status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
     <div class="nr-passkeys-fe-enrollment__error" role="alert" style="display:none"></div>
 
-    <div class="nr-passkeys-fe-enrollment__success nr-passkeys-fe-enrollment-success" role="status" style="display:none">
+    <div class="nr-passkeys-fe-enrollment__success nr-passkeys-fe-enrollment-success" style="display:none">
         <div class="nr-passkeys-fe-enrollment-success__icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -65,9 +65,10 @@
         <h2 class="nr-passkeys-fe-enrollment-success__title">
             <f:translate key="enrollment.success.title" extensionName="nr_passkeys_fe" />
         </h2>
-        <p class="nr-passkeys-fe-enrollment-success__message">
+        <f:comment>output carries the status role natively, so the message is announced.</f:comment>
+        <output class="nr-passkeys-fe-enrollment-success__message">
             <f:translate key="enrollment.success.message" extensionName="nr_passkeys_fe" />
-        </p>
+        </output>
     </div>
 
     <div class="nr-passkeys-fe-enrollment__field">
