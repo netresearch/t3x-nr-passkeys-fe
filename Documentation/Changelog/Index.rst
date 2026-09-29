@@ -6,6 +6,128 @@
 Changelog
 =========
 
+Version 2.0.0
+=============
+
+*Plugin settings that take effect, Required enforcement that binds, and a
+working admin module*
+
+Breaking / Important
+--------------------
+
+- **Required enforcement becomes binding once the grace period is over.**
+  Until now the enrollment interstitial wrote a new grace period start on
+  every request of a Required user whose grace period had ended, so the
+  user could skip enrollment forever. The start is now written only where
+  none is stored: a Required user without a passkey whose grace period has
+  expired is sent to the enrollment page on every request, with no way to
+  skip, as the enforcement documentation already described. *Upgrade:* a
+  site that relied on Required never becoming binding resets the affected
+  users' grace periods with the new "Reset grace period" action in the
+  backend module, or sets the group to Encourage.
+
+- **A grace period lasts exactly its days times 24 hours.** It used to end
+  after N local calendar days, an hour earlier or later across a daylight
+  saving change. The banner and the enrollment page count started 24-hour
+  periods, so a 14-day grace period shows 14 at its start and 1 during its
+  last day; the banner no longer says "0 day(s)" on the last day. A grace
+  period now starts on the user's first request, before the banner and the
+  enrollment page render.
+
+- **TYPO3 13.4 LTS and 14.3 LTS only.** The constraints are
+  ``^13.4 || ^14.3`` in ``composer.json`` and ``13.4.20-14.3.99`` in
+  ``ext_emconf.php``. Installations on TYPO3 14.1 or 14.2 upgrade TYPO3 to
+  14.3 first.
+
+- **Three TypoScript constants removed:**
+  ``plugin.tx_nrpasskeysfe.settings.loginPageUid``, ``managementPageUid``
+  and ``enrollmentPageUid``. Nothing read them: the extension has no logout
+  redirect and no "back to login" link, and the post-login interstitial
+  redirects to the site setting ``nr_passkeys_fe.enrollmentPageUrl``.
+  *Upgrade:* delete them from the site's TypoScript constants. A site that
+  still sets them keeps working.
+
+- **Templates and a partial that were never rendered are removed:**
+  ``Enrollment/Success.html``, ``Management/RecoveryCodes.html``,
+  ``Management/Enrollment.html``, ``Login/Recovery.html`` and
+  ``Partials/Login/PasskeyButton.html``, together with their 17 labels (en,
+  de, fr) and the CSS rules only they used. Only the ``index`` actions exist,
+  so an override of these files never took effect. *Upgrade:* a site that
+  overrides ``Login/Index.html``, ``Enrollment/Index.html`` or the felogin
+  templates compares its copy with the shipped one: the login templates now
+  render ``Partials/NrPasskeysFe/LoginAssets.html`` for their CSS, scripts
+  and JavaScript translations, and felogin finds it through
+  ``plugin.tx_felogin_login.view.partialRootPaths.1700000000``.
+
+- **The login plugin's "Discoverable login" field is a select.** *Use the
+  site setting* (the new default), *On* or *Off*. Values stored by the old
+  checkbox keep their meaning as *On* and *Off*; such an element follows the
+  new ``discoverableEnabled`` constant only once it is set to *Use the site
+  setting*.
+
+- **Removed from the frontend output:** ``window.NrPasskeysFeConfig``, the
+  ``data-site-identifier`` attribute of the felogin passkey panel and the
+  recovery form, the felogin view variables ``passkeyRpId`` and
+  ``passkeyLoginEnabled``, and the "My device doesn't support passkeys"
+  link, whose target was never set. The enrollment script no longer
+  follows a ``redirectUrl`` in the verify response; no server code sent one.
+  Custom scripts or template overrides that read any of these drop them.
+
+Features
+--------
+
+- **The plugin settings are editable and take effect.** The Login,
+  Management and Enrollment plugins show their FlexForm on a "Plugin" tab on
+  TYPO3 13.4 and 14.3. Discoverable login off shows a username field, the
+  password fallback links to the new "Password login page" field, and a
+  redirect page receives the visitor after a passkey login. Both page fields
+  accept only a standard page on the plugin's site, reached directly or
+  through shortcuts, that the visitor may access as TYPO3 decides for a page
+  request; any other target falls back to the plugin's own page.
+
+- **New TypoScript constants.** ``discoverableEnabled`` sets the default of
+  the login plugin and makes the felogin passkey tab ask for a username when
+  it is off. ``css.includeDefault = 0`` now switches the default CSS off for
+  the plugins and the felogin integration; before, nothing read it.
+
+- **The enrollment page shows the user's enforcement state.** It shows the
+  grace days left, or that enrollment is required, and a success message
+  after a registration.
+
+- **Reset grace period in the backend module.** The credential lookup gets
+  the action the user management documentation already described. The next
+  request under Required starts a new grace period.
+
+Bugfixes
+--------
+
+- **Saving the enforcement level in the admin dashboard works.** The select
+  posted to a route that did not exist, so every change ended in "Update
+  failed". Changes are recorded in the history like an edit in the record
+  form.
+
+- **The credential lookup in the admin module lists the user's passkeys.**
+  The request failed on every supported TYPO3 version.
+
+- **The admin module follows the backend's light and dark scheme,** and the
+  enforcement select and the adoption bar have accessible names.
+
+- **The removal question in the passkey management no longer shows HTML
+  entities** for a label with ``&`` or quotes.
+
+- **No deprecated core API.** The client address for the rate limiter and
+  the lockout comes from the request instead of ``getIndpEnv()``, and the
+  plugin FlexForms are registered without ``addPiFlexFormValue()``; TYPO3
+  14.3 deprecates both.
+
+Tests
+-----
+
+- CI runs the JavaScript unit tests, and those tests drive the shipped
+  modules instead of copies of their logic. The end-to-end suite covers the
+  new settings on TYPO3 13.4 and 14.3, with a second variant whose site base
+  carries a host.
+
 Version 1.0.1
 =============
 
