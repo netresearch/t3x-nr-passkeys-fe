@@ -39,8 +39,8 @@ test.describe('Passkey login plugin', () => {
     });
 
     test('with discoverable login off the plugin asks for the username first', async ({ page }) => {
-        await page.goto('/login-plugin-username');
-        await page.waitForLoadState('networkidle');
+        // 'load' runs after DOMContentLoaded, where PasskeyLogin.js binds the button.
+        await page.goto('/login-plugin-username', { waitUntil: 'load' });
 
         const plugin = page.locator('[data-nr-passkeys-fe="login"]');
         await expect(plugin).toHaveAttribute('data-discoverable', '0');
@@ -144,8 +144,7 @@ test.describe('Passkey login plugin', () => {
         await setAutomaticPresence(cdp, authenticatorId, false);
         await logOut(page);
 
-        await page.goto('/login-plugin-redirect');
-        await page.waitForLoadState('networkidle');
+        await page.goto('/login-plugin-redirect', { waitUntil: 'load' });
         // The server resolved the page to a link on this site; the browser
         // never sees the page uid.
         await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', /\/member$/);

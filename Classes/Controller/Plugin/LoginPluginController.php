@@ -85,35 +85,40 @@ final class LoginPluginController extends ActionController
      */
     private function resolveSameSitePageUri(mixed $pageReference, ?SiteInterface $site): ?string
     {
-        if (!$site instanceof SiteInterface) {
-            return null;
-        }
-
-        // A group field stores "pages_<uid>" or the bare uid.
-        if (\is_string($pageReference) && \str_starts_with($pageReference, 'pages_')) {
-            $pageReference = \substr($pageReference, 6);
-        }
-
-        if (\is_bool($pageReference) || !MathUtility::canBeInterpretedAsInteger($pageReference)) {
-            return null;
-        }
-
-        // Uid 0 and negative uids have no root line, so SiteFinder refuses
-        // them like any other page outside a site.
-        $pageUid = (int) $pageReference;
-
-        try {
-            $targetSite = $this->siteFinder->getSiteByPageId($pageUid);
-        } catch (SiteNotFoundException) {
-            return null;
-        }
-
-        if ($targetSite->getIdentifier() !== $site->getIdentifier()) {
+        $pageUid = $this->pageUidFrom($pageReference);
+        if ($pageUid === null || !$site instanceof SiteInterface || !$this->isPageOfSite($pageUid, $site)) {
             return null;
         }
 
         $uri = $this->uriBuilder->reset()->setTargetPageUid($pageUid)->build();
 
         return $uri !== '' ? $uri : null;
+    }
+
+    /**
+     * A group field stores "pages_<uid>" or the bare uid; anything else is no page.
+     */
+    private function pageUidFrom(mixed $pageReference): ?int
+    {
+        if (\is_string($pageReference) && \str_starts_with($pageReference, 'pages_')) {
+            $pageReference = \substr($pageReference, 6);
+        }
+
+        return !\is_bool($pageReference) && MathUtility::canBeInterpretedAsInteger($pageReference)
+            ? (int) $pageReference
+            : null;
+    }
+
+    /**
+     * Uid 0 and negative uids have no root line, so SiteFinder refuses them
+     * like any other page outside a site.
+     */
+    private function isPageOfSite(int $pageUid, SiteInterface $site): bool
+    {
+        try {
+            return $this->siteFinder->getSiteByPageId($pageUid)->getIdentifier() === $site->getIdentifier();
+        } catch (SiteNotFoundException) {
+            return false;
+        }
     }
 }

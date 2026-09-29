@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 
+use ArrayObject;
 use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -218,19 +219,18 @@ final class LoginPluginControllerTest extends TestCase
         );
         $subject = $this->buildController($siteFinder);
 
-        $targetUid = 0;
+        // The builder links the page last passed to setTargetPageUid().
+        $target = new ArrayObject(['uid' => 0]);
         $uriBuilder = $this->createStub(UriBuilder::class);
         $uriBuilder->method('reset')->willReturnSelf();
         $uriBuilder->method('setTargetPageUid')->willReturnCallback(
-            static function (int $uid) use (&$targetUid, $uriBuilder): UriBuilder {
-                $targetUid = $uid;
+            static function (int $uid) use ($target, $uriBuilder): UriBuilder {
+                $target['uid'] = $uid;
                 return $uriBuilder;
             },
         );
         $uriBuilder->method('build')->willReturnCallback(
-            static function () use (&$targetUid, $targets): string {
-                return $targets[$targetUid][1] ?? '';
-            },
+            static fn(): string => $targets[$target['uid']][1] ?? '',
         );
 
         $assignedVars = [];
