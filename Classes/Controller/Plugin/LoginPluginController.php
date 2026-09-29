@@ -63,7 +63,6 @@ final class LoginPluginController extends ActionController
                 $site,
                 isLoginTarget: true,
             ),
-            'recoveryUrl' => '#nr-passkeys-fe-recovery',
             // The hidden form the script submits after a successful ceremony
             // needs the token the core user authentication accepts. Its scope
             // is fixed: AbstractUserAuthentication compares it against

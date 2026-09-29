@@ -2,7 +2,10 @@
 <f:layout name="Default" />
 
 <f:section name="Content">
-<f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" />
+<f:comment>Compared with == '0' so an unset setting keeps the default CSS.</f:comment>
+<f:if condition="{settings.css.includeDefault} == '0'">
+    <f:else><f:asset.css identifier="nr-passkeys-fe-css" href="EXT:nr_passkeys_fe/Resources/Public/Css/passkey-fe.css" /></f:else>
+</f:if>
 <f:asset.script identifier="nr-passkeys-fe-utils" priority="true" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyUtils.js" />
 <f:asset.script identifier="nr-passkeys-fe-enrollment" src="EXT:nr_passkeys_fe/Resources/Public/JavaScript/PasskeyEnrollment.js" />
 

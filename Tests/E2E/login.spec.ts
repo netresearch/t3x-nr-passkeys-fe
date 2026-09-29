@@ -56,6 +56,18 @@ test.describe('Passkey login plugin', () => {
         await expect(username).toBeFocused();
     });
 
+    test('the default CSS follows its constant', async ({ page }) => {
+        const stylesheet = 'link[rel="stylesheet"][href*="passkey-fe.css"]';
+
+        await page.goto('/login-plugin');
+        await expect(page.locator(stylesheet)).toHaveCount(1);
+
+        // css.includeDefault = 0 for this page (runTests.conf, ts-constants).
+        await page.goto('/login-plugin-username');
+        await expect(page.locator('[data-nr-passkeys-fe="login"]')).toBeAttached();
+        await expect(page.locator(stylesheet)).toHaveCount(0);
+    });
+
     test('the password fallback links to the configured page when it is switched on', async ({ page }) => {
         await page.goto('/login-plugin-username');
         const link = page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' });
@@ -275,5 +287,35 @@ test.describe('Passkey login plugin', () => {
         expect(unknownBody.length > 0).toBe(knownBody.length > 0);
         expect(unknownBody.toLowerCase()).not.toContain('unknown');
         expect(unknownBody.toLowerCase()).not.toContain('not found');
+    });
+});
+
+test.describe('Passkey tab in the felogin form', () => {
+    const stylesheet = 'link[rel="stylesheet"][href*="passkey-fe.css"]';
+
+    test('it logs in discoverably by default, with the default CSS', async ({ page }) => {
+        await page.goto('/login', { waitUntil: 'load' });
+
+        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        await expect(panel).toHaveAttribute('data-discoverable', '1');
+        await expect(panel.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
+        await expect(page.locator(stylesheet)).toHaveCount(1);
+    });
+
+    test('it follows the constants: username first and no default CSS', async ({ page }) => {
+        // Both constants are 0 for this page (runTests.conf, ts-constants).
+        await page.goto('/login-username', { waitUntil: 'load' });
+
+        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        await expect(panel).toHaveAttribute('data-discoverable', '0');
+        await expect(page.locator(stylesheet)).toHaveCount(0);
+
+        const username = panel.getByRole('textbox', { name: 'Username' });
+        await expect(username).toBeVisible();
+        await expect(username).toHaveAttribute('name', 'nr_passkeys_username');
+
+        await page.locator('#nr-passkeys-fe-felogin-login-btn').click();
+        await expect(panel.locator('.nr-passkeys-fe-login__error')).toHaveText('Please enter your username.');
+        await expect(username).toBeFocused();
     });
 });

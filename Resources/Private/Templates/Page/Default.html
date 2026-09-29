@@ -39,14 +39,20 @@
     <f:render section="HeaderAssets" optional="true" />
 </head>
 <body>
+    <f:comment>
+        Links come from the menu data processors of the demo page TypoScript
+        (.ddev/commands/web/install-v14): the site root, and the pages below
+        it that TYPO3 shows to the current visitor.
+    </f:comment>
+    <f:variable name="home" value="{homeNavigation.0}" />
     <header class="page-header">
-        <h1><a href="/">EXT:nr_passkeys_fe Demo (TYPO3 v14)</a></h1>
+        <h1><a href="{home.link}">EXT:nr_passkeys_fe Demo (TYPO3 v14)</a></h1>
     </header>
     <nav class="page-nav">
-        <a href="/">Home</a>
-        <a href="/passkey-login">Passkey Login</a>
-        <a href="/my-account">My Account</a>
-        <a href="/passkey-setup">Passkey Setup</a>
+        <a href="{home.link}">Home</a>
+        <f:for each="{mainNavigation}" as="item">
+            <a href="{item.link}">{item.title}</a>
+        </f:for>
     </nav>
     <main class="page-content">
         <f:format.raw>{content}</f:format.raw>

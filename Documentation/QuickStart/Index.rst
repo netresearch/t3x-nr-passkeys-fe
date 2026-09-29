@@ -51,14 +51,6 @@ In your site's root TypoScript record, add:
     @import 'EXT:nr_passkeys_fe/Configuration/TypoScript/setup.typoscript'
     @import 'EXT:nr_passkeys_fe/Configuration/TypoScript/constants.typoscript'
 
-Then set the page UIDs for your login and management pages:
-
-..  code-block:: typoscript
-
-    plugin.tx_nrpasskeysfe.settings.loginPageUid = 42
-    plugin.tx_nrpasskeysfe.settings.managementPageUid = 43
-    plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = 44
-
 Step 3: Add plugins to pages
 =============================
 

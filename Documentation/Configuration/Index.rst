@@ -6,7 +6,7 @@
 Configuration
 =============
 
-Configuration happens at three levels:
+Configuration happens at four levels:
 
 1. **Extension settings** -- Global defaults (algorithm, challenge TTL,
    rate limiting)
@@ -23,7 +23,7 @@ its :guilabel:`Plugin` tab:
 ..  confval:: settings.discoverableEnabled
 
     :type: boolean
-    :Default: enabled
+    :Default: the constant :confval:`plugin.tx_nrpasskeysfe.settings.discoverableEnabled` (enabled)
 
     Allow login without entering a username: the passkey identifies the
     user. Turn it off to show a username field and require a username

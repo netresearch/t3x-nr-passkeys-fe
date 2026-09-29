@@ -69,9 +69,9 @@ Two PSR-15 middlewares are registered:
 
 ## TypoScript
 
-Constants are prefixed `plugin.tx_nrpasskeysfe.settings.*`. The three
-key constants are `loginPageUid`, `managementPageUid`, `enrollmentPageUid`.
-These must be set in the site's TypoScript constants.
+Constants are prefixed `plugin.tx_nrpasskeysfe.settings.*`: `discoverableEnabled`
+and `css.includeDefault`. `setup.typoscript` hands both to the plugins and, under
+`plugin.tx_felogin_login.settings.passkeys`, to the felogin template override.
 
 ## Site Configuration Schema
 

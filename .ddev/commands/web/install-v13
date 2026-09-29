@@ -203,21 +203,6 @@ cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
 );
 TSPHP
 
-# Look up actual page UIDs and set TypoScript constants
-LOGIN_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1")
-ACCOUNT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1")
-ENROLLMENT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1")
-
-cat >> "$INSTALL_DIR/config/system/additional.php" << CONSTPHP
-
-// Configure passkey plugin page UIDs
-\\TYPO3\\CMS\\Core\\Utility\\ExtensionManagementUtility::addTypoScriptConstants('
-plugin.tx_nrpasskeysfe.settings.loginPageUid = ${LOGIN_UID}
-plugin.tx_nrpasskeysfe.settings.managementPageUid = ${ACCOUNT_UID}
-plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = ${ENROLLMENT_UID}
-');
-CONSTPHP
-
 # Add nr_passkeys_fe TypoScript to sys_template
 mysql -h db -u root -proot "$VERSION" -N -e "
 UPDATE sys_template

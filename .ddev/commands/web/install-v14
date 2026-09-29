@@ -155,6 +155,14 @@ page.10 {
   variables {
     content < styles.content.get
   }
+  dataProcessing {
+    10 = menu
+    10.as = mainNavigation
+    20 = menu
+    20.special = rootline
+    20.special.range = 0|0
+    20.as = homeNavigation
+  }
 }
 ');
     "
@@ -221,20 +229,6 @@ cat >> "$INSTALL_DIR/config/system/additional.php" << 'TSPHP'
     '@import "EXT:nr_passkeys_fe/Configuration/TypoScript/constants.typoscript"'
 );
 TSPHP
-
-# Dynamic page UID constants
-LOGIN_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-login' LIMIT 1")
-ACCOUNT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/my-account' LIMIT 1")
-ENROLLMENT_UID=$(mysql -h db -u root -proot "$VERSION" -N -e "SELECT uid FROM pages WHERE slug='/passkey-setup' LIMIT 1")
-
-cat >> "$INSTALL_DIR/config/system/additional.php" << CONSTPHP
-
-\\TYPO3\\CMS\\Core\\Utility\\ExtensionManagementUtility::addTypoScriptConstants('
-plugin.tx_nrpasskeysfe.settings.loginPageUid = ${LOGIN_UID}
-plugin.tx_nrpasskeysfe.settings.managementPageUid = ${ACCOUNT_UID}
-plugin.tx_nrpasskeysfe.settings.enrollmentPageUid = ${ENROLLMENT_UID}
-');
-CONSTPHP
 
 # Add TypoScript to sys_template (if not already done for no-intro case)
 mysql -h db -u root -proot "$VERSION" -N -e "

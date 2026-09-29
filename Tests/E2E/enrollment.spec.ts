@@ -17,6 +17,8 @@ test.describe('Passkey enrollment plugin', () => {
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('[data-nr-passkeys-fe="enrollment"]')).toBeVisible();
+        // css.includeDefault = 0 for this page (runTests.conf, ts-constants).
+        await expect(page.locator('link[rel="stylesheet"][href*="passkey-fe.css"]')).toHaveCount(0);
     });
 
     test('the status endpoint answers for a logged-in user', async ({ page }) => {
