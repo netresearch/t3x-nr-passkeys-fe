@@ -123,8 +123,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         }
 
         // Check lockout before returning user for authUser
-        $rawIp = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($rawIp) ? $rawIp : '';
+        $ip = $this->getRemoteAddress();
 
         try {
             $this->getRateLimiterService()->checkLockout($username, $ip);
@@ -175,8 +174,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
         $rawUname = $this->login['uname'] ?? '';
         $username = \is_string($rawUname) ? $rawUname : '';
-        $rawIp = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($rawIp) ? $rawIp : '';
+        $ip = $this->getRemoteAddress();
 
         try {
             // Check lockout (may have changed between getUser and authUser)
@@ -465,6 +463,19 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         if ($feUserAuth instanceof FrontendUserAuthentication) {
             $feUserAuth->setKey('ses', $key, $value);
         }
+    }
+
+    /**
+     * The client address core computed for this login (authInfo['REMOTE_ADDR']
+     * from AbstractUserAuthentication::getAuthInfoArray(), at 13.4 and 14.3).
+     * The auth chain has no request argument, and $GLOBALS['TYPO3_REQUEST'] is
+     * not reliable here; core already derived the address from the request.
+     */
+    private function getRemoteAddress(): string
+    {
+        $remoteAddress = $this->authInfo['REMOTE_ADDR'] ?? '';
+
+        return \is_string($remoteAddress) ? $remoteAddress : '';
     }
 
     private function getWebAuthnService(): FrontendWebAuthnService

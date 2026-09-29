@@ -33,6 +33,7 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 final readonly class RecoveryController
 {
     use JsonBodyTrait;
+    use RemoteAddressTrait;
 
     public function __construct(
         private RecoveryCodeService $recoveryCodeService,
@@ -103,8 +104,7 @@ final readonly class RecoveryController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
+        $ip = $this->getRemoteAddress($request);
 
         try {
             $this->rateLimiterService->consumeRateLimit('fe_recovery_verify', $ip);

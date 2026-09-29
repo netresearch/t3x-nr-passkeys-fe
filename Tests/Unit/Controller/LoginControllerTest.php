@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use ArrayObject;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -19,6 +20,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -29,6 +31,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -429,5 +432,131 @@ final class LoginControllerTest extends TestCase
     private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    // ---------------------------------------------------------------
+    // Client address: the request's normalizedParams, not getIndpEnv()
+    // ---------------------------------------------------------------
+
+    /**
+     * A request as it arrives without core's normalized-params-attribute
+     * middleware; tests that model the middleware add the attribute.
+     *
+     * @param array<string, string> $serverParams
+     */
+    private function requestFrom(array $serverParams): ServerRequest
+    {
+        return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', 'POST', 'php://input', [], $serverParams))
+            ->withParsedBody([]);
+    }
+
+    /**
+     * Let the rate limiter record which address each endpoint was charged for,
+     * then stop the request as an exceeded limit would.
+     *
+     * @return ArrayObject<int, string> "endpoint@address" per call
+     */
+    private function recordRateLimitedAddresses(): ArrayObject
+    {
+        $addresses = new ArrayObject();
+        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
+            static function (string $endpoint, string $ip) use ($addresses): never {
+                $addresses[] = $endpoint . '@' . $ip;
+                throw new RateLimitExceeded();
+            },
+        );
+
+        return $addresses;
+    }
+
+    #[Test]
+    public function optionsActionRateLimitsTheAddressFromTheNormalizedParams(): void
+    {
+        $addresses = $this->recordRateLimitedAddresses();
+
+        // The server param differs on purpose: only the attribute may count.
+        $request = $this->requestFrom(['REMOTE_ADDR' => '192.0.2.1'])
+            ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.8'], [], '', ''));
+        $this->subject->optionsAction($request);
+
+        self::assertSame(['fe_login_options@203.0.113.8'], $addresses->getArrayCopy());
+    }
+
+    #[Test]
+    public function verifyActionRateLimitsTheAddressFromTheNormalizedParams(): void
+    {
+        $addresses = $this->recordRateLimitedAddresses();
+
+        // The server param differs on purpose: only the attribute may count.
+        $request = $this->requestFrom(['REMOTE_ADDR' => '192.0.2.1'])
+            ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.9'], [], '', ''))
+            ->withParsedBody(['assertion' => ['id' => 'x'], 'challengeToken' => 'token']);
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame(['fe_login_verify@203.0.113.9'], $addresses->getArrayCopy());
+    }
+
+    #[Test]
+    public function withoutTheAttributeTheAddressHonoursTheReverseProxyConfiguration(): void
+    {
+        // A request that did not pass the middleware: the address is computed
+        // from the server params with the SYS configuration, as core does.
+        $addresses = $this->recordRateLimitedAddresses();
+        $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP'] = '10.0.0.1';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyHeaderMultiValue'] = 'first';
+
+        try {
+            $this->subject->optionsAction($this->requestFrom(
+                ['REMOTE_ADDR' => '10.0.0.1', 'HTTP_X_FORWARDED_FOR' => '198.51.100.4'],
+            ));
+        } finally {
+            if ($backup === null) {
+                unset($GLOBALS['TYPO3_CONF_VARS']['SYS']);
+            } else {
+                $GLOBALS['TYPO3_CONF_VARS']['SYS'] = $backup;
+            }
+        }
+
+        self::assertSame(['fe_login_options@198.51.100.4'], $addresses->getArrayCopy());
+    }
+
+    #[Test]
+    public function aForwardedForHeaderFromAnUntrustedClientIsIgnored(): void
+    {
+        // No reverseProxyIP configured: X-Forwarded-For is whatever the client
+        // sent, so the limiter must charge the connecting address.
+        $addresses = $this->recordRateLimitedAddresses();
+        $serverParams = ['REMOTE_ADDR' => '198.51.100.7', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4'];
+
+        $request = $this->requestFrom($serverParams)
+            ->withAttribute('normalizedParams', new NormalizedParams($serverParams, [], '', ''));
+        $this->subject->optionsAction($request);
+
+        self::assertSame(['fe_login_options@198.51.100.7'], $addresses->getArrayCopy());
+    }
+
+    #[Test]
+    public function withoutTheAttributeAForwardedForHeaderFromAnUntrustedClientIsIgnored(): void
+    {
+        // The fallback path, again without a trusted proxy.
+        $addresses = $this->recordRateLimitedAddresses();
+        $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
+        $GLOBALS['TYPO3_CONF_VARS']['SYS'] = [];
+
+        try {
+            $this->subject->optionsAction($this->requestFrom(
+                ['REMOTE_ADDR' => '198.51.100.7', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4'],
+            ));
+        } finally {
+            if ($backup === null) {
+                unset($GLOBALS['TYPO3_CONF_VARS']['SYS']);
+            } else {
+                $GLOBALS['TYPO3_CONF_VARS']['SYS'] = $backup;
+            }
+        }
+
+        self::assertSame(['fe_login_options@198.51.100.7'], $addresses->getArrayCopy());
     }
 }

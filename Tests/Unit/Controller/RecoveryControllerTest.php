@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -23,6 +24,7 @@ use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
@@ -205,5 +207,33 @@ final class RecoveryControllerTest extends TestCase
     private function decodeBody(ResponseInterface $response): array
     {
         return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    #[Test]
+    public function verifyActionRateLimitsAndChecksTheLockoutForTheAddressFromTheNormalizedParams(): void
+    {
+        $calls = [];
+        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
+            static function (string $endpoint, string $ip) use (&$calls): void {
+                $calls[] = 'rate:' . $endpoint . '@' . $ip;
+            },
+        );
+        $this->rateLimiterService->method('checkLockout')->willReturnCallback(
+            static function (string $username, string $ip) use (&$calls): never {
+                $calls[] = 'lockout:' . $username . '@' . $ip;
+                throw new RateLimitExceeded();
+            },
+        );
+
+        $request = (new ServerRequest('https://example.com/', 'POST', 'php://input', [], ['REMOTE_ADDR' => '192.0.2.1']))
+            ->withParsedBody(['username' => 'jdoe', 'code' => 'ABCD-1234'])
+            // Set by core's normalized-params-attribute middleware; the
+            // differing server param must not be used.
+            ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.11'], [], '', ''));
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame(['rate:fe_recovery_verify@203.0.113.11', 'lockout:jdoe@203.0.113.11'], $calls);
     }
 }

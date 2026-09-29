@@ -20,6 +20,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
@@ -367,6 +368,76 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $result = $subject->authUser($user);
 
         self::assertSame(200, $result);
+    }
+
+    // --- client address: from core's authInfo, not from getIndpEnv() ---
+
+    /**
+     * A service whose rate limiter is the given mock, logged in as
+     * frontend_user with the address core put into authInfo.
+     *
+     * AbstractUserAuthentication::getAuthInfoArray() fills REMOTE_ADDR from
+     * the request's normalizedParams (14.3) or the server (13.4).
+     *
+     * @param list<string> $mockedMethods
+     */
+    private function serviceAtAddress(
+        string $remoteAddress,
+        RateLimiterService $rateLimiterService,
+        FrontendWebAuthnService $webAuthnService,
+        array $mockedMethods = [],
+    ): PasskeyFrontendAuthenticationService {
+        GeneralUtility::purgeInstances();
+        foreach ([
+            FrontendWebAuthnService::class => $webAuthnService,
+            RateLimiterService::class => $rateLimiterService,
+            FrontendEnforcementService::class => $this->enforcementService,
+            SiteConfigurationService::class => $this->siteConfigService,
+            ChallengeService::class => $this->challengeService,
+        ] as $className => $instance) {
+            GeneralUtility::addInstance($className, $instance);
+        }
+
+        $service = $mockedMethods === []
+            ? new PasskeyFrontendAuthenticationService()
+            : $this->getMockBuilder(PasskeyFrontendAuthenticationService::class)->onlyMethods($mockedMethods)->getMock();
+        $this->injectLogger($service, $this->logger);
+        $service->login = [
+            'uname' => 'frontend_user',
+            'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
+        ];
+        $service->authInfo = ['REMOTE_ADDR' => $remoteAddress];
+
+        return $service;
+    }
+
+    #[Test]
+    public function getUserChecksTheLockoutForTheAddressCoreDerivedForThisLogin(): void
+    {
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        $rateLimiterService->expects(self::once())->method('checkLockout')->with('frontend_user', '203.0.113.20');
+        $service = $this->serviceAtAddress('203.0.113.20', $rateLimiterService, $this->webAuthnService, ['fetchUserRecord']);
+        self::assertInstanceOf(MockObject::class, $service);
+        $service->expects(self::once())->method('fetchUserRecord')->willReturn(['uid' => 42, 'username' => 'frontend_user']);
+
+        self::assertIsArray($service->getUser());
+    }
+
+    #[Test]
+    public function authUserRecordsTheAttemptForTheAddressCoreDerivedForThisLogin(): void
+    {
+        $webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $webAuthnService->method('verifyAssertionResponse')->willReturn([
+            'feUserUid' => 42,
+            'credential' => new FrontendCredential(uid: 10, feUser: 42, label: 'Test Key'),
+        ]);
+        $rateLimiterService = $this->createMock(RateLimiterService::class);
+        $rateLimiterService->expects(self::once())->method('checkLockout')->with('frontend_user', '203.0.113.21');
+        $rateLimiterService->expects(self::once())->method('recordSuccess')->with('frontend_user', '203.0.113.21');
+
+        $service = $this->serviceAtAddress('203.0.113.21', $rateLimiterService, $webAuthnService);
+
+        self::assertSame(200, $service->authUser(['uid' => 42, 'username' => 'frontend_user']));
     }
 
     #[Test]
