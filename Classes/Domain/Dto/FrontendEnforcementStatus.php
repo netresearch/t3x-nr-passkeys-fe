@@ -42,26 +42,21 @@ final readonly class FrontendEnforcementStatus
     ) {}
 
     /**
-     * Calendar days left in a running grace period, a started day counting
-     * as one; 0 outside a grace period.
+     * Days left in a running grace period, counted as started 24-hour
+     * periods until the deadline; 0 outside a grace period.
      *
-     * Counted with DateInterval rather than seconds / 86400, so a period
-     * that crosses a daylight-saving change is not a day longer or shorter
-     * than the calendar says. The banner and the enrollment page both use it.
+     * The deadline lies whole 24-hour periods after the start
+     * (FrontendEnforcementService), so the count starts at the configured
+     * number of days and drops by one every 24 hours, across a
+     * daylight-saving change too. The banner and the enrollment page both use
+     * it.
      */
     public function graceDaysRemaining(DateTimeImmutable $now): int
     {
-        if (!$this->inGracePeriod
-            || !$this->graceDeadline instanceof DateTimeImmutable
-            || $this->graceDeadline <= $now
-        ) {
-            return 0;
-        }
+        $secondsLeft = $this->inGracePeriod && $this->graceDeadline instanceof DateTimeImmutable
+            ? $this->graceDeadline->getTimestamp() - $now->getTimestamp()
+            : 0;
 
-        $left = $now->diff($this->graceDeadline);
-        $days = (int) $left->days;
-        $startedDay = $left->h > 0 || $left->i > 0 || $left->s > 0 || $left->f > 0;
-
-        return $startedDay ? $days + 1 : $days;
+        return $secondsLeft > 0 ? \intdiv($secondsLeft + 86399, 86400) : 0;
     }
 }

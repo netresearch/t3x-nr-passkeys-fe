@@ -507,6 +507,14 @@
                 <source>Clear rate-limiter lockout for this user</source>
                 <target>Réinitialiser le verrouillage de connexion pour cet utilisateur</target>
             </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace" resname="dashboard.lookup.reset_grace">
+                <source>Reset grace period</source>
+                <target>Réinitialiser le délai de grâce</target>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace_tooltip" resname="dashboard.lookup.reset_grace_tooltip">
+                <source>Clear the grace period start, so a new grace period starts on the next visit</source>
+                <target>Effacer le début du délai de grâce ; un nouveau délai commence à la prochaine visite</target>
+            </trans-unit>
 
             <!-- Help page -->
             <trans-unit id="help.title" resname="help.title">
@@ -810,6 +818,26 @@
             <trans-unit id="js.unlock.done" resname="js.unlock.done">
                 <source>Reset</source>
                 <target>Réinitialisé</target>
+            </trans-unit>
+            <trans-unit id="js.admin.resetGrace.title" resname="js.admin.resetGrace.title">
+                <source>Reset grace period</source>
+                <target>Réinitialiser le délai de grâce</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.confirm" resname="js.resetGrace.confirm">
+                <source>Reset the grace period of this user? A new grace period starts on the next page the user visits while passkeys are required.</source>
+                <target>Réinitialiser le délai de grâce de cet utilisateur ? Un nouveau délai commence à la prochaine page visitée tant que les passkeys sont exigées.</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.success" resname="js.resetGrace.success">
+                <source>Grace period reset</source>
+                <target>Délai de grâce réinitialisé</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.message" resname="js.resetGrace.message">
+                <source>The grace period starts again on the next visit.</source>
+                <target>Le délai de grâce recommence à la prochaine visite.</target>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.failed" resname="js.resetGrace.failed">
+                <source>Reset failed</source>
+                <target>Échec de la réinitialisation</target>
             </trans-unit>
 
             <!-- JS: Login module -->

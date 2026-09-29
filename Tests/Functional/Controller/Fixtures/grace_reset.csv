@@ -1,0 +1,7 @@
+be_users
+,uid,pid,username,password,admin,disable,deleted
+,1,0,admin,x,1,0,0
+,2,0,editor,x,0,0,0
+fe_users
+,uid,pid,username,password,usergroup,disable,deleted,passkey_grace_period_start
+,1,1,expired,x,"",0,0,1700000000

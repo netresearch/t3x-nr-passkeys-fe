@@ -55,8 +55,9 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
     {
         yield 'required, in its grace period' => [1, false, 10];
         yield 'enforced' => [2, true, 0];
-        // The page starts the grace period, as the interstitial would.
-        yield 'required, grace period not started' => [3, false, 14];
+        // The interstitial starts a due grace period before the page is
+        // rendered; the page itself only shows the status.
+        yield 'required, grace period not started' => [3, true, 0];
         yield 'required, grace period over' => [4, true, 0];
         yield 'not enforced' => [5, false, 0];
         // A passkey settles it, as for the interstitial and the banner.
@@ -75,12 +76,11 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
     }
 
     #[Test]
-    public function theEnrollmentPageStartsAGracePeriodThatHasNotStarted(): void
+    public function theEnrollmentPageStartsNoGracePeriodItself(): void
     {
-        $before = \time();
         $this->renderForFrontendUser(3);
 
-        self::assertGreaterThanOrEqual($before, $this->graceStartOf(3));
+        self::assertSame(0, $this->graceStartOf(3));
     }
 
     #[Test]

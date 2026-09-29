@@ -61,6 +61,30 @@ test.describe('Passkey enrollment plugin', () => {
         await expect(plugin.getByText('Passkey enrollment is required to continue accessing your account.')).toHaveCount(0);
     });
 
+    test('a grace period that starts now shows on the banner and on the plugin alike', async ({ page }) => {
+        // e2e_fresh is in a group that requires passkeys, with no grace
+        // period started. The banner is rendered before the plugin, so both
+        // show the fourteen days only if the start is written first.
+        await loginWithPassword(page, 'e2e_fresh');
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        await expect(page.locator('.nr-passkeys-banner')).toContainText('You have 14 day(s) left to register a passkey.');
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        await expect(plugin.getByText('You have 14 days remaining to set up your passkey.')).toBeVisible();
+        await expect(page.getByText('Passkey enrollment is required to continue accessing your account.')).toHaveCount(0);
+    });
+
+    test('a grace period that is over is not granted again', async ({ page }) => {
+        // e2e_expired's fourteen-day grace period started thirty days ago.
+        await loginWithPassword(page, 'e2e_expired');
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        await expect(page.locator('.nr-passkeys-banner')).toContainText('Passkey enrollment is required to continue accessing your account.');
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        await expect(plugin.getByText('Passkey enrollment is required to continue accessing your account.')).toBeVisible();
+        await expect(page.getByText(/day\(s\) left|days remaining/)).toHaveCount(0);
+    });
+
     test('a user whose group enforces passkeys is told enrollment is required', async ({ page }) => {
         await loginWithPassword(page, 'e2e_enforced');
         await page.goto('/enrollment', { waitUntil: 'load' });

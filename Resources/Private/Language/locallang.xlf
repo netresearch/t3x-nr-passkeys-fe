@@ -389,6 +389,12 @@
             <trans-unit id="dashboard.lookup.unlock_user_tooltip" resname="dashboard.lookup.unlock_user_tooltip">
                 <source>Clear rate-limiter lockout for this user</source>
             </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace" resname="dashboard.lookup.reset_grace">
+                <source>Reset grace period</source>
+            </trans-unit>
+            <trans-unit id="dashboard.lookup.reset_grace_tooltip" resname="dashboard.lookup.reset_grace_tooltip">
+                <source>Clear the grace period start, so a new grace period starts on the next visit</source>
+            </trans-unit>
 
             <!-- Help page -->
             <trans-unit id="help.title" resname="help.title">
@@ -751,6 +757,21 @@
             </trans-unit>
             <trans-unit id="js.unlock.done" resname="js.unlock.done">
                 <source>Reset</source>
+            </trans-unit>
+            <trans-unit id="js.admin.resetGrace.title" resname="js.admin.resetGrace.title">
+                <source>Reset grace period</source>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.confirm" resname="js.resetGrace.confirm">
+                <source>Reset the grace period of this user? A new grace period starts on the next page the user visits while passkeys are required.</source>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.success" resname="js.resetGrace.success">
+                <source>Grace period reset</source>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.message" resname="js.resetGrace.message">
+                <source>The grace period starts again on the next visit.</source>
+            </trans-unit>
+            <trans-unit id="js.resetGrace.failed" resname="js.resetGrace.failed">
+                <source>Reset failed</source>
             </trans-unit>
 
             <!-- ============================================================

@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Controller;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendGroupEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Psr\Http\Message\ResponseInterface;
@@ -27,8 +28,9 @@ use TYPO3\CMS\Core\Utility\MathUtility;
  * Admin API controller for FE passkey management operations.
  *
  * Provides AJAX endpoints for listing, revoking, and unlocking
- * frontend user passkeys, and for setting a frontend user group's
- * enforcement level. All endpoints require a backend admin session.
+ * frontend user passkeys, for setting a frontend user group's enforcement
+ * level, and for resetting a user's grace period. All endpoints require a
+ * backend admin session.
  */
 final readonly class AdminController
 {
@@ -40,6 +42,7 @@ final readonly class AdminController
         private RateLimiterService $rateLimiterService,
         private LoggerInterface $logger,
         private FrontendGroupEnforcementService $groupEnforcementService,
+        private FrontendEnforcementService $enforcementService,
     ) {}
 
     /**
@@ -191,6 +194,43 @@ final readonly class AdminController
             'admin_uid' => $adminUid,
             'fe_user_uid' => $feUserUid,
             'username' => $username,
+        ]);
+
+        return new JsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Reset the grace period of a frontend user: the next request the
+     * enrollment interstitial handles under Required starts a new one.
+     *
+     * POST /nr-passkeys-fe/admin/reset-grace-period
+     * Body: { "feUserUid": 123 }
+     */
+    public function resetGracePeriodAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $adminUid = $this->requireAdminUid();
+        if ($adminUid === null) {
+            return new JsonResponse(['error' => 'Unauthorized'], 403);
+        }
+
+        $body = $this->getJsonBody($request);
+        $rawUid = $body['feUserUid'] ?? null;
+        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
+        if ($feUserUid === 0) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        // An existing user only, so the audit log names no phantom uid.
+        if ($this->userLookupService->findFeUserByUid($feUserUid) === null) {
+            return new JsonResponse(['error' => 'User not found'], 404);
+        }
+
+        $this->enforcementService->resetGracePeriod($feUserUid);
+
+        $this->logger->info('Admin reset FE passkey grace period', [
+            'admin_uid' => $adminUid,
+            'fe_user_uid' => $feUserUid,
         ]);
 
         return new JsonResponse(['status' => 'ok']);

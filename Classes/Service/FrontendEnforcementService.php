@@ -40,6 +40,8 @@ final class FrontendEnforcementService
         'enforced' => 3,
     ];
 
+    private const SECONDS_PER_DAY = 86400;
+
     /** @var array<string, FrontendEnforcementStatus> */
     private array $statusCache = [];
 
@@ -115,11 +117,13 @@ final class FrontendEnforcementService
         $graceDeadline = null;
 
         if ($effectiveGraceDays > 0 && $gracePeriodStart > 0) {
+            // A grace day is 24 hours. Counted in local calendar days, a
+            // period across a daylight-saving change would be an hour longer
+            // or shorter, and could end at a local time that does not exist.
             $deadline = (new DateTimeImmutable())
-                ->setTimestamp($gracePeriodStart)
-                ->modify('+' . $effectiveGraceDays . ' days');
+                ->setTimestamp($gracePeriodStart + $effectiveGraceDays * self::SECONDS_PER_DAY);
 
-            if ($deadline !== false && $deadline > new DateTimeImmutable()) {
+            if ($deadline > new DateTimeImmutable()) {
                 $inGracePeriod = true;
                 $graceDeadline = $deadline;
             }
@@ -161,14 +165,36 @@ final class FrontendEnforcementService
             ['uid' => $feUserUid, 'passkey_grace_period_start' => 0],
         ) > 0;
 
-        // Invalidate cached status for this user across all sites
+        $this->forgetStatusOf($feUserUid);
+
+        return $started;
+    }
+
+    /**
+     * Clear a frontend user's grace period start, so the next request the
+     * enrollment interstitial handles under Required starts a new one.
+     */
+    public function resetGracePeriod(int $feUserUid): void
+    {
+        $this->connectionPool->getConnectionForTable('fe_users')->update(
+            'fe_users',
+            ['passkey_grace_period_start' => 0],
+            ['uid' => $feUserUid],
+        );
+
+        $this->forgetStatusOf($feUserUid);
+    }
+
+    /**
+     * Invalidate the cached status of a user across all sites.
+     */
+    private function forgetStatusOf(int $feUserUid): void
+    {
         foreach (\array_keys($this->statusCache) as $key) {
             if (\str_starts_with($key, $feUserUid . '|')) {
                 unset($this->statusCache[$key]);
             }
         }
-
-        return $started;
     }
 
     /**

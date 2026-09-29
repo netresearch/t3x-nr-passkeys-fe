@@ -97,29 +97,31 @@ final class FrontendEnforcementStatusTest extends TestCase
     }
 
     /**
-     * Europe/Berlin leaves daylight saving time on 2026-10-25 and enters it
-     * on 2026-03-29. A period that crosses either change is still counted in
-     * calendar days: seconds / 86400 would be a day off on one side.
+     * Seconds from "now" to the deadline, and the days shown: started
+     * 24-hour periods. 2026-10-24 10:00 Europe/Berlin is the day before
+     * daylight saving time ends; the count follows the seconds, not the
+     * local calendar.
      *
-     * @return iterable<string, array{string, string, int}>
+     * @return iterable<string, array{int, int}>
      */
-    public static function graceDeadlines(): iterable
+    public static function secondsToTheDeadline(): iterable
     {
-        yield 'ten calendar days, crossing the end of DST' => ['2026-10-24 10:00', '2026-11-03 10:00', 10];
-        yield 'ten calendar days, crossing the start of DST' => ['2026-03-24 10:00', '2026-04-03 10:00', 10];
-        yield 'a started day counts as one' => ['2026-11-02 22:00', '2026-11-03 10:00', 1];
-        yield 'nine days and a started one' => ['2026-10-24 11:00', '2026-11-03 10:00', 10];
-        yield 'deadline reached' => ['2026-11-03 10:00', '2026-11-03 10:00', 0];
+        yield 'fourteen full periods, across the end of DST' => [14 * 86400, 14];
+        yield 'one second more than a period' => [86400 + 1, 2];
+        yield 'exactly one period' => [86400, 1];
+        yield 'one second' => [1, 1];
+        yield 'deadline reached' => [0, 0];
+        yield 'deadline passed' => [-60, 0];
     }
 
     #[Test]
-    #[DataProvider('graceDeadlines')]
-    public function graceDaysRemainingCountsCalendarDays(string $now, string $deadline, int $expected): void
+    #[DataProvider('secondsToTheDeadline')]
+    public function graceDaysRemainingCountsStartedPeriodsOf24Hours(int $secondsLeft, int $expected): void
     {
-        $berlin = new DateTimeZone('Europe/Berlin');
-        $status = $this->statusInGrace(new DateTimeImmutable($deadline, $berlin));
+        $now = new DateTimeImmutable('2026-10-24 10:00', new DateTimeZone('Europe/Berlin'));
+        $status = $this->statusInGrace($now->setTimestamp($now->getTimestamp() + $secondsLeft));
 
-        self::assertSame($expected, $status->graceDaysRemaining(new DateTimeImmutable($now, $berlin)));
+        self::assertSame($expected, $status->graceDaysRemaining($now));
     }
 
     #[Test]

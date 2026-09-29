@@ -34,8 +34,9 @@ final class EnrollmentPluginController extends ActionController
         $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
 
-        // The same status the post-login interstitial and the banner act on.
-        // A user who holds a passkey has nothing left to do here.
+        // The same status the post-login interstitial and the banner act on;
+        // the interstitial has started a due grace period before this page
+        // is rendered. A user who holds a passkey has nothing left to do here.
         $status = $this->resolveStatus($site);
         $enrollmentRequired = false;
         $graceDaysRemaining = 0;
@@ -66,11 +67,7 @@ final class EnrollmentPluginController extends ActionController
             return null;
         }
 
-        return $this->withGracePeriodStarted(
-            $feUserUid,
-            $site,
-            $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site),
-        );
+        return $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
     }
 
     /**
@@ -82,28 +79,5 @@ final class EnrollmentPluginController extends ActionController
         $userRow = $feUser instanceof FrontendUserAuthentication ? $feUser->user : null;
 
         return \is_array($userRow) && \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
-    }
-
-    /**
-     * The post-login interstitial starts the grace period on its first
-     * redirect, but passes the enrollment page itself through before it gets
-     * there. A user who arrives here first gets it started here, by the same
-     * service call, so the page shows the days that now run.
-     */
-    private function withGracePeriodStarted(
-        int $feUserUid,
-        SiteInterface $site,
-        FrontendEnforcementStatus $status,
-    ): FrontendEnforcementStatus {
-        $gracePeriodDue = $status->effectiveLevel === 'required'
-            && $status->passkeyCount === 0
-            && !$status->inGracePeriod
-            && $status->graceDays > 0;
-
-        if ($gracePeriodDue && $this->enforcementService->startGracePeriod($feUserUid)) {
-            return $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
-        }
-
-        return $status;
     }
 }

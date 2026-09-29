@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Event\EnforcementLevelResolvedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -356,6 +357,73 @@ final class FrontendEnforcementServiceTest extends TestCase
         );
 
         self::assertTrue($subject->startGracePeriod(42));
+    }
+
+    #[Test]
+    public function resetGracePeriodClearsTheStartOfTheUser(): void
+    {
+        $connection = $this->createMock(Connection::class);
+        $connection->expects(self::once())
+            ->method('update')
+            ->with('fe_users', ['passkey_grace_period_start' => 0], ['uid' => 42])
+            ->willReturn(1);
+
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getConnectionForTable')->willReturn($connection);
+
+        $subject = new FrontendEnforcementService(
+            $this->siteConfigService,
+            $this->credentialRepository,
+            $this->recoveryCodeService,
+            $this->eventDispatcher,
+            $connectionPool,
+        );
+
+        $subject->resetGracePeriod(42);
+    }
+
+    #[Test]
+    public function aGracePeriodEndsWhole24HourPeriodsAfterItsStartAcrossADstChange(): void
+    {
+        // Local calendar days across a daylight-saving change are 23 or 25
+        // hours long; the deadline must not follow them.
+        $timezone = \date_default_timezone_get();
+        \date_default_timezone_set('Europe/Berlin');
+        try {
+            $start = \time() - 3600;
+            $days = $this->daysUntilTheNextDstChange($start);
+
+            $this->siteConfigService->method('getEnforcementLevel')->willReturn('off');
+            $this->credentialRepository->method('countByFeUser')->willReturn(0);
+            $this->recoveryCodeService->method('countRemaining')->willReturn(0);
+            $this->setupDbQueries(
+                ['uid' => 1, 'usergroup' => '3', 'passkey_grace_period_start' => $start],
+                [['uid' => 3, 'passkey_enforcement' => 'required', 'passkey_grace_period_days' => $days]],
+            );
+
+            $status = $this->subject->getStatus(1, 'main', $this->site);
+
+            self::assertSame($start + $days * 86400, $status->graceDeadline?->getTimestamp());
+            self::assertSame($days, $status->graceDaysRemaining((new DateTimeImmutable())->setTimestamp($start)));
+        } finally {
+            \date_default_timezone_set($timezone);
+        }
+    }
+
+    /**
+     * The smallest number of days after $start whose end lies on the other
+     * side of a Europe/Berlin daylight-saving change (at most about 220).
+     */
+    private function daysUntilTheNextDstChange(int $start): int
+    {
+        $offsetAt = static fn(int $timestamp): int => (new DateTimeImmutable())->setTimestamp($timestamp)->getOffset();
+        for ($days = 1; $days < 400; $days++) {
+            if ($offsetAt($start + $days * 86400) !== $offsetAt($start)) {
+                return $days;
+            }
+        }
+
+        self::fail('No daylight-saving change within 400 days');
     }
 
     // ---------------------------------------------------------------
