@@ -521,4 +521,42 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(['fe_login_options@198.51.100.4'], $addresses->getArrayCopy());
     }
+
+    #[Test]
+    public function aForwardedForHeaderFromAnUntrustedClientIsIgnored(): void
+    {
+        // No reverseProxyIP configured: X-Forwarded-For is whatever the client
+        // sent, so the limiter must charge the connecting address.
+        $addresses = $this->recordRateLimitedAddresses();
+        $serverParams = ['REMOTE_ADDR' => '198.51.100.7', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4'];
+
+        $request = $this->requestFrom($serverParams)
+            ->withAttribute('normalizedParams', new NormalizedParams($serverParams, [], '', ''));
+        $this->subject->optionsAction($request);
+
+        self::assertSame(['fe_login_options@198.51.100.7'], $addresses->getArrayCopy());
+    }
+
+    #[Test]
+    public function withoutTheAttributeAForwardedForHeaderFromAnUntrustedClientIsIgnored(): void
+    {
+        // The fallback path, again without a trusted proxy.
+        $addresses = $this->recordRateLimitedAddresses();
+        $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
+        $GLOBALS['TYPO3_CONF_VARS']['SYS'] = [];
+
+        try {
+            $this->subject->optionsAction($this->requestFrom(
+                ['REMOTE_ADDR' => '198.51.100.7', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4'],
+            ));
+        } finally {
+            if ($backup === null) {
+                unset($GLOBALS['TYPO3_CONF_VARS']['SYS']);
+            } else {
+                $GLOBALS['TYPO3_CONF_VARS']['SYS'] = $backup;
+            }
+        }
+
+        self::assertSame(['fe_login_options@198.51.100.7'], $addresses->getArrayCopy());
+    }
 }
