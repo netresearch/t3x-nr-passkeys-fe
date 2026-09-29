@@ -160,4 +160,4 @@ IP-based enforcement).
 ..  note::
 
     Magic link login (including ``MagicLinkRequestedEvent``) is deferred
-    to v0.2. See :ref:`ADR-011 <adr-011>`.
+    to v0.2. See :doc:`ADR-011 </Adr/Adr011MagicLinkDeferredToV02>`.
