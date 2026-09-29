@@ -9,20 +9,28 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller\Plugin;
 
+use ArrayObject;
 use GuzzleHttp\Psr7\Uri;
 use Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController;
+use Netresearch\NrPasskeysFe\Service\LinkablePageResolver;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use ReflectionClass;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Http\StreamFactory;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
+use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
 use TYPO3\CMS\Extbase\Mvc\Request;
+use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
 
 #[CoversClass(LoginPluginController::class)]
 final class LoginPluginControllerTest extends TestCase
@@ -30,7 +38,7 @@ final class LoginPluginControllerTest extends TestCase
     #[Test]
     public function isInstantiable(): void
     {
-        $subject = new LoginPluginController();
+        $subject = new LoginPluginController($this->createStub(SiteFinder::class), $this->createStub(LinkablePageResolver::class));
         self::assertInstanceOf(LoginPluginController::class, $subject);
     }
 
@@ -74,21 +82,438 @@ final class LoginPluginControllerTest extends TestCase
         self::assertTrue($assignedVars['discoverableEnabled']);
     }
 
-    private function buildController(): LoginPluginController
+    #[Test]
+    public function discoverableLoginIsTheDefaultAndShowsNoUsernameField(): void
     {
-        $subject = new LoginPluginController();
+        $vars = $this->renderWithSettings([]);
+
+        self::assertTrue($vars['discoverableEnabled']);
+        self::assertFalse($vars['showUsernameField']);
+    }
+
+    #[Test]
+    public function turningDiscoverableLoginOffAsksForTheUsername(): void
+    {
+        $vars = $this->renderWithSettings(['discoverableEnabled' => '0']);
+
+        self::assertFalse($vars['discoverableEnabled']);
+        self::assertTrue($vars['showUsernameField']);
+    }
+
+    #[Test]
+    public function aRedirectPageOnTheSameSiteBecomesTheTargetOfTheLogin(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', '/member']]);
+
+        self::assertSame('/member', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageReferenceWithTheTablePrefixIsResolvedToo(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => 'pages_11'], targets: [11 => ['main', '/member']]);
+
+        self::assertSame('/member', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageOfAnotherSiteIsIgnored(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['other', 'https://other.example/member']]);
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageWithoutASiteIsIgnored(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: []);
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageTypolinkWillNotLinkToIsIgnored(): void
+    {
+        // A hidden page resolves to its site but builds no link, access
+        // restriction or not; the login then stays on the current page.
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', '']]);
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageOnlyLoggedInUsersMaySeeIsLinked(): void
+    {
+        // The form arrives with the login, so the visitor may see the page by
+        // then; typolink only links it when asked to link restricted pages.
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18'], targets: [18 => ['main', '/members-only', '-2']]);
+
+        self::assertSame('/members-only', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aPasswordPageOnlyLoggedInUsersMaySeeIsNotLinked(): void
+    {
+        // The password link is shown to visitors who are not logged in yet.
+        $vars = $this->renderWithSettings(['passwordLoginPage' => '18'], targets: [18 => ['main', '/members-only', '-2']]);
+
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * Links TYPO3 can build for a page of this site that lead elsewhere: an
+     * external-URL page (doktype 3), a shortcut (doktype 4) into another
+     * site, and forms a browser reads as another host or no page at all.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function linksLeavingTheSite(): iterable
+    {
+        yield 'external URL page' => ['https://evil.example/landing'];
+        yield 'shortcut into another site' => ['https://other.example/page'];
+        yield 'protocol-relative' => ['//evil.example/landing'];
+        yield 'backslash host' => ['/\\evil.example/landing'];
+        yield 'javascript' => ['javascript:alert(1)'];
+        yield 'other scheme on the site host' => ['ftp://main.example/file'];
+        yield 'no scheme, not a path' => ['evil.example/landing'];
+        // Browsers strip tab, LF and CR from a URL, so these read as "//host".
+        yield 'tab in a path' => ["/\t/evil.example/landing"];
+        yield 'line feed in a path' => ["/\n/evil.example/landing"];
+        yield 'carriage return in a path' => ["/\r/evil.example/landing"];
+        yield 'tab and backslash' => ["/\t\\evil.example/landing"];
+        yield 'backslash before the user info' => ['http://evil.example\\@main.example/landing'];
+        yield 'space' => ['/ /evil.example/landing'];
+        yield 'delete character' => ["/\x7f/evil.example/landing"];
+        yield 'another port on the site host' => ['https://main.example:8443/landing'];
+        // Same host and port as the https base, only the scheme differs.
+        yield 'http on the port of the https site' => ['http://main.example:443/landing'];
+        yield 'another scheme on the site host' => ['http://main.example/landing'];
+    }
+
+    #[Test]
+    #[DataProvider('linksLeavingTheSite')]
+    public function aPageOfThisSiteWhoseLinkLeavesTheSiteIsIgnored(string $builtLink): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '17', 'passwordLoginPage' => '17'],
+            targets: [17 => ['main', $builtLink]],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function aPageTheResolverRefusesIsIgnored(): void
+    {
+        // The link TYPO3 would build is on-site, so only the resolver refuses.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '17', 'passwordLoginPage' => '17'],
+            targets: [17 => ['site' => 'main', 'uri' => '/member', 'linkable' => false]],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function thePageTheResolverReachesIsLinked(): void
+    {
+        // A shortcut: the resolver answers with the page it leads to.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'resolvesTo' => 11],
+                11 => ['site' => 'main', 'uri' => '/member'],
+            ],
+        );
+
+        self::assertSame('/member', $vars['redirectUrl']);
+        self::assertSame('/member', $vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function aReachedPageOfAnotherSiteIsIgnored(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'resolvesTo' => 51],
+                51 => ['site' => 'other', 'uri' => '/other-page'],
+            ],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function theResolverJudgesEachPageForTheVisitorWhoFollowsIt(): void
+    {
+        $calls = new ArrayObject();
+        $this->renderWithSettings(
+            ['redirectAfterLogin' => '11', 'passwordLoginPage' => '10'],
+            targets: [11 => ['main', '/member'], 10 => ['main', '/login']],
+            resolverCalls: $calls,
+        );
+
+        self::assertEqualsCanonicalizing([[11, true], [10, false]], $calls->getArrayCopy());
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnASiteWithoutAHostIsIgnored(): void
+    {
+        // A site with base "/" has no origin to compare with, and TYPO3 builds
+        // paths for it even with config.forceAbsoluteUrls. The host of the
+        // request is not trusted in its place: it comes from the client.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '11'],
+            targets: [11 => ['main', 'https://main.example/member']],
+            siteBase: '/',
+        );
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkWithTheDefaultPortSpelledOutIsKept(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', 'https://main.example:443/member']]);
+
+        self::assertSame('https://main.example:443/member', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnTheSiteHostIsKept(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', 'https://MAIN.example/member']]);
+
+        self::assertSame('https://MAIN.example/member', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnTheHostOfASiteLanguageIsKept(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '11'],
+            targets: [11 => ['main', 'https://main.example.de/mitglieder']],
+            languageBases: ['https://main.example.de/'],
+        );
+
+        self::assertSame('https://main.example.de/mitglieder', $vars['redirectUrl']);
+    }
+
+    /**
+     * @return iterable<string, array{mixed}>
+     */
+    public static function unusablePageReferences(): iterable
+    {
+        yield 'unset' => [null];
+        yield 'empty' => [''];
+        yield 'zero' => ['0'];
+        yield 'negative' => ['-11'];
+        yield 'a URL' => ['https://evil.example/'];
+        yield 'a path' => ['/member'];
+        yield 'prefix only' => ['pages_'];
+        yield 'another table' => ['tt_content_11'];
+        yield 'boolean' => [true];
+        yield 'list' => ['11,12'];
+    }
+
+    #[Test]
+    #[DataProvider('unusablePageReferences')]
+    public function aPageReferenceThatIsNoPageUidIsIgnored(mixed $reference): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => $reference, 'passwordLoginPage' => $reference],
+            targets: [11 => ['main', '/member'], 1 => ['main', '/']],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function thePasswordFallbackLinksToThePasswordLoginPage(): void
+    {
+        $vars = $this->renderWithSettings(['passwordLoginPage' => '10'], targets: [10 => ['main', '/login']]);
+
+        self::assertSame('/login', $vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function turningThePasswordFallbackOffHidesItEvenWithAPage(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['showPasswordFallback' => '0', 'passwordLoginPage' => '10'],
+            targets: [10 => ['main', '/login']],
+        );
+
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function thePasswordFallbackNeedsAPageOnTheSameSite(): void
+    {
+        $vars = $this->renderWithSettings(['passwordLoginPage' => '10'], targets: [10 => ['other', 'https://other.example/login']]);
+
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * Render indexAction for the site "main" and return what it assigned.
+     *
+     * @param array<string, mixed>                          $settings
+     * @param array<int, array{0: string, 1: string, 2?: bool}> $targets       page uid => [site identifier, URI typolink builds, only for logged-in users]
+     * @param list<string>                                  $languageBases bases of the current site's languages
+     *
+     * @return array<string, mixed>
+     */
+    private function renderWithSettings(
+        array $settings,
+        array $targets = [],
+        array $languageBases = [],
+        string $siteBase = 'https://main.example',
+        ?ArrayObject $resolverCalls = null,
+    ): array {
+        $targets = \array_map($this->normalizeTarget(...), $targets);
+        $siteFinder = $this->createStub(SiteFinder::class);
+        $siteFinder->method('getSiteByPageId')->willReturnCallback(
+            static function (int $pageUid) use ($targets): Site {
+                if (!isset($targets[$pageUid])) {
+                    throw new SiteNotFoundException('No site for page ' . $pageUid, 1);
+                }
+
+                return new Site($targets[$pageUid]['site'], 1, ['base' => 'https://' . $targets[$pageUid]['site'] . '.example/']);
+            },
+        );
+
+        // The resolver admits a page described in $targets unless it is
+        // marked not linkable, and answers with the page it resolves to. What
+        // it decides against real pages is LinkablePageResolverTest's subject.
+        $resolverCalls ??= new ArrayObject();
+        $resolver = $this->createStub(LinkablePageResolver::class);
+        $resolver->method('resolve')->willReturnCallback(
+            static function (int $uid, bool $afterLogin) use ($targets, $resolverCalls): ?int {
+                $resolverCalls[] = [$uid, $afterLogin];
+                if (!isset($targets[$uid]) || !$targets[$uid]['linkable']) {
+                    return null;
+                }
+
+                return $targets[$uid]['resolvesTo'] ?? $uid;
+            },
+        );
+        $subject = $this->buildController($siteFinder, $resolver);
+
+        // The builder links the page last passed to setTargetPageUid(), and a
+        // page only for logged-in users only when restricted pages are linked,
+        // as typolink does.
+        $target = new ArrayObject(['uid' => 0, 'linkRestricted' => false]);
+        $uriBuilder = $this->createStub(UriBuilder::class);
+        $uriBuilder->method('reset')->willReturnCallback(
+            static function () use ($target, $uriBuilder): UriBuilder {
+                $target['linkRestricted'] = false;
+                return $uriBuilder;
+            },
+        );
+        $uriBuilder->method('setTargetPageUid')->willReturnCallback(
+            static function (int $uid) use ($target, $uriBuilder): UriBuilder {
+                $target['uid'] = $uid;
+                return $uriBuilder;
+            },
+        );
+        $uriBuilder->method('setLinkAccessRestrictedPages')->willReturnCallback(
+            static function (bool $link) use ($target, $uriBuilder): UriBuilder {
+                $target['linkRestricted'] = $link;
+                return $uriBuilder;
+            },
+        );
+        $uriBuilder->method('build')->willReturnCallback(
+            static function () use ($target, $targets): string {
+                $page = $targets[$target['uid']] ?? null;
+                // Like typolink: a page the anonymous visitor may see (no
+                // restriction, or "hide at login") is linked; others only
+                // with linkAccessRestrictedPages.
+                if ($page === null || (!\in_array($page['fe_group'], ['', '0', '-1'], true) && !$target['linkRestricted'])) {
+                    return '';
+                }
+
+                return $page['uri'];
+            },
+        );
+
+        $assignedVars = [];
+        $view = $this->createStub(ViewInterface::class);
+        $view->method('assignMultiple')->willReturnCallback(
+            static function (array $vars) use (&$assignedVars, $view): ViewInterface {
+                $assignedVars = $vars;
+                return $view;
+            },
+        );
+
+        $this->injectExtbaseProperties(
+            $subject,
+            $this->buildExtbaseRequest('main', $siteBase, $languageBases, 'https://main.example/page'),
+            $view,
+            ['settings' => $settings, 'uriBuilder' => $uriBuilder],
+        );
+
+        $subject->indexAction();
+
+        return $assignedVars;
+    }
+
+    /**
+     * A target is [site identifier, URI typolink builds, fe_group] or an
+     * array with the keys site, uri, fe_group, linkable and resolvesTo.
+     *
+     * @param array<int|string, mixed> $target
+     *
+     * @return array{site: string, uri: string, fe_group: string, linkable: bool, resolvesTo: ?int}
+     */
+    private function normalizeTarget(array $target): array
+    {
+        return [
+            'site' => (string) ($target['site'] ?? $target[0]),
+            'uri' => (string) ($target['uri'] ?? $target[1] ?? ''),
+            'fe_group' => (string) ($target['fe_group'] ?? $target[2] ?? ''),
+            'linkable' => (bool) ($target['linkable'] ?? true),
+            'resolvesTo' => isset($target['resolvesTo']) ? (int) $target['resolvesTo'] : null,
+        ];
+    }
+
+    private function buildController(?SiteFinder $siteFinder = null, ?LinkablePageResolver $resolver = null): LoginPluginController
+    {
+        $subject = new LoginPluginController(
+            $siteFinder ?? $this->createStub(SiteFinder::class),
+            $resolver ?? $this->createStub(LinkablePageResolver::class),
+        );
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
         return $subject;
     }
 
-    private function buildExtbaseRequest(string $siteIdentifier, string $baseUrl): Request
-    {
+    /**
+     * @param list<string> $languageBases
+     */
+    private function buildExtbaseRequest(
+        string $siteIdentifier,
+        string $baseUrl,
+        array $languageBases = [],
+        ?string $requestUrl = null,
+    ): Request {
+        $languages = [];
+        foreach ($languageBases as $languageId => $languageBase) {
+            $languages[] = new SiteLanguage($languageId + 1, 'de_DE.UTF-8', new Uri($languageBase), []);
+        }
+
         $site = $this->createStub(SiteInterface::class);
         $site->method('getIdentifier')->willReturn($siteIdentifier);
         $site->method('getBase')->willReturn(new Uri($baseUrl));
+        $site->method('getLanguages')->willReturn($languages);
 
-        $serverRequest = new ServerRequest($baseUrl . '/page', 'GET');
+        $serverRequest = new ServerRequest($requestUrl ?? $baseUrl . '/page', 'GET');
         $serverRequest = $serverRequest->withAttribute('site', $site);
         $serverRequest = $serverRequest->withAttribute(
             'extbase',

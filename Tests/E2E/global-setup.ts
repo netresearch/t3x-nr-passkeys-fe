@@ -31,7 +31,14 @@ const TIMEOUT_MS = 120_000;
 const INTERVAL_MS = 1_000;
 
 async function waitForPath(path: string, deadline: number): Promise<void> {
-    const context = await request.newContext({ baseURL: target, ignoreHTTPSErrors: true });
+    // With E2E_SITE_BASE_HOST=1 the main site answers only under its alias
+    // (Build/Scripts/runTests.conf), so the check has to name it.
+    const siteHost = process.env.E2E_SITE_BASE_HOST === '1' ? process.env.E2E_SECURE_ALIAS_HOST : undefined;
+    const context = await request.newContext({
+        baseURL: target,
+        ignoreHTTPSErrors: true,
+        extraHTTPHeaders: siteHost ? { Host: siteHost } : {},
+    });
     let lastSeen = 'no response at all';
 
     try {

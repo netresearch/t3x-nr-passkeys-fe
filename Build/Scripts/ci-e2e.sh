@@ -51,5 +51,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "ci-e2e.sh: TYPO3 ${E2E_TYPO3_VERSION}, PHP ${PHP_VERSION}, variant=${E2E_VARIANT:-<none>}"
 
+# The "hosted" variant runs the suite against a main site whose base names a
+# host (http://typo3.localhost/) instead of '/', so the login plugin's origin
+# comparison is exercised; e2e_container_args in runTests.conf rewrites the
+# base. Any other variant runs the site as provisioned.
+case "${E2E_VARIANT:-}" in
+    hosted) export E2E_SITE_BASE_HOST=1 ;;
+    ""|default) ;;
+    *)
+        echo "::error::ci-e2e.sh: unknown E2E_VARIANT '${E2E_VARIANT}'." >&2
+        exit 1
+        ;;
+esac
+
 export E2E_TYPO3_VERSION
 exec "${SCRIPT_DIR}/runTests.sh" -s e2e -p "${PHP_VERSION}"

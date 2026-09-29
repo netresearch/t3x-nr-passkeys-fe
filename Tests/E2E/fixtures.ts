@@ -77,7 +77,7 @@ export async function setAutomaticPresence(
  * a passkey-first login. A spec that fills the fields without switching tabs
  * fills hidden ones.
  */
-export async function loginWithPassword(page: Page): Promise<void> {
+export async function loginWithPassword(page: Page, user: string = FE_USER): Promise<void> {
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
 
@@ -88,7 +88,7 @@ export async function loginWithPassword(page: Page): Promise<void> {
 
     const username = page.locator('#tx-felogin-input-username');
     await expect(username, 'the felogin password panel has to be reachable on the login page').toBeVisible({ timeout: 5000 });
-    await username.fill(FE_USER);
+    await username.fill(user);
     await page.locator('#tx-felogin-input-password').fill(FE_PASSWORD);
     await page.locator('#tx-felogin-input-password').press('Enter');
     await page.waitForLoadState('networkidle');

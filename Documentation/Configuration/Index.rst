@@ -17,7 +17,8 @@ Configuration happens at three levels:
 Plugin FlexForm
 ===============
 
-The login plugin carries one switch on the content element itself:
+The login plugin carries these settings on the content element itself, on
+its :guilabel:`Plugin` tab:
 
 ..  confval:: settings.discoverableEnabled
 
@@ -25,10 +26,90 @@ The login plugin carries one switch on the content element itself:
     :Default: enabled
 
     Allow login without entering a username: the passkey identifies the
-    user. This also switches WebAuthn Conditional UI — with it enabled the
-    browser offers the passkey directly in the username field's autofill
-    menu, which is the entry point most returning users reach for. Turn it
-    off to require a username before a passkey is accepted.
+    user. Turn it off to show a username field and require a username
+    before a passkey is accepted.
+
+    WebAuthn Conditional UI, where the browser offers the passkey in a
+    username field's autofill menu, is armed only when discoverable login
+    is on *and* the login container holds a field named
+    ``nr_passkeys_username``. The extension's templates render that field
+    only with discoverable login off, so they never arm it; a template
+    override that adds the field with discoverable login on does.
+
+..  confval:: settings.showPasswordFallback
+
+    :type: boolean
+    :Default: enabled
+
+    Show a "Use password instead" link next to the recovery code link. The
+    link points to :confval:`settings.passwordLoginPage`; without that page
+    no link is shown, whatever this switch says.
+
+..  confval:: settings.passwordLoginPage
+
+    :type: page
+    :Default: none
+
+    The page with the password login, usually a felogin plugin. It is
+    linked only when all of these hold, and ignored otherwise:
+
+    - the page is a standard page (doktype 1), or shortcuts lead to one.
+      External-URL and link pages, folders, spacers, mount points and every
+      other page type are ignored, so no URL an editor types reaches the
+      plugin. A shortcut is followed as TYPO3 follows it for the visitor
+      (target page, first subpage the visitor may see, parent page); a
+      "random subpage" shortcut anywhere in the chain is ignored, because
+      the page it leads to is not known when the link is built;
+    - that standard page belongs to the site the plugin is rendered on;
+    - TYPO3 grants a visitor who is not logged in access to it, with the
+      same checks as for a page request: the page itself (hidden, start
+      and end time, access groups) and every page above it that has
+      "Extend to subpages" set, in the current workspace and language. In
+      practice the page and those pages are unrestricted or set to "Hide at
+      login";
+    - the link TYPO3 built stays on the site: a path, or an ``http``/``https``
+      URL whose scheme, host and port are those of the site's base or of one
+      of its languages. A link containing a backslash, a space or a control
+      character is refused as well, because browsers remove or reinterpret
+      those characters.
+
+..  confval:: settings.redirectAfterLogin
+
+    :type: page
+    :Default: none (the visitor stays on the current page)
+
+    The page a successful passkey login leads to: the plugin's hidden login
+    form posts to it, so the one-time login token only ever goes to a URL
+    that passed these checks. The rules of
+    :confval:`settings.passwordLoginPage` apply, with one difference in
+    access: TYPO3 has to grant access to a visitor holding "Show at any
+    login" (``fe_group`` ``-2``) and no other group, so the page may be
+    linked although the anonymous visitor cannot see it yet. A page, or a
+    page above it that extends its access to subpages, restricted to a user
+    group or to "Hide at login" is ignored, because the login does not
+    necessarily grant it; "Show at any login" combined with a group is
+    accepted, because TYPO3 grants either.
+    Where felogin sits on the same page, the login is completed through
+    felogin's form and felogin's own redirect settings apply instead.
+
+    ..  important::
+
+        Frontend users without any user group cannot reach a "Show at any
+        login" page. TYPO3 counts a frontend user as logged in for page
+        access only when the user belongs to at least one frontend user
+        group: ``FrontendUserAuthentication::createUserAspect()`` (TYPO3
+        13.4 and 14.3) adds ``-2`` to the user's groups only in that case.
+        A user without a group who logs in with a passkey is sent to such a
+        redirect page and gets "403 Access Denied". Put every frontend user
+        in a group, or pick an unrestricted page.
+
+..  confval:: settings.cssClass
+
+    :type: string
+    :Default: empty
+
+    Additional CSS class on the plugin's outer element. The management and
+    enrollment plugins carry this field too; it is their only setting.
 
 ..  toctree::
     :maxdepth: 1
