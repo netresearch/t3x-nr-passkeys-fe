@@ -38,6 +38,18 @@ test.describe('Passkey login plugin', () => {
         await expect(plugin.getByRole('link', { name: 'Use password instead' })).toHaveCount(0);
     });
 
+    test('a plugin that chose discoverable login keeps it when the constant is off', async ({ page }) => {
+        // The constant is 0 for this page; its FlexForm stores an explicit "on".
+        await page.goto('/login-plugin-discoverable', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="login"]');
+        await expect(plugin).toHaveAttribute('data-discoverable', '1');
+        await expect(plugin.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
+    });
+
+    // The FlexForm of /login-plugin-username stores "use the site setting", and
+    // the constant is 0 there (runTests.conf): the username field comes from the
+    // constant, not from the content element.
     test('with discoverable login off the plugin asks for the username first', async ({ page }) => {
         // 'load' runs after DOMContentLoaded, where PasskeyLogin.js binds the button.
         await page.goto('/login-plugin-username', { waitUntil: 'load' });

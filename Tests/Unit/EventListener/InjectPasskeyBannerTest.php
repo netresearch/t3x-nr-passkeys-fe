@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\EventListener;
 
+use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\EventListener\InjectPasskeyBanner;
@@ -144,6 +145,61 @@ final class InjectPasskeyBannerTest extends TestCase
     #[Test]
     public function injectsBannerWhenEnforcementIsEncourage(): void
     {
+        $request = $this->prepareBannerRendering();
+
+        $status = new FrontendEnforcementStatus(
+            effectiveLevel: 'encourage',
+            siteLevel: 'encourage',
+            groupLevel: 'off',
+            passkeyCount: 0,
+            inGracePeriod: false,
+            graceDeadline: null,
+            recoveryCodesRemaining: 0,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $event = $this->buildEvent($request, '<html><body></body></html>');
+
+        $this->subject->__invoke($event);
+
+        $content = $this->getEventContent($event);
+        self::assertStringContainsString('nr-passkeys-banner', $content);
+        self::assertStringContainsString('data-enforcement="encourage"', $content);
+        self::assertStringContainsString('dismiss-banner', $content);
+        self::assertFalse($event->isCachingEnabled());
+    }
+
+    #[Test]
+    public function theRequiredBannerCountsAStartedLastDayAsOne(): void
+    {
+        $request = $this->prepareBannerRendering();
+
+        // Twelve hours left: the enrollment page says one day, and so must the
+        // banner (FrontendEnforcementStatus::graceDaysRemaining serves both).
+        $status = new FrontendEnforcementStatus(
+            effectiveLevel: 'required',
+            siteLevel: 'off',
+            groupLevel: 'required',
+            passkeyCount: 0,
+            inGracePeriod: true,
+            graceDeadline: new DateTimeImmutable('+12 hours'),
+            recoveryCodesRemaining: 0,
+            graceDays: 14,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $event = $this->buildEvent($request, '<html><body></body></html>');
+        $this->subject->__invoke($event);
+
+        self::assertStringContainsString('You have 1 day(s) left', $this->getEventContent($event));
+    }
+
+    /**
+     * Stub what LocalizationUtility::translate() needs and return a request
+     * of a logged-in user without passkeys on site "main".
+     */
+    private function prepareBannerRendering(): ServerRequest
+    {
         // Set up localization stubs needed by LocalizationUtility::translate().
         GeneralUtility::purgeInstances();
 
@@ -187,26 +243,7 @@ final class InjectPasskeyBannerTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->siteConfigService->method('getEnrollmentPageUrl')->willReturn('/passkey-setup');
 
-        $status = new FrontendEnforcementStatus(
-            effectiveLevel: 'encourage',
-            siteLevel: 'encourage',
-            groupLevel: 'off',
-            passkeyCount: 0,
-            inGracePeriod: false,
-            graceDeadline: null,
-            recoveryCodesRemaining: 0,
-        );
-        $this->enforcementService->method('getStatus')->willReturn($status);
-
-        $event = $this->buildEvent($request, '<html><body></body></html>');
-
-        $this->subject->__invoke($event);
-
-        $content = $this->getEventContent($event);
-        self::assertStringContainsString('nr-passkeys-banner', $content);
-        self::assertStringContainsString('data-enforcement="encourage"', $content);
-        self::assertStringContainsString('dismiss-banner', $content);
-        self::assertFalse($event->isCachingEnabled());
+        return $request;
     }
 
     #[Test]

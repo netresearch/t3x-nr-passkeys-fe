@@ -23,8 +23,6 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
  */
 final class EnrollmentPluginController extends ActionController
 {
-    private const SECONDS_PER_DAY = 86400;
-
     public function __construct(
         private readonly FrontendEnforcementService $enforcementService,
     ) {}
@@ -37,19 +35,25 @@ final class EnrollmentPluginController extends ActionController
         $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
 
         // The same status the post-login interstitial and the banner act on.
+        // A user who holds a passkey has nothing left to do here.
         $status = $this->resolveStatus($site);
+        $enrollmentRequired = false;
+        $graceDaysRemaining = 0;
+        if ($status instanceof FrontendEnforcementStatus && $status->passkeyCount === 0) {
+            // Enrollment cannot be put off: enforced, or required with no
+            // grace period left to run.
+            $enrollmentRequired = $status->effectiveLevel === 'enforced'
+                || ($status->effectiveLevel === 'required' && !$status->inGracePeriod);
+            $graceDaysRemaining = $status->graceDaysRemaining(new DateTimeImmutable());
+        }
 
         $this->view->assignMultiple([
             'eidUrl' => $eidUrl,
             'siteIdentifier' => $site?->getIdentifier() ?? '',
             'registerOptionsUrl' => $eidUrl . '&action=registrationOptions',
             'registerVerifyUrl' => $eidUrl . '&action=registrationVerify',
-            // Enrollment cannot be put off: enforced, or required with no
-            // grace period left to run.
-            'enrollmentRequired' => $status instanceof FrontendEnforcementStatus
-                && ($status->effectiveLevel === 'enforced'
-                    || ($status->effectiveLevel === 'required' && !$status->inGracePeriod)),
-            'gracePeriodDaysRemaining' => $this->graceDaysRemaining($status),
+            'enrollmentRequired' => $enrollmentRequired,
+            'gracePeriodDaysRemaining' => $graceDaysRemaining,
         ]);
 
         return $this->htmlResponse();
@@ -68,24 +72,20 @@ final class EnrollmentPluginController extends ActionController
             return null;
         }
 
-        return $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
-    }
+        $status = $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
 
-    /**
-     * Whole days left in a running grace period, counting a started day as a
-     * day: with twelve hours left the page says one day, not zero.
-     */
-    private function graceDaysRemaining(?FrontendEnforcementStatus $status): int
-    {
-        if (!$status instanceof FrontendEnforcementStatus
-            || !$status->inGracePeriod
-            || !$status->graceDeadline instanceof DateTimeImmutable
-        ) {
-            return 0;
+        // The post-login interstitial starts the grace period on its first
+        // redirect, but passes the enrollment page itself through before it
+        // gets there. A user who arrives here first gets it started here, by
+        // the same service call, so the page shows the days that now run.
+        if ($status->effectiveLevel === 'required'
+            && $status->passkeyCount === 0
+            && !$status->inGracePeriod
+            && $status->graceDays > 0
+            && $this->enforcementService->startGracePeriod($feUserUid)) {
+            return $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
         }
 
-        $secondsLeft = $status->graceDeadline->getTimestamp() - \time();
-
-        return \max(1, (int) \ceil($secondsLeft / self::SECONDS_PER_DAY));
+        return $status;
     }
 }

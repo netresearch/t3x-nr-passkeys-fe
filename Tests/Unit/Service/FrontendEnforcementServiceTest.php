@@ -330,6 +330,8 @@ final class FrontendEnforcementServiceTest extends TestCase
     #[Test]
     public function startGracePeriodUpdatesFeUsersTable(): void
     {
+        // Only a grace period that never started is written: the criteria
+        // include a start of 0, so an expired period is not granted again.
         $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())
             ->method('update')
@@ -337,8 +339,9 @@ final class FrontendEnforcementServiceTest extends TestCase
                 'fe_users',
                 self::callback(static fn(array $data): bool => isset($data['passkey_grace_period_start'])
                     && $data['passkey_grace_period_start'] > 0),
-                ['uid' => 42],
-            );
+                ['uid' => 42, 'passkey_grace_period_start' => 0],
+            )
+            ->willReturn(1);
 
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getConnectionForTable')
@@ -352,7 +355,7 @@ final class FrontendEnforcementServiceTest extends TestCase
             $connectionPool,
         );
 
-        $subject->startGracePeriod(42);
+        self::assertTrue($subject->startGracePeriod(42));
     }
 
     // ---------------------------------------------------------------

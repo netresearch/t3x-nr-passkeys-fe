@@ -55,9 +55,13 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
     {
         yield 'required, in its grace period' => [1, false, 10];
         yield 'enforced' => [2, true, 0];
-        yield 'required, grace period not started' => [3, true, 0];
+        // The page starts the grace period, as the interstitial would.
+        yield 'required, grace period not started' => [3, false, 14];
         yield 'required, grace period over' => [4, true, 0];
         yield 'not enforced' => [5, false, 0];
+        // A passkey settles it, as for the interstitial and the banner.
+        yield 'required, already holds a passkey' => [6, false, 0];
+        yield 'enforced, already holds a passkey' => [7, false, 0];
     }
 
     #[Test]
@@ -68,6 +72,33 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
 
         self::assertSame($required, $vars['enrollmentRequired']);
         self::assertSame($graceDays, $vars['gracePeriodDaysRemaining']);
+    }
+
+    #[Test]
+    public function theEnrollmentPageStartsAGracePeriodThatHasNotStarted(): void
+    {
+        $before = \time();
+        $this->renderForFrontendUser(3);
+
+        self::assertGreaterThanOrEqual($before, $this->graceStartOf(3));
+    }
+
+    #[Test]
+    public function aGracePeriodThatIsOverIsNotStartedAgain(): void
+    {
+        $start = $this->graceStartOf(4);
+        $vars = $this->renderForFrontendUser(4);
+
+        self::assertSame($start, $this->graceStartOf(4));
+        self::assertTrue($vars['enrollmentRequired']);
+    }
+
+    #[Test]
+    public function aPasskeyHolderGetsNoGracePeriodStarted(): void
+    {
+        $this->renderForFrontendUser(6);
+
+        self::assertSame(0, $this->graceStartOf(6));
     }
 
     #[Test]
@@ -85,6 +116,15 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
         $vars = $this->renderForFrontendUser(5, siteLevel: 'enforced');
 
         self::assertTrue($vars['enrollmentRequired']);
+    }
+
+    private function graceStartOf(int $feUserUid): int
+    {
+        $value = $this->get(ConnectionPool::class)->getConnectionForTable('fe_users')
+            ->select(['passkey_grace_period_start'], 'fe_users', ['uid' => $feUserUid])
+            ->fetchOne();
+
+        return \is_numeric($value) ? (int) $value : -1;
     }
 
     /**

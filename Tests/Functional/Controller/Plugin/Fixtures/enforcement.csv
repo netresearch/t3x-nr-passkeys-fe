@@ -10,3 +10,9 @@ fe_users
 ,3,1,grace_not_started,x,"1",0,0,0,0
 ,4,1,grace_expired,x,"1",0,0,0,0
 ,5,1,not_enforced,x,"3",0,0,0,0
+,6,1,required_with_passkey,x,"1",0,0,0,0
+,7,1,enforced_with_passkey,x,"2",0,0,0,0
+tx_nrpasskeysfe_credential
+,uid,pid,fe_user,credential_id,public_key_cose,sign_count,user_handle,aaguid,transports,label,site_identifier,storage_pid,created_at,last_used_at,revoked_at,revoked_by,deleted,tstamp,crdate
+,1,1,6,credential-user-6,public-key-cose-6,0,user-handle-6,00000000-0000-0000-0000-000000000000,"[""usb""]",Key 6,main,1,1700000100,0,0,0,0,1700000100,1700000100
+,2,1,7,credential-user-7,public-key-cose-7,0,user-handle-7,00000000-0000-0000-0000-000000000000,"[""usb""]",Key 7,main,1,1700000100,0,0,0,0,1700000100,1700000100

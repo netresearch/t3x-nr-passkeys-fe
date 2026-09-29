@@ -11,7 +11,8 @@ Configuration happens at four levels:
 1. **Extension settings** -- Global defaults (algorithm, challenge TTL,
    rate limiting)
 2. **Site configuration** -- Per-site RP ID and origin
-3. **TypoScript** -- Plugin view settings and page UIDs
+3. **TypoScript** -- Plugin view paths, the default of discoverable login
+   and the default CSS
 4. **Plugin FlexForm** -- Per-plugin switches on the content element
 
 Plugin FlexForm
@@ -22,12 +23,22 @@ its :guilabel:`Plugin` tab:
 
 ..  confval:: settings.discoverableEnabled
 
-    :type: boolean
-    :Default: the constant :confval:`plugin.tx_nrpasskeysfe.settings.discoverableEnabled` (enabled)
+    :type: select: *Use the site setting* / *On* / *Off*
+    :Default: *Use the site setting*
 
     Allow login without entering a username: the passkey identifies the
-    user. Turn it off to show a username field and require a username
-    before a passkey is accepted.
+    user. *Off* shows a username field and requires a username before a
+    passkey is accepted. *Use the site setting* follows the TypoScript
+    constant :confval:`plugin.tx_nrpasskeysfe.settings.discoverableEnabled`;
+    *On* and *Off* hold for this content element whatever the constant says.
+
+    Content elements saved before this field became a select stored ``1``
+    (the old checkbox's default) or ``0``. Both keep their meaning, as *On*
+    and *Off*, so such an element does not follow the constant until it is
+    set to *Use the site setting*. The empty choice is handed to TypoScript
+    by a listener on ``BeforeFlexFormConfigurationOverrideEvent``; core's
+    ``ignoreFlexFormSettingsIfEmpty`` cannot be used for it, because it also
+    treats ``0`` as empty and would override an explicit *Off*.
 
     WebAuthn Conditional UI, where the browser offers the passkey in a
     username field's autofill menu, is armed only when discoverable login

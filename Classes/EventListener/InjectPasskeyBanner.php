@@ -88,7 +88,13 @@ final readonly class InjectPasskeyBanner
         $isDismissible = $effectiveLevel === 'encourage';
         $enrollmentUrl = $this->resolveEnrollmentUrl($site);
 
-        $banner = $this->renderBanner($effectiveLevel, $isDismissible, $enrollmentUrl, $status->graceDeadline);
+        $banner = $this->renderBanner(
+            $effectiveLevel,
+            $isDismissible,
+            $enrollmentUrl,
+            $status->graceDeadline,
+            $status->graceDaysRemaining(new DateTimeImmutable()),
+        );
 
         if ($banner === '') {
             return;
@@ -122,6 +128,7 @@ final readonly class InjectPasskeyBanner
         bool $isDismissible,
         string $enrollmentUrl,
         ?DateTimeImmutable $graceDeadline,
+        int $graceDaysRemaining,
     ): string {
         $enrollmentUrlEscaped = \htmlspecialchars($enrollmentUrl, ENT_QUOTES, 'UTF-8');
 
@@ -133,11 +140,10 @@ final readonly class InjectPasskeyBanner
         if ($level === 'required' && $graceDeadline instanceof DateTimeImmutable) {
             $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')
                 ?? 'Passkey setup required';
-            $remainingDays = (int) $graceDeadline->diff(new DateTimeImmutable())->days;
             $description = \sprintf(
                 LocalizationUtility::translate('banner.required.grace_description', 'NrPasskeysFe')
                     ?? 'You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.',
-                \max(0, $remainingDays),
+                $graceDaysRemaining,
             );
         } elseif ($level === 'enforced' || $level === 'required') {
             $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')

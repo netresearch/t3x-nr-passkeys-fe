@@ -22,11 +22,12 @@ Constants
    :type: boolean
    :Default: ``1``
 
-   Discoverable (usernameless) login. It is the default for the login
-   plugin, whose FlexForm switch overrides it per content element, and the
-   setting the felogin integration follows: with ``0`` the passkey tab of
-   the felogin form shows a username field and asks for the username
-   before a passkey is accepted.
+   Discoverable (usernameless) login. The login plugin follows it where
+   its FlexForm field is set to *Use the site setting* (see
+   :confval:`settings.discoverableEnabled`); an element set to *On* or
+   *Off* keeps its own value. The felogin integration always follows it:
+   with ``0`` the passkey tab of the felogin form shows a username field and
+   asks for the username before a passkey is accepted.
 
 ..  confval:: plugin.tx_nrpasskeysfe.settings.css.includeDefault
 

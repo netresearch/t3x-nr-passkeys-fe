@@ -4,6 +4,7 @@ import {
     eidUrl,
     loginWithPassword,
     removeAllCredentials,
+    registerPasskey,
     removeVirtualAuthenticator,
 } from './fixtures';
 
@@ -67,6 +68,29 @@ test.describe('Passkey enrollment plugin', () => {
         const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
         await expect(plugin.getByText('Passkey enrollment is required to continue accessing your account.')).toBeVisible();
         await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);
+    });
+
+    test('a user who has registered a passkey is not told to enroll any more', async ({ page }) => {
+        const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
+        await loginWithPassword(page, 'e2e_enforced');
+        await page.goto('/enrollment', { waitUntil: 'load' });
+
+        const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
+        const required = plugin.getByText('Passkey enrollment is required to continue accessing your account.');
+        await expect(required).toBeVisible();
+
+        const registered = await registerPasskey(page, 'E2E enforced key');
+        expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
+
+        await page.reload({ waitUntil: 'load' });
+        await expect(plugin).toBeVisible();
+        await expect(required).toHaveCount(0);
+        await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);
+
+        // An enforced user holding a passkey may no longer log in with the
+        // password, so the credential goes before any later spec needs that.
+        await removeAllCredentials(page);
+        await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
     test('a user with nothing enforced sees neither notice', async ({ page }) => {

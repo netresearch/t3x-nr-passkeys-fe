@@ -142,16 +142,24 @@ final class FrontendEnforcementService
     }
 
     /**
-     * Start the grace period for a frontend user by recording the current timestamp.
+     * Start the grace period for a frontend user by recording the current
+     * timestamp, unless one was started before.
+     *
+     * A status without a grace deadline means either "never started" or
+     * "already over"; only the stored start tells them apart. Writing only
+     * where it is still 0 keeps an expired grace period expired instead of
+     * granting a fresh one on the next request.
+     *
+     * @return bool whether a grace period was started now
      */
-    public function startGracePeriod(int $feUserUid): void
+    public function startGracePeriod(int $feUserUid): bool
     {
         $connection = $this->connectionPool->getConnectionForTable('fe_users');
-        $connection->update(
+        $started = $connection->update(
             'fe_users',
             ['passkey_grace_period_start' => \time()],
-            ['uid' => $feUserUid],
-        );
+            ['uid' => $feUserUid, 'passkey_grace_period_start' => 0],
+        ) > 0;
 
         // Invalidate cached status for this user across all sites
         foreach (\array_keys($this->statusCache) as $key) {
@@ -159,6 +167,8 @@ final class FrontendEnforcementService
                 unset($this->statusCache[$key]);
             }
         }
+
+        return $started;
     }
 
     /**
