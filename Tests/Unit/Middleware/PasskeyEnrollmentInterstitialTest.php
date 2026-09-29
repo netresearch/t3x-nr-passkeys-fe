@@ -338,7 +338,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
      */
     public static function statusesWithNoGracePeriodToStart(): iterable
     {
-        $status = static fn(string $level, bool $inGrace, int $graceDays): FrontendEnforcementStatus => new FrontendEnforcementStatus(
+        $status = static fn(string $level, bool $inGrace, int $graceDays, bool $started = false): FrontendEnforcementStatus => new FrontendEnforcementStatus(
             effectiveLevel: $level,
             siteLevel: $level,
             groupLevel: 'off',
@@ -347,11 +347,15 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
             graceDeadline: $inGrace ? new DateTimeImmutable('+3 days') : null,
             recoveryCodesRemaining: 0,
             graceDays: $graceDays,
+            gracePeriodStarted: $started,
         );
 
         yield 'enforced' => [$status('enforced', false, 0)];
         yield 'required without grace days' => [$status('required', false, 0)];
-        yield 'required, grace period running' => [$status('required', true, 14)];
+        yield 'required, grace period running' => [$status('required', true, 14, true)];
+        // Over: a start is stored, no deadline is left. Neither a write nor a
+        // second status read.
+        yield 'required, grace period over' => [$status('required', false, 14, true)];
     }
 
     #[Test]
@@ -360,7 +364,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     {
         $enforcementService = $this->createMock(FrontendEnforcementService::class);
         $enforcementService->expects(self::never())->method('startGracePeriod');
-        $enforcementService->method('getStatus')->willReturn($status);
+        $enforcementService->expects(self::once())->method('getStatus')->willReturn($status);
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');

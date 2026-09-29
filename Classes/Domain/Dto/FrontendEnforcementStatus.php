@@ -39,6 +39,11 @@ final readonly class FrontendEnforcementStatus
         public int $recoveryCodesRemaining,
         /** Configured grace period in days (0 means no grace period configured) */
         public int $graceDays = 0,
+        /**
+         * Whether a grace period start is stored for the user, running or
+         * over. Without it "over" and "never started" look the same.
+         */
+        public bool $gracePeriodStarted = false,
     ) {}
 
     /**

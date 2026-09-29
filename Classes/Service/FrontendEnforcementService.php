@@ -138,6 +138,7 @@ final class FrontendEnforcementService
             graceDeadline: $graceDeadline,
             recoveryCodesRemaining: $recoveryCodesRemaining,
             graceDays: $effectiveGraceDays,
+            gracePeriodStarted: $gracePeriodStart > 0,
         );
 
         $this->statusCache[$cacheKey] = $status;

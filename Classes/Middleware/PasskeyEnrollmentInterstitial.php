@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
-use DateTimeImmutable;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -149,7 +148,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         SiteInterface $site,
         FrontendEnforcementStatus $status,
     ): FrontendEnforcementStatus {
-        if ($status->effectiveLevel !== 'required' || !$this->hasGracePeriodConfigured($status)) {
+        if ($status->effectiveLevel !== 'required' || !$this->isGracePeriodDue($status)) {
             return $status;
         }
 
@@ -200,13 +199,12 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     }
 
     /**
-     * Check if the status indicates a grace period is configured (days > 0) but
-     * not yet started (graceDeadline is null and not in grace period).
+     * A grace period is configured (days > 0) and no start is stored. A
+     * grace period that is over has a start and is not started again, so
+     * such a user costs neither a write nor a second status read.
      */
-    private function hasGracePeriodConfigured(FrontendEnforcementStatus $status): bool
+    private function isGracePeriodDue(FrontendEnforcementStatus $status): bool
     {
-        return !$status->inGracePeriod
-            && !$status->graceDeadline instanceof DateTimeImmutable
-            && $status->graceDays > 0;
+        return $status->graceDays > 0 && !$status->gracePeriodStarted;
     }
 }

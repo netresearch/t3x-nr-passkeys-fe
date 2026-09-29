@@ -114,6 +114,18 @@ describe('handleResetGrace', () => {
     });
 });
 
+describe('initialize', () => {
+    it('wires the reset button when the module starts', () => {
+        const handler = vi.spyOn(admin, 'handleResetGrace').mockResolvedValue(undefined);
+        const button = mountButton();
+
+        admin.initialize();
+        button.click();
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('bindResetGrace', () => {
     it('wires the button to the handler', () => {
         const handler = vi.spyOn(admin, 'handleResetGrace').mockResolvedValue(undefined);

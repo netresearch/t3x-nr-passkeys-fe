@@ -196,6 +196,7 @@ final class FrontendEnforcementServiceTest extends TestCase
 
         self::assertTrue($status->inGracePeriod);
         self::assertNotNull($status->graceDeadline);
+        self::assertTrue($status->gracePeriodStarted);
     }
 
     #[Test]
@@ -215,6 +216,7 @@ final class FrontendEnforcementServiceTest extends TestCase
 
         self::assertFalse($status->inGracePeriod);
         self::assertNull($status->graceDeadline);
+        self::assertTrue($status->gracePeriodStarted);
     }
 
     #[Test]
@@ -233,6 +235,7 @@ final class FrontendEnforcementServiceTest extends TestCase
 
         self::assertFalse($status->inGracePeriod);
         self::assertNull($status->graceDeadline);
+        self::assertFalse($status->gracePeriodStarted);
     }
 
     // ---------------------------------------------------------------
