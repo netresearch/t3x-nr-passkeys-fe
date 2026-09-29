@@ -61,28 +61,46 @@ final class EnrollmentPluginController extends ActionController
 
     private function resolveStatus(?SiteInterface $site): ?FrontendEnforcementStatus
     {
+        $feUserUid = $this->frontendUserUid();
+        if (!$site instanceof SiteInterface || $feUserUid <= 0) {
+            return null;
+        }
+
+        return $this->withGracePeriodStarted(
+            $feUserUid,
+            $site,
+            $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site),
+        );
+    }
+
+    /**
+     * The logged-in frontend user's uid, 0 without one.
+     */
+    private function frontendUserUid(): int
+    {
         $feUser = $this->request->getAttribute('frontend.user');
-        if (!$site instanceof SiteInterface || !$feUser instanceof FrontendUserAuthentication) {
-            return null;
-        }
+        $userRow = $feUser instanceof FrontendUserAuthentication ? $feUser->user : null;
 
-        $userRow = $feUser->user;
-        $feUserUid = \is_array($userRow) && \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
-        if ($feUserUid <= 0) {
-            return null;
-        }
+        return \is_array($userRow) && \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+    }
 
-        $status = $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
-
-        // The post-login interstitial starts the grace period on its first
-        // redirect, but passes the enrollment page itself through before it
-        // gets there. A user who arrives here first gets it started here, by
-        // the same service call, so the page shows the days that now run.
-        if ($status->effectiveLevel === 'required'
+    /**
+     * The post-login interstitial starts the grace period on its first
+     * redirect, but passes the enrollment page itself through before it gets
+     * there. A user who arrives here first gets it started here, by the same
+     * service call, so the page shows the days that now run.
+     */
+    private function withGracePeriodStarted(
+        int $feUserUid,
+        SiteInterface $site,
+        FrontendEnforcementStatus $status,
+    ): FrontendEnforcementStatus {
+        $gracePeriodDue = $status->effectiveLevel === 'required'
             && $status->passkeyCount === 0
             && !$status->inGracePeriod
-            && $status->graceDays > 0
-            && $this->enforcementService->startGracePeriod($feUserUid)) {
+            && $status->graceDays > 0;
+
+        if ($gracePeriodDue && $this->enforcementService->startGracePeriod($feUserUid)) {
             return $this->enforcementService->getStatus($feUserUid, $site->getIdentifier(), $site);
         }
 
