@@ -188,6 +188,8 @@ final class LoginPluginControllerTest extends TestCase
         yield 'space' => ['/ /evil.example/landing'];
         yield 'delete character' => ["/\x7f/evil.example/landing"];
         yield 'another port on the site host' => ['https://main.example:8443/landing'];
+        // Same host and port as the https base, only the scheme differs.
+        yield 'http on the port of the https site' => ['http://main.example:443/landing'];
         yield 'another scheme on the site host' => ['http://main.example/landing'];
     }
 
@@ -335,6 +337,72 @@ final class LoginPluginControllerTest extends TestCase
         self::assertNull($vars['redirectUrl']);
     }
 
+    /**
+     * Pages under an ancestor that extends its fe_group to subpages, the
+     * target itself unrestricted. 30 is the parent, 31 the grandparent.
+     *
+     * @return iterable<string, array{array<int, array<string, mixed>>, bool, bool}>
+     */
+    public static function inheritedRestrictions(): iterable
+    {
+        $tree = static fn(string $parentGroup, int $extend, array $grandparent = []): array => [
+            18 => ['site' => 'main', 'uri' => '/tree/child', 'pid' => 30],
+            30 => ['site' => 'main', 'uri' => '/tree', 'pid' => $grandparent === [] ? 1 : 31, 'fe_group' => $parentGroup, 'extendToSubpages' => $extend],
+        ] + ($grandparent === [] ? [] : [31 => ['site' => 'main', 'uri' => '/', 'pid' => 1] + $grandparent]);
+
+        // [pages, linked as the login target, linked as the password page]
+        yield 'a group, extended' => [$tree('8', 1), false, false];
+        yield 'hide at login, extended' => [$tree('-1', 1), false, true];
+        yield 'any login, extended' => [$tree('-2', 1), true, false];
+        yield 'a group, not extended' => [$tree('8', 0), true, true];
+        yield 'a group on the grandparent, extended' => [$tree('', 0, ['fe_group' => '8', 'extendToSubpages' => 1]), false, false];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $targets
+     */
+    #[Test]
+    #[DataProvider('inheritedRestrictions')]
+    public function anInheritedRestrictionCountsAsTheTargetsOwn(array $targets, bool $asLoginTarget, bool $asPasswordPage): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18', 'passwordLoginPage' => '18'], targets: $targets);
+
+        self::assertSame($asLoginTarget ? '/tree/child' : null, $vars['redirectUrl']);
+        self::assertSame($asPasswordPage ? '/tree/child' : null, $vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function aShortcutToAPageForAnyLoginIsJudgedLikeThatPage(): void
+    {
+        // Core's own group check would drop the -2 target for the anonymous
+        // visitor; the shortcut is resolved without it and judged here.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 18],
+                18 => ['site' => 'main', 'uri' => '/members-only', 'fe_group' => '-2'],
+            ],
+        );
+
+        self::assertSame('/members-only', $vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function aRandomSubpageShortcutIsIgnored(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 11, 'shortcut_mode' => 2],
+                11 => ['site' => 'main', 'uri' => '/member'],
+            ],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
     #[Test]
     public function anAbsoluteLinkWithTheDefaultPortSpelledOutIsKept(): void
     {
@@ -447,16 +515,28 @@ final class LoginPluginControllerTest extends TestCase
             },
         );
 
-        // getPage() and resolveShortcutPage() as core answers them for the
-        // records described in $targets.
+        // getPage(), getRawRecord() and resolveShortcutPage() as core answers
+        // them for the records described in $targets.
         $pageRepository = $this->createStub(PageRepository::class);
         $pageRepository->method('getPage')->willReturnCallback(
             static fn(int $uid): array => isset($targets[$uid]) ? self::pageRecord($uid, $targets[$uid]) : [],
         );
+        $pageRepository->method('getRawRecord')->willReturnCallback(
+            static fn(string $table, int $uid): ?array => isset($targets[$uid]) ? self::pageRecord($uid, $targets[$uid]) : null,
+        );
         $pageRepository->method('resolveShortcutPage')->willReturnCallback(
-            static function (array $page) use ($targets): array {
+            // 13.4 takes ($page, $resolveRandomSubpages, $disableGroupAccessCheck),
+            // 14.3 ($page, $disableGroupAccessCheck): the group flag comes last.
+            static function (array $page, bool ...$flags) use ($targets): array {
                 $target = $targets[$page['uid']]['shortcut'] ?? null;
-                if ($target === null || !isset($targets[$target])) {
+                $groupChecked = $flags === [] || !\end($flags);
+                if (
+                    $target === null
+                    || !isset($targets[$target])
+                    // With the group check, core resolves only to pages the
+                    // anonymous visitor may see.
+                    || ($groupChecked && !\in_array($targets[$target]['fe_group'], ['', '0', '-1'], true))
+                ) {
                     throw new ShortcutTargetPageNotFoundException('Shortcut target not accessible', 1);
                 }
 
@@ -530,11 +610,12 @@ final class LoginPluginControllerTest extends TestCase
 
     /**
      * A target is [site identifier, URI typolink builds, fe_group] or an
-     * array with the keys site, uri, fe_group, doktype and shortcut.
+     * array with the keys site, uri, fe_group, doktype, shortcut,
+     * shortcut_mode, pid and extendToSubpages.
      *
      * @param array<int|string, mixed> $target
      *
-     * @return array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int}
+     * @return array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int, shortcut_mode: int, pid: int, extendToSubpages: int}
      */
     private function normalizeTarget(array $target): array
     {
@@ -544,17 +625,27 @@ final class LoginPluginControllerTest extends TestCase
             'fe_group' => (string) ($target['fe_group'] ?? $target[2] ?? ''),
             'doktype' => (int) ($target['doktype'] ?? PageRepository::DOKTYPE_DEFAULT),
             'shortcut' => isset($target['shortcut']) ? (int) $target['shortcut'] : null,
+            'shortcut_mode' => (int) ($target['shortcut_mode'] ?? 0),
+            'pid' => (int) ($target['pid'] ?? 1),
+            'extendToSubpages' => (int) ($target['extendToSubpages'] ?? 0),
         ];
     }
 
     /**
-     * @param array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int} $target
+     * @param array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int, shortcut_mode: int, pid: int, extendToSubpages: int} $target
      *
      * @return array<string, int|string>
      */
     private static function pageRecord(int $uid, array $target): array
     {
-        return ['uid' => $uid, 'doktype' => $target['doktype'], 'fe_group' => $target['fe_group']];
+        return [
+            'uid' => $uid,
+            'pid' => $target['pid'],
+            'doktype' => $target['doktype'],
+            'fe_group' => $target['fe_group'],
+            'shortcut_mode' => $target['shortcut_mode'],
+            'extendToSubpages' => $target['extendToSubpages'],
+        ];
     }
 
     private function buildController(?SiteFinder $siteFinder = null, ?PageRepository $pageRepository = null): LoginPluginController

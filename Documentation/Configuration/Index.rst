@@ -56,15 +56,22 @@ its :guilabel:`Plugin` tab:
     - the page is a standard page (doktype 1), or a shortcut that TYPO3's own
       shortcut resolution leads to a standard page. External-URL and link
       pages, folders, spacers, mount points and every other page type are
-      ignored, so no URL an editor types reaches the plugin;
+      ignored, so no URL an editor types reaches the plugin. A "random
+      subpage" shortcut is ignored as well;
     - that standard page belongs to the site the plugin is rendered on;
-    - TYPO3 builds a link to it for a visitor who is not logged in (not for
-      a hidden or access-restricted page);
+    - a visitor who is not logged in may see it: the page is unrestricted or
+      set to "Hide at login", and so is every page above it that has
+      "Extend to subpages" set;
     - the link TYPO3 built stays on the site: a path, or an ``http``/``https``
       URL whose scheme, host and port are those of the site's base or of one
       of its languages. A link containing a backslash, a space or a control
       character is refused as well, because browsers remove or reinterpret
       those characters.
+
+    A shortcut is judged by the page it leads to, under the same access rule
+    as a page chosen directly. One difference between the TYPO3 versions
+    remains: a shortcut to a link page that points to a page of this site
+    is resolved to that page on TYPO3 14.3 and ignored on 13.4.
 
 ..  confval:: settings.redirectAfterLogin
 
@@ -75,21 +82,24 @@ its :guilabel:`Plugin` tab:
     form posts to it, so the one-time login token only ever goes to a URL
     that passed these checks. The rules of
     :confval:`settings.passwordLoginPage` apply, with one difference in
-    access: the page may be unrestricted or restricted to "Show at any
-    login" (``fe_group`` ``-2``), which is linked although the anonymous
-    visitor cannot see it yet. A page for a user group, "Hide at login" or a
+    access: the page, and every page above it that has "Extend to subpages"
+    set, may be unrestricted or restricted to "Show at any login"
+    (``fe_group`` ``-2``), which is linked although the anonymous visitor
+    cannot see it yet. A page for a user group, "Hide at login" or a
     combination is ignored, because the login does not necessarily grant it.
     Where felogin sits on the same page, the login is completed through
     felogin's form and felogin's own redirect settings apply instead.
 
-    ..  note::
+    ..  important::
 
-        TYPO3 counts a frontend user as logged in for "Show at any login"
-        only when the user belongs to at least one frontend user group
-        (``FrontendUserAuthentication::createUserAspect()`` in TYPO3 13.4 and
-        14.3). A user without a group who logs in with a passkey reaches
-        such a redirect page with "403 Access Denied". Put every user in a
-        group, or pick an unrestricted page.
+        Frontend users without any user group cannot reach a "Show at any
+        login" page. TYPO3 counts a frontend user as logged in for page
+        access only when the user belongs to at least one frontend user
+        group: ``FrontendUserAuthentication::createUserAspect()`` (TYPO3
+        13.4 and 14.3) adds ``-2`` to the user's groups only in that case.
+        A user without a group who logs in with a passkey is sent to such a
+        redirect page and gets "403 Access Denied". Put every frontend user
+        in a group, or pick an unrestricted page.
 
 ..  confval:: settings.cssClass
 

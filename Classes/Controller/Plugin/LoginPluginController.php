@@ -29,9 +29,28 @@ use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 final class LoginPluginController extends ActionController
 {
     /**
-     * fe_group values a login target may carry: none, or "any logged-in user".
+     * fe_group values a login target may carry, on the page itself and on
+     * every ancestor that extends its access to subpages: none, or "any
+     * logged-in user".
      */
-    private const LOGIN_TARGET_ACCESS = ['', '0', '-2'];
+    private const ACCESS_AFTER_LOGIN = ['', '0', '-2'];
+
+    /**
+     * The same for the password page, which is followed before the login:
+     * none, or "hide at login".
+     */
+    private const ACCESS_BEFORE_LOGIN = ['', '0', '-1'];
+
+    /**
+     * pages.shortcut_mode "random subpage": which page the visitor lands on is
+     * not known when the link is built.
+     */
+    private const SHORTCUT_MODE_RANDOM_SUBPAGE = 2;
+
+    /**
+     * Upper bound for the rootline walk, far above any real page tree depth.
+     */
+    private const MAX_ROOTLINE_DEPTH = 100;
 
     public function __construct(
         private readonly SiteFinder $siteFinder,
@@ -99,14 +118,17 @@ final class LoginPluginController extends ActionController
      * link must still pass staysOnSite(). Anything that fails yields null and
      * the caller falls back to its default.
      *
-     * A login target must be visible to the visitor once logged in: a page
-     * without access restriction, or one restricted to "any logged-in user"
-     * (fe_group -2), which is linked although the anonymous visitor the
-     * plugin is rendered for cannot see it yet. A group, "hide at login" (-1)
-     * or a list is refused, because the login may not grant it. Core adds -2
-     * only for a user with at least one group
-     * (FrontendUserAuthentication::createUserAspect()), so a group-less user
-     * still gets 403 on a -2 page.
+     * The page must be visible to the visitor when the link is followed,
+     * checked as core checks it: its own fe_group, and the fe_group of every
+     * ancestor with "extend to subpages". A login target is followed after
+     * the login, so it may be unrestricted or restricted to "any logged-in
+     * user" (fe_group -2), which is linked although the anonymous visitor the
+     * plugin is rendered for cannot see it yet; a group, "hide at login" (-1)
+     * or a list is refused, because the login may not grant it. The password
+     * page is followed before the login: unrestricted or "hide at login".
+     * Core adds -2 only for a user with at least one group
+     * (FrontendUserAuthentication::createUserAspect()), so a user without a
+     * group still gets 403 on a -2 page.
      */
     private function resolveSameSitePageUri(
         mixed $pageReference,
@@ -115,12 +137,12 @@ final class LoginPluginController extends ActionController
     ): ?string {
         $page = $this->standardPage($this->pageUidFrom($pageReference));
         $pageUid = $page['uid'] ?? 0;
-        $feGroup = $page['fe_group'] ?? '';
         if (
-            $pageUid <= 0
+            $page === null
+            || $pageUid <= 0
             || !$site instanceof SiteInterface
             || !$this->isPageOfSite($pageUid, $site)
-            || ($isLoginTarget && !\in_array($feGroup, self::LOGIN_TARGET_ACCESS, true))
+            || !$this->isAccessible($page, $isLoginTarget ? self::ACCESS_AFTER_LOGIN : self::ACCESS_BEFORE_LOGIN)
         ) {
             return null;
         }
@@ -128,7 +150,8 @@ final class LoginPluginController extends ActionController
         $uri = $this->uriBuilder
             ->reset()
             ->setTargetPageUid($pageUid)
-            // After the check above, the only restriction left is -2.
+            // After the check above, the only restriction a login target
+            // can carry is -2.
             ->setLinkAccessRestrictedPages($isLoginTarget)
             ->build();
 
@@ -137,16 +160,20 @@ final class LoginPluginController extends ActionController
 
     /**
      * The record of a standard page, following a shortcut through core's own
-     * resolution; null for anything else.
+     * resolution; null for anything else. The shortcut is resolved without
+     * core's group check, so its target is judged by the same access rule
+     * as a page chosen directly; a "random subpage" shortcut is refused.
      *
-     * @return array{uid: int, fe_group: string}|null
+     * @return array{uid: int, pid: int, fe_group: string}|null
      */
     private function standardPage(?int $pageUid): ?array
     {
         $page = $pageUid !== null && $pageUid > 0 ? $this->pageRepository->getPage($pageUid, true) : [];
         if ($this->intOf($page['doktype'] ?? null) === PageRepository::DOKTYPE_SHORTCUT) {
             try {
-                $page = $this->pageRepository->resolveShortcutPage($page);
+                $page = $this->intOf($page['shortcut_mode'] ?? null) === self::SHORTCUT_MODE_RANDOM_SUBPAGE
+                    ? []
+                    : $this->pageRepository->resolveShortcutPage($page, disableGroupAccessCheck: true);
             } catch (PageNotFoundException|RuntimeException) {
                 // A missing target, or (13.4: \RuntimeException, 14.3: its
                 // PageNotFoundException subclasses) a loop or chain too long.
@@ -158,9 +185,42 @@ final class LoginPluginController extends ActionController
             return null;
         }
 
-        $feGroup = $page['fe_group'] ?? '';
+        return [
+            'uid' => $this->intOf($page['uid'] ?? null),
+            'pid' => $this->intOf($page['pid'] ?? null),
+            'fe_group' => $this->feGroupOf($page),
+        ];
+    }
 
-        return ['uid' => $this->intOf($page['uid'] ?? null), 'fe_group' => \is_scalar($feGroup) ? (string) $feGroup : ''];
+    /**
+     * Whether the page's own fe_group, and that of every ancestor that
+     * extends its access to subpages, is one of $allowed.
+     *
+     * @param array{uid: int, pid: int, fe_group: string} $page
+     * @param list<string> $allowed
+     */
+    private function isAccessible(array $page, array $allowed): bool
+    {
+        $accessible = \in_array($page['fe_group'], $allowed, true);
+        $pid = $page['pid'];
+        for ($depth = 0; $accessible && $pid > 0 && $depth < self::MAX_ROOTLINE_DEPTH; $depth++) {
+            $ancestor = $this->pageRepository->getRawRecord('pages', $pid, ['pid', 'fe_group', 'extendToSubpages']) ?? [];
+            $accessible = $this->intOf($ancestor['extendToSubpages'] ?? null) !== 1
+                || \in_array($this->feGroupOf($ancestor), $allowed, true);
+            $pid = $this->intOf($ancestor['pid'] ?? null);
+        }
+
+        return $accessible;
+    }
+
+    /**
+     * @param array<array-key, mixed> $record
+     */
+    private function feGroupOf(array $record): string
+    {
+        $feGroup = $record['fe_group'] ?? '';
+
+        return \is_scalar($feGroup) ? (string) $feGroup : '';
     }
 
     private function intOf(mixed $value): int

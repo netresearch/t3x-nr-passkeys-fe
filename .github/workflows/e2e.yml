@@ -32,6 +32,10 @@ jobs:
       # in Build/Scripts/runTests.conf rather than from the workflow's default
       # pipeline.
       setup-script: 'Build/Scripts/ci-e2e.sh'
+      # Each TYPO3 version runs twice: with the site base '/' as provisioned,
+      # and with a host in it ("hosted", see ci-e2e.sh). The first keeps the
+      # job names the branch ruleset requires.
+      setup-variants: '["", "hosted"]'
       artifact-path: |
         test-results/
         playwright-report/

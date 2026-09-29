@@ -177,6 +177,8 @@ test.describe('Passkey login plugin', () => {
         ['/login-plugin-refused-206', 'a link page to a page of this site'],
         ['/login-plugin-refused-207', 'a folder'],
         ['/login-plugin-refused-208', 'a shortcut to an external-URL page'],
+        ['/login-plugin-group-tree', 'a page below a parent for a group'],
+        ['/login-plugin-shortcut-random', 'a "random subpage" shortcut'],
     ];
     for (const [path, what] of refusedTargets) {
         test(`${what} is neither the login target nor the password link`, async ({ page }) => {
@@ -209,6 +211,9 @@ test.describe('Passkey login plugin', () => {
         ['/login-plugin-members', '/members-only', 'a page for any logged-in user is where the login lands'],
         ['/login-plugin-group', '/login-plugin-group', 'a page for a group is no login target; the login stays on the plugin page'],
         ['/login-plugin-hide', '/login-plugin-hide', 'a page hidden at login is no login target; the login stays on the plugin page'],
+        ['/login-plugin-members-tree', '/members-tree/child', 'a page below a parent for any logged-in user is where the login lands'],
+        ['/login-plugin-shortcut-members', '/members-only', 'a shortcut to a page for any logged-in user is where the login lands'],
+        ['/login-plugin-group-tree', '/login-plugin-group-tree', 'a page below a parent for a group is no login target; the login stays on the plugin page'],
     ]) {
         test(what, async ({ page }) => {
             test.setTimeout(90_000);
