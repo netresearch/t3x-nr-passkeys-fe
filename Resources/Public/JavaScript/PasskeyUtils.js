@@ -193,17 +193,6 @@
   };
 
   /**
-   * Check whether a URL shares the same origin as the current page.
-   *
-   * @param {string} url
-   * @returns {boolean}
-   */
-  window.NrPasskeysFe.isSameOrigin = function (url) {
-    try { return new URL(url, window.location.origin).origin === window.location.origin; }
-    catch (e) { return false; }
-  };
-
-  /**
    * Build an eID URL with additional query parameters.
    * @param {string} eidUrl - Base eID URL (e.g. "/?eID=nr_passkeys_fe")
    * @param {Object} params - Additional parameters (e.g. {action: 'loginOptions'})

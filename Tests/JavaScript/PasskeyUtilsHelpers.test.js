@@ -114,14 +114,6 @@ describe('NrPasskeysFe — DOM helpers', () => {
         expect(btnLoading.style.display).toBe('none');
     });
 
-    it('isSameOrigin returns true for same origin', () => {
-        expect(window.NrPasskeysFe.isSameOrigin('/dashboard')).toBe(true);
-    });
-
-    it('isSameOrigin returns false for different origin', () => {
-        expect(window.NrPasskeysFe.isSameOrigin('https://evil.example.com/redirect')).toBe(false);
-    });
-
     it('buildEidUrl appends action parameter to eID URL', () => {
         const result = window.NrPasskeysFe.buildEidUrl('/?eID=nr_passkeys_fe', {action: 'loginOptions'});
         expect(result).toContain('eID=nr_passkeys_fe');
