@@ -14,6 +14,8 @@ use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\UserAspect;
 
 /**
  * What the resolver admits against real pages, judged by core's
@@ -71,6 +73,28 @@ final class LinkablePageResolverTest extends AbstractPasskeyFunctionalTestCase
         // The first subpage the visitor may see, as core picks it.
         yield 'a first subpage shortcut past a subpage for a group' => [60, 62, 62];
         yield 'a parent page shortcut' => [63, 62, 62];
+        // Core follows the target of a random subpage shortcut on 14.3 and
+        // picks a random subpage on 13.4; either way it is refused.
+        yield 'a random subpage shortcut with a target set' => [64, null, null];
+        yield 'a first subpage shortcut to the subpages of another page' => [70, 72, 72];
+        yield 'a first subpage shortcut whose first subpage is a folder' => [75, 77, 77];
+        // RootlineUtility throws for a page whose parent is missing.
+        yield 'a page with a broken rootline' => [80, null, null];
+    }
+
+    #[Test]
+    public function theRequestsFrontendUserIsLeftAsItIs(): void
+    {
+        // The resolver judges for a visitor of its own; the request's user
+        // aspect must not be replaced by that visitor.
+        $context = $this->get(Context::class);
+        $aspect = new UserAspect(null, [0, -1]);
+        $context->setAspect('frontend.user', $aspect);
+
+        $this->get(LinkablePageResolver::class)->resolve(11, true);
+
+        self::assertSame($aspect, $context->getAspect('frontend.user'));
+        self::assertSame([0, -1], $context->getPropertyFromAspect('frontend.user', 'groupIds'));
     }
 
     #[Test]
