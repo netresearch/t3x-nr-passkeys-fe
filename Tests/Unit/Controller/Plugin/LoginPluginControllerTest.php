@@ -24,6 +24,7 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Http\StreamFactory;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
@@ -133,11 +134,81 @@ final class LoginPluginControllerTest extends TestCase
     #[Test]
     public function aRedirectPageTypolinkWillNotLinkToIsIgnored(): void
     {
-        // A hidden or access-restricted page resolves to its site but builds
-        // no link; the login then stays on the current page.
+        // A hidden page resolves to its site but builds no link, access
+        // restriction or not; the login then stays on the current page.
         $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', '']]);
 
         self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aRedirectPageOnlyLoggedInUsersMaySeeIsLinked(): void
+    {
+        // The form arrives with the login, so the visitor may see the page by
+        // then; typolink only links it when asked to link restricted pages.
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18'], targets: [18 => ['main', '/members-only', true]]);
+
+        self::assertSame('/members-only', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aPasswordPageOnlyLoggedInUsersMaySeeIsNotLinked(): void
+    {
+        // The password link is shown to visitors who are not logged in yet.
+        $vars = $this->renderWithSettings(['passwordLoginPage' => '18'], targets: [18 => ['main', '/members-only', true]]);
+
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * Links TYPO3 can build for a page of this site that lead elsewhere: an
+     * external-URL page (doktype 3), a shortcut (doktype 4) into another
+     * site, and forms a browser reads as another host or no page at all.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function linksLeavingTheSite(): iterable
+    {
+        yield 'external URL page' => ['https://evil.example/landing'];
+        yield 'shortcut into another site' => ['https://other.example/page'];
+        yield 'protocol-relative' => ['//evil.example/landing'];
+        yield 'backslash host' => ['/\\evil.example/landing'];
+        yield 'javascript' => ['javascript:alert(1)'];
+        yield 'other scheme on the site host' => ['ftp://main.example/file'];
+        yield 'no scheme, not a path' => ['evil.example/landing'];
+    }
+
+    #[Test]
+    #[DataProvider('linksLeavingTheSite')]
+    public function aPageOfThisSiteWhoseLinkLeavesTheSiteIsIgnored(string $builtLink): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '17', 'passwordLoginPage' => '17'],
+            targets: [17 => ['main', $builtLink]],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnTheSiteHostIsKept(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', 'https://MAIN.example/member']]);
+
+        self::assertSame('https://MAIN.example/member', $vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnTheHostOfASiteLanguageIsKept(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '11'],
+            targets: [11 => ['main', 'https://main.example.de/mitglieder']],
+            languageBases: ['https://main.example.de/'],
+        );
+
+        self::assertSame('https://main.example.de/mitglieder', $vars['redirectUrl']);
     }
 
     /**
@@ -200,12 +271,13 @@ final class LoginPluginControllerTest extends TestCase
     /**
      * Render indexAction for the site "main" and return what it assigned.
      *
-     * @param array<string, mixed>                   $settings
-     * @param array<int, array{string, string}>      $targets  page uid => [site identifier, URI typolink builds]
+     * @param array<string, mixed>                          $settings
+     * @param array<int, array{0: string, 1: string, 2?: bool}> $targets       page uid => [site identifier, URI typolink builds, only for logged-in users]
+     * @param list<string>                                  $languageBases bases of the current site's languages
      *
      * @return array<string, mixed>
      */
-    private function renderWithSettings(array $settings, array $targets = []): array
+    private function renderWithSettings(array $settings, array $targets = [], array $languageBases = []): array
     {
         $siteFinder = $this->createStub(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willReturnCallback(
@@ -219,18 +291,38 @@ final class LoginPluginControllerTest extends TestCase
         );
         $subject = $this->buildController($siteFinder);
 
-        // The builder links the page last passed to setTargetPageUid().
-        $target = new ArrayObject(['uid' => 0]);
+        // The builder links the page last passed to setTargetPageUid(), and a
+        // page only for logged-in users only when restricted pages are linked,
+        // as typolink does.
+        $target = new ArrayObject(['uid' => 0, 'linkRestricted' => false]);
         $uriBuilder = $this->createStub(UriBuilder::class);
-        $uriBuilder->method('reset')->willReturnSelf();
+        $uriBuilder->method('reset')->willReturnCallback(
+            static function () use ($target, $uriBuilder): UriBuilder {
+                $target['linkRestricted'] = false;
+                return $uriBuilder;
+            },
+        );
         $uriBuilder->method('setTargetPageUid')->willReturnCallback(
             static function (int $uid) use ($target, $uriBuilder): UriBuilder {
                 $target['uid'] = $uid;
                 return $uriBuilder;
             },
         );
+        $uriBuilder->method('setLinkAccessRestrictedPages')->willReturnCallback(
+            static function (bool $link) use ($target, $uriBuilder): UriBuilder {
+                $target['linkRestricted'] = $link;
+                return $uriBuilder;
+            },
+        );
         $uriBuilder->method('build')->willReturnCallback(
-            static fn(): string => $targets[$target['uid']][1] ?? '',
+            static function () use ($target, $targets): string {
+                $page = $targets[$target['uid']] ?? null;
+                if ($page === null || (($page[2] ?? false) && !$target['linkRestricted'])) {
+                    return '';
+                }
+
+                return $page[1];
+            },
         );
 
         $assignedVars = [];
@@ -244,7 +336,7 @@ final class LoginPluginControllerTest extends TestCase
 
         $this->injectExtbaseProperties(
             $subject,
-            $this->buildExtbaseRequest('main', 'https://main.example'),
+            $this->buildExtbaseRequest('main', 'https://main.example', $languageBases),
             $view,
             ['settings' => $settings, 'uriBuilder' => $uriBuilder],
         );
@@ -262,11 +354,20 @@ final class LoginPluginControllerTest extends TestCase
         return $subject;
     }
 
-    private function buildExtbaseRequest(string $siteIdentifier, string $baseUrl): Request
+    /**
+     * @param list<string> $languageBases
+     */
+    private function buildExtbaseRequest(string $siteIdentifier, string $baseUrl, array $languageBases = []): Request
     {
+        $languages = [];
+        foreach ($languageBases as $languageId => $languageBase) {
+            $languages[] = new SiteLanguage($languageId + 1, 'de_DE.UTF-8', new Uri($languageBase), []);
+        }
+
         $site = $this->createStub(SiteInterface::class);
         $site->method('getIdentifier')->willReturn($siteIdentifier);
         $site->method('getBase')->willReturn(new Uri($baseUrl));
+        $site->method('getLanguages')->willReturn($languages);
 
         $serverRequest = new ServerRequest($baseUrl . '/page', 'GET');
         $serverRequest = $serverRequest->withAttribute('site', $site);

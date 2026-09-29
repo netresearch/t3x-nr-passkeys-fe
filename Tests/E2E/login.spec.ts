@@ -161,6 +161,35 @@ test.describe('Passkey login plugin', () => {
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
+    // Pages of this site whose link leads elsewhere (runTests.conf): the
+    // login token must never be posted there, and no password link may point
+    // there. The plugin falls back to its own page and to no link.
+    for (const [path, what] of [
+        ['/login-plugin-external', 'an external-URL page'],
+        ['/login-plugin-shortcut', 'a shortcut into another site'],
+    ]) {
+        test(`${what} is neither the login target nor the password link`, async ({ page }) => {
+            await page.goto(path, { waitUntil: 'load' });
+
+            await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', new RegExp(`${path}$`));
+            await expect(
+                page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' }),
+            ).toHaveCount(0);
+        });
+    }
+
+    test('a redirect page only logged-in visitors may see is the login target', async ({ page }) => {
+        // The form arrives with the login, so /members-only (fe_group -2) is
+        // visible by then. The password link is shown to visitors who are not
+        // logged in, so that page is no password link.
+        await page.goto('/login-plugin-members', { waitUntil: 'load' });
+
+        await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', /\/members-only$/);
+        await expect(
+            page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' }),
+        ).toHaveCount(0);
+    });
+
     test('a known and an unknown username are answered the same way', async ({ page }) => {
         await page.goto('/login-plugin');
 
