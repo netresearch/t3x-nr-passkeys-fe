@@ -10,65 +10,66 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Tests\Fuzz;
 
 use DateTimeImmutable;
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use Netresearch\NrPasskeysFe\Tests\Unit\Service\QueryBuilderStubTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+#[CoversClass(FrontendEnforcementService::class)]
 #[CoversClass(FrontendEnforcementStatus::class)]
 final class EnforcementFuzzTest extends TestCase
 {
+    use QueryBuilderStubTrait;
+
     private const VALID_LEVELS = ['off', 'encourage', 'required', 'enforced'];
 
-    private const SEVERITY_MAP = [
-        'off' => 0,
-        'encourage' => 1,
-        'required' => 2,
-        'enforced' => 3,
+    /**
+     * The specification of "strictest wins", written out rather than computed:
+     * [site level][group level] => effective level.
+     */
+    private const EXPECTED_EFFECTIVE = [
+        'off' => ['off' => 'off', 'encourage' => 'encourage', 'required' => 'required', 'enforced' => 'enforced'],
+        'encourage' => ['off' => 'encourage', 'encourage' => 'encourage', 'required' => 'required', 'enforced' => 'enforced'],
+        'required' => ['off' => 'required', 'encourage' => 'required', 'required' => 'required', 'enforced' => 'enforced'],
+        'enforced' => ['off' => 'enforced', 'encourage' => 'enforced', 'required' => 'enforced', 'enforced' => 'enforced'],
     ];
 
     // ---------------------------------------------------------------
-    // Level combinations
+    // Level combinations, resolved by FrontendEnforcementService
     // ---------------------------------------------------------------
 
-    #[Test]
-    public function allCombinationsOfSiteAndGroupLevelProduceValidEffectiveLevel(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function levelCombinationProvider(): iterable
     {
         foreach (self::VALID_LEVELS as $siteLevel) {
             foreach (self::VALID_LEVELS as $groupLevel) {
-                $siteSeverity = self::SEVERITY_MAP[$siteLevel];
-                $groupSeverity = self::SEVERITY_MAP[$groupLevel];
-                $effectiveLevel = $siteSeverity >= $groupSeverity ? $siteLevel : $groupLevel;
-
-                self::assertContains(
-                    $effectiveLevel,
-                    self::VALID_LEVELS,
-                    "Combination site='{$siteLevel}' group='{$groupLevel}' produced invalid effective level: '{$effectiveLevel}'",
-                );
+                yield "site {$siteLevel}, group {$groupLevel}" => [$siteLevel, $groupLevel];
             }
         }
     }
 
     #[Test]
-    public function strictestWinsForAllLevelCombinations(): void
+    #[DataProvider('levelCombinationProvider')]
+    public function theServiceResolvesTheStrictestOfSiteAndGroupLevel(string $siteLevel, string $groupLevel): void
     {
-        foreach (self::VALID_LEVELS as $levelA) {
-            foreach (self::VALID_LEVELS as $levelB) {
-                $severityA = self::SEVERITY_MAP[$levelA];
-                $severityB = self::SEVERITY_MAP[$levelB];
-                $expected = $severityA >= $severityB ? $levelA : $levelB;
+        $status = $this->statusFor($siteLevel, [$groupLevel]);
 
-                $effectiveSeverity = \max($severityA, $severityB);
-                $effectiveLevel = \array_search($effectiveSeverity, self::SEVERITY_MAP, true);
-
-                self::assertSame(
-                    self::SEVERITY_MAP[$expected],
-                    self::SEVERITY_MAP[$effectiveLevel],
-                    "Strictest-wins: site='{$levelA}' group='{$levelB}' should produce severity " . self::SEVERITY_MAP[$expected],
-                );
-            }
-        }
+        self::assertSame(self::EXPECTED_EFFECTIVE[$siteLevel][$groupLevel], $status->effectiveLevel);
+        self::assertSame($siteLevel, $status->siteLevel);
+        self::assertSame($groupLevel, $status->groupLevel);
     }
 
     /**
@@ -81,26 +82,97 @@ final class EnforcementFuzzTest extends TestCase
         yield 'uppercase ENFORCED' => ['ENFORCED'];
         yield 'typo' => ['enfource'];
         yield 'number as string' => ['3'];
-        yield 'space padded' => [' off '];
-        yield 'unicode' => ['оff'];  // Cyrillic 'о' looks like Latin 'o'
-        yield 'null byte' => ["\x00off"];
+        yield 'space padded' => [' enforced '];
+        yield 'unicode' => ['еnforced'];  // Cyrillic 'е' looks like Latin 'e'
+        yield 'null byte' => ["\x00enforced"];
         yield 'binary random' => [\random_bytes(8)];
         yield 'sql injection' => ["'; DROP TABLE fe_groups; --"];
-        yield 'json string' => ['{"level":"off"}'];
-        yield 'very long' => [\str_repeat('off', 1000)];
+        yield 'json string' => ['{"level":"enforced"}'];
+        yield 'very long' => [\str_repeat('enforced', 1000)];
     }
 
     #[Test]
     #[DataProvider('invalidLevelStringProvider')]
-    public function invalidLevelStringDefaultsToOff(string $rawLevel): void
+    public function anInvalidGroupLevelNeverRaisesEnforcement(string $rawLevel): void
     {
-        // The severity map lookup: invalid strings should not be found, yielding default behavior
-        $severity = self::SEVERITY_MAP[$rawLevel] ?? null;
+        // A group value the TCA does not offer counts as off: it neither
+        // escalates the site level nor becomes the group level.
+        $status = $this->statusFor('encourage', [$rawLevel]);
 
-        self::assertNull(
-            $severity,
-            "Invalid level string '{$rawLevel}' must not resolve to a severity via direct array lookup",
+        self::assertSame('encourage', $status->effectiveLevel);
+        self::assertSame('off', $status->groupLevel);
+    }
+
+    #[Test]
+    public function theStrictestOfSeveralRandomGroupsWinsInAnyOrder(): void
+    {
+        for ($i = 0; $i < 50; $i++) {
+            $groups = [];
+            for ($g = \random_int(1, 4); $g > 0; $g--) {
+                $groups[] = self::VALID_LEVELS[\random_int(0, 3)];
+            }
+
+            $siteLevel = self::VALID_LEVELS[\random_int(0, 3)];
+
+            $forward = $this->statusFor($siteLevel, $groups);
+            $reversed = $this->statusFor($siteLevel, \array_reverse($groups));
+
+            $expected = $siteLevel;
+            foreach ($groups as $groupLevel) {
+                $expected = self::EXPECTED_EFFECTIVE[$expected][$groupLevel];
+            }
+
+            $message = 'site ' . $siteLevel . ', groups ' . \implode(',', $groups);
+            self::assertSame($expected, $forward->effectiveLevel, $message);
+            self::assertSame($forward->effectiveLevel, $reversed->effectiveLevel, $message);
+        }
+    }
+
+    /**
+     * Resolve the status of frontend user 1, who belongs to one group per
+     * given level (each with $graceDays grace days), on a site at $siteLevel;
+     * $graceStart is the user's grace-period start timestamp.
+     *
+     * @param list<string> $groupLevels
+     */
+    private function statusFor(string $siteLevel, array $groupLevels, int $graceDays = 0, int $graceStart = 0): FrontendEnforcementStatus
+    {
+        $siteConfiguration = $this->createStub(SiteConfigurationService::class);
+        $siteConfiguration->method('getEnforcementLevel')->willReturn($siteLevel);
+
+        $groups = [];
+        foreach (\array_values($groupLevels) as $index => $level) {
+            $groups[] = ['uid' => $index + 1, 'passkey_enforcement' => $level, 'passkey_grace_period_days' => $graceDays];
+        }
+
+        $userResult = $this->createStub(Result::class);
+        $userResult->method('fetchAssociative')->willReturn([
+            'uid' => 1,
+            'usergroup' => \implode(',', \array_column($groups, 'uid')),
+            'passkey_grace_period_start' => $graceStart,
+        ]);
+        $groupResult = $this->createStub(Result::class);
+        $groupResult->method('fetchAllAssociative')->willReturn($groups);
+        $userQueryBuilder = $this->createQueryBuilderStub($userResult);
+        $groupQueryBuilder = $this->createQueryBuilderStub($groupResult);
+
+        $connectionPool = $this->createStub(ConnectionPool::class);
+        $connectionPool->method('getQueryBuilderForTable')->willReturnCallback(
+            static fn(string $table): QueryBuilder => $table === 'fe_groups' ? $groupQueryBuilder : $userQueryBuilder,
         );
+
+        $eventDispatcher = $this->createStub(EventDispatcherInterface::class);
+        $eventDispatcher->method('dispatch')->willReturnArgument(0);
+
+        $service = new FrontendEnforcementService(
+            $siteConfiguration,
+            $this->createStub(FrontendCredentialRepository::class),
+            $this->createStub(RecoveryCodeService::class),
+            $eventDispatcher,
+            $connectionPool,
+        );
+
+        return $service->getStatus(1, 'main', $this->createStub(SiteInterface::class));
     }
 
     // ---------------------------------------------------------------
@@ -152,23 +224,29 @@ final class EnforcementFuzzTest extends TestCase
     }
 
     #[Test]
-    public function enforcedLevelNeverAllowsGracePeriodByConvention(): void
+    public function anEnforcedGroupGrantsNoGracePeriodEvenWithGraceDaysConfigured(): void
     {
-        // Business rule: 'enforced' means hard requirement, no grace period applies
-        // We verify this invariant at the DTO level when grace period = false
-        $status = new FrontendEnforcementStatus(
-            effectiveLevel: 'enforced',
-            siteLevel: 'enforced',
-            groupLevel: 'enforced',
-            passkeyCount: 0,
-            inGracePeriod: false,
-            graceDeadline: null,
-            recoveryCodesRemaining: 0,
-        );
+        // Business rule: 'enforced' is a hard requirement. The group carries
+        // 14 grace days and the user started a grace period yesterday; the
+        // service must still grant none.
+        $status = $this->statusFor('off', ['enforced'], graceDays: 14, graceStart: \time() - 86_400);
 
+        self::assertSame('enforced', $status->effectiveLevel);
         self::assertFalse($status->inGracePeriod);
         self::assertNull($status->graceDeadline);
-        self::assertSame('enforced', $status->effectiveLevel);
+        self::assertSame(0, $status->graceDays);
+    }
+
+    #[Test]
+    public function aRequiredGroupWithTheSameGraceDataIsInItsGracePeriod(): void
+    {
+        // Control for the case above: the same fixture at 'required' does
+        // produce a grace period, so the enforced case cannot pass vacuously.
+        $status = $this->statusFor('off', ['required'], graceDays: 14, graceStart: \time() - 86_400);
+
+        self::assertSame('required', $status->effectiveLevel);
+        self::assertTrue($status->inGracePeriod);
+        self::assertSame(14, $status->graceDays);
     }
 
     #[Test]
@@ -188,28 +266,5 @@ final class EnforcementFuzzTest extends TestCase
 
         self::assertTrue($status->inGracePeriod);
         self::assertSame($deadline, $status->graceDeadline);
-    }
-
-    #[Test]
-    public function severityOrderingIsConsistentAcrossAllLevels(): void
-    {
-        for ($i = 0; $i < 50; $i++) {
-            $a = self::VALID_LEVELS[\random_int(0, 3)];
-            $b = self::VALID_LEVELS[\random_int(0, 3)];
-
-            $severityA = self::SEVERITY_MAP[$a];
-            $severityB = self::SEVERITY_MAP[$b];
-            $strictest = $severityA >= $severityB ? $a : $b;
-            $strictestSeverity = self::SEVERITY_MAP[$strictest];
-
-            self::assertGreaterThanOrEqual($severityA, $strictestSeverity);
-            self::assertGreaterThanOrEqual($severityB, $strictestSeverity);
-            // Commutative
-            $reversed = $severityB >= $severityA ? $b : $a;
-            self::assertSame(
-                self::SEVERITY_MAP[$strictest],
-                self::SEVERITY_MAP[$reversed],
-            );
-        }
     }
 }

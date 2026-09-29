@@ -1,24 +1,24 @@
 /**
- * Tests for PasskeyBanner.js
+ * @vitest-environment-options {"url": "https://example.test/"}
  *
- * PasskeyBanner.js is standalone (does not depend on PasskeyUtils.js)
- * as it handles only cookie-based dismiss logic with no base64/WebAuthn needs.
+ * Tests for the SHIPPED Resources/Public/JavaScript/PasskeyBanner.js.
+ *
+ * The module initialises on load, so every test builds the banner and then
+ * imports the module afresh. The page is served over https because the
+ * module sets its dismiss cookie with the Secure flag, which a browser (and
+ * jsdom) drops on a plain-http page.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { loadModules, clearBody } from './support/modules.js';
 
 const DISMISS_COOKIE = 'nr_passkeys_fe_banner_dismissed';
-const DISMISS_DAYS = 30;
 
-function clearBody() {
-    while (document.body.firstChild) {
-        document.body.removeChild(document.body.firstChild);
-    }
-}
-
-function createBanner({ enforcement = 'encourage' } = {}) {
+function createBanner(enforcement) {
     const banner = document.createElement('div');
     banner.setAttribute('data-nr-passkeys-fe', 'banner');
-    banner.dataset.enforcement = enforcement;
+    if (enforcement !== undefined) {
+        banner.dataset.enforcement = enforcement;
+    }
     banner.style.display = 'none';
     banner.setAttribute('hidden', 'true');
 
@@ -31,183 +31,120 @@ function createBanner({ enforcement = 'encourage' } = {}) {
     return { banner, dismissBtn };
 }
 
-// Cookie helpers (mirrored from PasskeyBanner.js)
-function setCookie(name, value, days) {
-    let expires = '';
-    if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-        expires = '; expires=' + date.toUTCString();
-    }
-    document.cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value) + expires + '; path=/; SameSite=Lax';
+function dismissCookie() {
+    const entry = document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith(DISMISS_COOKIE + '='));
+    return entry ? entry.slice(DISMISS_COOKIE.length + 1) : null;
 }
 
-function getCookie(name) {
-    const nameEQ = encodeURIComponent(name) + '=';
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-        const c = cookies[i].trim();
-        if (c.indexOf(nameEQ) === 0) {
-            return decodeURIComponent(c.substring(nameEQ.length));
-        }
-    }
-    return null;
+function clearDismissCookie() {
+    document.cookie = DISMISS_COOKIE + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; Secure';
 }
 
-function clearCookie(name) {
-    document.cookie = encodeURIComponent(name) + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-}
+beforeEach(() => {
+    clearBody();
+    clearDismissCookie();
+});
 
-// ---------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------
+afterEach(() => {
+    clearBody();
+    clearDismissCookie();
+});
 
-describe('PasskeyBanner — show/dismiss (encourage mode)', () => {
-    beforeEach(() => {
-        clearBody();
-        clearCookie(DISMISS_COOKIE);
+describe('PasskeyBanner — encourage level', () => {
+    it('shows a banner that has not been dismissed', async () => {
+        const { banner, dismissBtn } = createBanner('encourage');
+
+        await loadModules('PasskeyBanner.js');
+
+        expect(banner.style.display).toBe('');
+        expect(banner.hasAttribute('hidden')).toBe(false);
+        expect(dismissBtn.style.display).toBe('');
     });
 
-    afterEach(() => {
-        clearBody();
-        clearCookie(DISMISS_COOKIE);
-        vi.restoreAllMocks();
+    it('treats a banner without a level as encourage', async () => {
+        const { banner, dismissBtn } = createBanner(undefined);
+
+        await loadModules('PasskeyBanner.js');
+        dismissBtn.click();
+
+        expect(banner.hasAttribute('hidden')).toBe(true);
+        expect(dismissCookie()).toBe('1');
     });
 
-    it('banner starts hidden before init', () => {
-        const { banner } = createBanner();
+    it('dismissing hides the banner and remembers it in a cookie', async () => {
+        const { banner, dismissBtn } = createBanner('encourage');
+
+        await loadModules('PasskeyBanner.js');
+        dismissBtn.click();
+
         expect(banner.style.display).toBe('none');
+        expect(banner.getAttribute('hidden')).toBe('true');
+        expect(dismissCookie()).toBe('1');
     });
 
-    it('shows banner on init for encourage mode when not dismissed', () => {
-        const { banner } = createBanner({ enforcement: 'encourage' });
+    it('remembers the dismissal for 30 days, site-wide and only over https', async () => {
+        // document.cookie does not report the attributes back, so the string
+        // the module writes is read at the setter.
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+        const written = [];
+        const setter = vi.spyOn(Document.prototype, 'cookie', 'set');
+        setter.mockImplementation(function (value) {
+            written.push(value);
+        });
+        const { dismissBtn } = createBanner('encourage');
 
-        // Simulate init logic
-        const enforcement = banner.dataset.enforcement;
-        const dismissed = getCookie(DISMISS_COOKIE) === '1';
+        await loadModules('PasskeyBanner.js');
+        dismissBtn.click();
+        setter.mockRestore();
+        vi.useRealTimers();
 
-        if (enforcement === 'encourage' && dismissed) {
-            banner.style.display = 'none';
-        } else {
-            banner.style.display = '';
-            banner.removeAttribute('hidden');
-        }
+        const cookie = written.find((c) => c.startsWith(DISMISS_COOKIE + '=1'));
+        expect(cookie).toBeDefined();
+        expect(cookie).toContain('; expires=' + new Date('2026-01-31T00:00:00Z').toUTCString());
+        expect(cookie).toContain('; path=/');
+        expect(cookie).toContain('; SameSite=Lax');
+        expect(cookie).toContain('; Secure');
+    });
+
+    it('keeps a dismissed banner hidden on the next page', async () => {
+        document.cookie = DISMISS_COOKIE + '=1; path=/; Secure';
+        const { banner } = createBanner('encourage');
+
+        await loadModules('PasskeyBanner.js');
+
+        expect(banner.style.display).toBe('none');
+        expect(banner.hasAttribute('hidden')).toBe(true);
+    });
+});
+
+describe('PasskeyBanner — required and enforced levels', () => {
+    it.each(['required', 'enforced'])('shows the banner at %s even after an earlier dismissal', async (level) => {
+        document.cookie = DISMISS_COOKIE + '=1; path=/; Secure';
+        const { banner } = createBanner(level);
+
+        await loadModules('PasskeyBanner.js');
 
         expect(banner.style.display).toBe('');
         expect(banner.hasAttribute('hidden')).toBe(false);
     });
 
-    it('hides banner when dismiss cookie is already set', () => {
-        setCookie(DISMISS_COOKIE, '1', DISMISS_DAYS);
-        const { banner } = createBanner({ enforcement: 'encourage' });
+    it.each(['required', 'enforced'])('hides the dismiss button at %s, also from assistive technology', async (level) => {
+        const { dismissBtn } = createBanner(level);
 
-        const dismissed = getCookie(DISMISS_COOKIE) === '1';
-        if (dismissed) {
-            banner.style.display = 'none';
-            banner.setAttribute('hidden', 'true');
-        }
-
-        expect(banner.style.display).toBe('none');
-    });
-
-    it('dismiss button sets cookie and hides banner', () => {
-        const { banner, dismissBtn } = createBanner({ enforcement: 'encourage' });
-
-        dismissBtn.addEventListener('click', () => {
-            setCookie(DISMISS_COOKIE, '1', DISMISS_DAYS);
-            banner.style.display = 'none';
-            banner.setAttribute('hidden', 'true');
-        });
-
-        dismissBtn.click();
-
-        expect(banner.style.display).toBe('none');
-        expect(getCookie(DISMISS_COOKIE)).toBe('1');
-    });
-
-    it('cookie expires in 30 days', () => {
-        setCookie(DISMISS_COOKIE, '1', DISMISS_DAYS);
-
-        const cookieValue = getCookie(DISMISS_COOKIE);
-        expect(cookieValue).toBe('1');
-    });
-});
-
-describe('PasskeyBanner — mandatory mode (required/enforced)', () => {
-    beforeEach(() => {
-        clearBody();
-        clearCookie(DISMISS_COOKIE);
-    });
-
-    afterEach(() => {
-        clearBody();
-        clearCookie(DISMISS_COOKIE);
-    });
-
-    it('hides dismiss button in required mode', () => {
-        const { banner, dismissBtn } = createBanner({ enforcement: 'required' });
-
-        const enforcement = banner.dataset.enforcement;
-        if (enforcement !== 'encourage') {
-            dismissBtn.style.display = 'none';
-            dismissBtn.setAttribute('aria-hidden', 'true');
-        }
+        await loadModules('PasskeyBanner.js');
 
         expect(dismissBtn.style.display).toBe('none');
         expect(dismissBtn.getAttribute('aria-hidden')).toBe('true');
     });
 
-    it('hides dismiss button in enforced mode', () => {
-        const { banner, dismissBtn } = createBanner({ enforcement: 'enforced' });
+    it('does not dismiss a required banner when the (hidden) button is clicked', async () => {
+        const { banner, dismissBtn } = createBanner('required');
 
-        const enforcement = banner.dataset.enforcement;
-        if (enforcement !== 'encourage') {
-            dismissBtn.style.display = 'none';
-            dismissBtn.setAttribute('aria-hidden', 'true');
-        }
+        await loadModules('PasskeyBanner.js');
+        dismissBtn.click();
 
-        expect(dismissBtn.style.display).toBe('none');
-    });
-
-    it('still shows banner in required mode even if cookie is set', () => {
-        setCookie(DISMISS_COOKIE, '1', DISMISS_DAYS);
-        const { banner } = createBanner({ enforcement: 'required' });
-
-        // required/enforced ignores the dismiss cookie
-        const enforcement = banner.dataset.enforcement;
-        if (enforcement === 'encourage') {
-            const dismissed = getCookie(DISMISS_COOKIE) === '1';
-            if (dismissed) {
-                banner.style.display = 'none';
-                return;
-            }
-        }
-        banner.style.display = '';
-        banner.removeAttribute('hidden');
-
-        expect(banner.style.display).toBe('');
-    });
-});
-
-describe('PasskeyBanner — cookie utilities', () => {
-    afterEach(() => {
-        clearCookie(DISMISS_COOKIE);
-    });
-
-    it('getCookie returns null for non-existent cookie', () => {
-        clearCookie(DISMISS_COOKIE);
-        expect(getCookie(DISMISS_COOKIE)).toBeNull();
-    });
-
-    it('getCookie returns correct value after setCookie', () => {
-        setCookie(DISMISS_COOKIE, '1', 30);
-        expect(getCookie(DISMISS_COOKIE)).toBe('1');
-    });
-
-    it('setCookie with SameSite=Lax', () => {
-        setCookie(DISMISS_COOKIE, '1', 30);
-        // In jsdom document.cookie may not fully emulate Expires/SameSite
-        // We just verify the value is readable
-        expect(getCookie(DISMISS_COOKIE)).toBe('1');
+        expect(banner.hasAttribute('hidden')).toBe(false);
+        expect(dismissCookie()).toBeNull();
     });
 });

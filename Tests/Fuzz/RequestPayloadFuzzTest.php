@@ -9,27 +9,52 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Fuzz;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
+use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
+use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
+use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
+use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
+use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
-use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 #[CoversClass(EidDispatcher::class)]
 final class RequestPayloadFuzzTest extends TestCase
 {
+    /**
+     * Data sets of malformedJsonProvider() whose body carries a non-empty
+     * scalar username; every other body is read as carrying none.
+     */
+    private const BODIES_WITH_A_USERNAME = [
+        'huge string value',
+        'unicode username',
+        'integer username',
+        'sql injection username',
+        'xss username',
+        'extra proto fields',
+        'path traversal',
+    ];
+
     private EidDispatcher $dispatcher;
 
     protected function setUp(): void
@@ -109,44 +134,45 @@ final class RequestPayloadFuzzTest extends TestCase
         yield 'null bytes' => ["\x00\x01\x02\x03"];
         yield 'extra proto fields' => ['{"username":"admin","__proto__":{"polluted":true}}'];
         yield 'path traversal' => ['{"username":"../../etc/passwd"}'];
+        yield 'code without username' => ['{"code":"ABCD-1234"}'];
     }
 
     #[Test]
     #[DataProvider('malformedJsonProvider')]
     public function loginOptionsHandlesMalformedJson(string $body): void
     {
-        // Register a controller stub that returns 500 (simulates controller error handling)
-        // The dispatcher creates controllers via GeneralUtility::makeInstance() which
-        // cannot resolve DI in test context, so we pre-register a stub.
-        $controllerStub = $this->createStub(LoginController::class);
-        $controllerStub->method('optionsAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
-        $controllerStub->method('verifyAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
-        GeneralUtility::addInstance(LoginController::class, $controllerStub);
+        // The real LoginController behind the real dispatcher: a malformed body
+        // is read as "no usable username" (discoverable options) or as a
+        // username (decoy options for an unknown account), never as an error.
+        GeneralUtility::addInstance(LoginController::class, $this->realLoginController());
 
         $request = $this->createRequestWithAction('loginOptions', $body);
         $response = $this->dispatcher->processRequest($request);
 
-        self::assertInstanceOf(ResponseInterface::class, $response);
-        // Must be a structured JSON error response (any 4xx or 5xx), not an exception
-        self::assertGreaterThanOrEqual(400, $response->getStatusCode());
-        self::assertLessThan(600, $response->getStatusCode());
+        self::assertSame(200, $response->getStatusCode());
+        $data = \json_decode((string) $response->getBody(), true);
+        self::assertIsArray($data);
+        self::assertSame('test-challenge-token', $data['challengeToken'] ?? null);
+        self::assertIsArray($data['options'] ?? null);
+        // Only a non-empty scalar username leads to the username-first branch.
+        $expected = \in_array($this->dataName(), self::BODIES_WITH_A_USERNAME, true) ? 'decoy' : 'discoverable';
+        self::assertSame($expected, $data['options']['challenge'] ?? null);
     }
 
     #[Test]
     #[DataProvider('malformedJsonProvider')]
     public function recoveryVerifyHandlesMalformedJson(string $body): void
     {
-        $controllerStub = $this->createStub(RecoveryController::class);
-        $controllerStub->method('verifyAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
-        $controllerStub->method('generateAction')->willReturn(new JsonResponse(['error' => 'Internal error'], 500));
-        GeneralUtility::addInstance(RecoveryController::class, $controllerStub);
+        // The real RecoveryController: none of these bodies carries both a
+        // username and a code, so every one is refused as incomplete before
+        // any lookup.
+        GeneralUtility::addInstance(RecoveryController::class, $this->realRecoveryController());
 
         $request = $this->createRequestWithAction('recoveryVerify', $body);
         $response = $this->dispatcher->processRequest($request);
 
-        self::assertInstanceOf(ResponseInterface::class, $response);
-        self::assertGreaterThanOrEqual(400, $response->getStatusCode());
-        self::assertLessThan(600, $response->getStatusCode());
+        self::assertSame(400, $response->getStatusCode());
+        self::assertSame(['error' => 'Missing required fields'], \json_decode((string) $response->getBody(), true));
     }
 
     // ---------------------------------------------------------------
@@ -202,6 +228,53 @@ final class RequestPayloadFuzzTest extends TestCase
     // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
+
+    /**
+     * A LoginController whose collaborators are stubbed, so only its own request
+     * handling runs: every username is unknown, so a named request gets decoy
+     * options and an unnamed one discoverable options.
+     */
+    private function realLoginController(): LoginController
+    {
+        $site = $this->createStub(SiteInterface::class);
+        $siteConfiguration = $this->createStub(SiteConfigurationService::class);
+        $siteConfiguration->method('getCurrentSite')->willReturn($site);
+        $siteConfiguration->method('getSiteIdentifier')->willReturn('main');
+
+        $challengeService = $this->createStub(ChallengeService::class);
+        $challengeService->method('generateChallenge')->willReturn(\str_repeat("\x01", 32));
+        $challengeService->method('createChallengeToken')->willReturn('test-challenge-token');
+
+        $webAuthn = $this->createStub(FrontendWebAuthnService::class);
+        $webAuthn->method('createDiscoverableAssertionOptions')->willReturn(['options' => null, 'optionsJson' => '{"challenge":"discoverable"}']);
+        $webAuthn->method('createDecoyAssertionOptions')->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
+
+        $configuration = $this->createStub(ExtensionConfigurationService::class);
+        $configuration->method('getConfiguration')->willReturn(new ExtensionConfiguration());
+
+        return new LoginController(
+            $webAuthn,
+            $siteConfiguration,
+            $this->createStub(FrontendCredentialRepository::class),
+            $this->createStub(FrontendUserLookupService::class),
+            $this->createStub(RateLimiterService::class),
+            $challengeService,
+            $configuration,
+            $this->createStub(EventDispatcherInterface::class),
+            new NullLogger(),
+        );
+    }
+
+    private function realRecoveryController(): RecoveryController
+    {
+        return new RecoveryController(
+            $this->createStub(RecoveryCodeService::class),
+            $this->createStub(RateLimiterService::class),
+            $this->createStub(FrontendUserLookupService::class),
+            $this->createStub(EventDispatcherInterface::class),
+            new NullLogger(),
+        );
+    }
 
     /**
      * Register a mock FrontendUserAuthentication for bootstrapFrontendUser().

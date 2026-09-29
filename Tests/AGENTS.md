@@ -146,7 +146,7 @@ composer ci:mutation
 - Unit test pattern: `Tests/Unit/Service/` (bypass-finals, per-test instances).
 - Functional base class: `Tests/AbstractPasskeyFunctionalTestCase.php`.
 - Site double: `Tests/Integration/SiteStubTrait.php`.
-- JS test pattern: `Tests/JavaScript/PasskeyLogin.test.js`.
+- JS test pattern: `Tests/JavaScript/PasskeyLogin.test.js` — import the shipped module through `Tests/JavaScript/support/modules.js` and drive it through the DOM; stub only fetch, WebAuthn and browser dialogs. Never re-implement module logic in a test: a copy cannot fail when the shipped code breaks.
 
 ## PR Checklist
 - [ ] New code paths have tests at the level listed under "What Needs Tests"
