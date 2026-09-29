@@ -62,6 +62,7 @@ The setup configures view paths for the Fluid templates:
     }
 
     plugin.tx_felogin_login.view.templateRootPaths.100 = EXT:nr_passkeys_fe/Resources/Private/Templates/Felogin/
+    plugin.tx_felogin_login.view.partialRootPaths.1700000000 = EXT:nr_passkeys_fe/Resources/Private/Partials/
 
     plugin.tx_felogin_login.settings.passkeys {
         discoverableEnabled = {$plugin.tx_nrpasskeysfe.settings.discoverableEnabled}
@@ -70,6 +71,19 @@ The setup configures view paths for the Fluid templates:
 
 The felogin template override receives only felogin's own settings, so the
 two constants are handed to it under ``plugin.tx_felogin_login.settings.passkeys``.
+
+..  _typoscript-felogin-partials:
+
+felogin partial path
+--------------------
+
+The felogin override renders the partial ``NrPasskeysFe/LoginAssets`` it
+shares with the login plugin. felogin finds it through the partial path key
+``1700000000``, chosen high so that it does not collide with the keys a site
+usually gives its own felogin partials. A site that sets
+``plugin.tx_felogin_login.view.partialRootPaths.1700000000`` itself replaces
+this path and must provide ``NrPasskeysFe/LoginAssets.html`` there, for
+example as a copy of the extension's partial.
 
 Overriding templates
 --------------------

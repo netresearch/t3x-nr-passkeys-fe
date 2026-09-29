@@ -32,20 +32,19 @@ Resources/
       locallang_mod.xlf        -> Backend module labels
     Layouts/
       Default.html             -> Base Fluid layout (FE plugins)
-    Partials/                  -> Reusable Fluid partials
+    Partials/
+      NrPasskeysFe/
+        LoginAssets.html       -> Login CSS, scripts and JS translations (login plugin + felogin override)
     Templates/
       AdminModule/             -> Backend admin module templates
         Dashboard.html         -> Dashboard + Enforcement tabs
         Help.html              -> Help page
       Enrollment/
-        Index.html             -> Enrollment form (WebAuthn ceremony)
-        Success.html           -> Post-enrollment success page
+        Index.html             -> Enrollment form (WebAuthn ceremony) with inline success
       Login/
-        Index.html             -> Passkey login form
-        Recovery.html          -> Recovery code login form
+        Index.html             -> Passkey login form with inline recovery code form
       Management/
-        Index.html             -> Self-service credential management
-        RecoveryCodes.html     -> Recovery code generation/display
+        Index.html             -> Self-service credential management, registration and recovery codes
   Public/
     Css/
       passkey-fe.css           -> Frontend plugin styles

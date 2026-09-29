@@ -45,7 +45,7 @@
     var btnLoading = registerBtn ? registerBtn.querySelector('.nr-passkeys-fe-btn__loading') : null;
     var statusEl = container.querySelector('.nr-passkeys-fe-enrollment__status, .nr-passkeys-fe-enrollment-form__status');
     var errorEl = container.querySelector('.nr-passkeys-fe-enrollment__error, .nr-passkeys-fe-enrollment-form__error');
-    var successEl = container.querySelector('.nr-passkeys-fe-enrollment-form__success');
+    var successEl = container.querySelector('.nr-passkeys-fe-enrollment__success, .nr-passkeys-fe-enrollment-form__success');
 
     // Feature detection
     if (!window.PublicKeyCredential) {
@@ -173,13 +173,7 @@
       if (verifyResponse.ok && verifyData.status === 'ok') {
         U.hideStatus(statusEl);
 
-        // Check if we should redirect (enrollment flow)
-        if (verifyData.redirectUrl && U.isSameOrigin(verifyData.redirectUrl)) {
-          window.location.href = verifyData.redirectUrl;
-          return;
-        }
-
-        // Show inline success (management flow)
+        // Inline success, on the enrollment page as in the management view.
         showElement(successEl);
         if (labelInput) {
           labelInput.value = 'Passkey';

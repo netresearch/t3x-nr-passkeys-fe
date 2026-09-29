@@ -110,7 +110,8 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         );
 
         $view = $this->createMock(ViewInterface::class);
-        $view->expects(self::exactly(3))->method('assign');
+        // The template override reads only the eID URL from the listener.
+        $view->expects(self::once())->method('assign')->with('passkeyEidUrl', '?eID=nr_passkeys_fe');
 
         $subject->__invoke($this->buildEvent($view, $site));
     }

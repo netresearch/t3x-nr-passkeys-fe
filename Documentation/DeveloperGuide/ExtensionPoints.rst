@@ -26,13 +26,20 @@ registering a higher-priority path:
 
 Available templates:
 
-- ``Login/Index.html`` -- Passkey login form
-- ``Login/Recovery.html`` -- Recovery code login form
-- ``Enrollment/Index.html`` -- Passkey enrollment form
-- ``Enrollment/Success.html`` -- Post-enrollment success page
-- ``Management/Index.html`` -- Self-service management panel
-- ``Management/RecoveryCodes.html`` -- Recovery code generation
-- ``AdminModule/Index.html`` -- Backend admin module shell
+- ``Login/Index.html`` -- Passkey login form, with the recovery code form
+- ``Enrollment/Index.html`` -- Passkey enrollment form, with its success message
+- ``Management/Index.html`` -- Self-service management panel, registration
+  and recovery codes
+- ``Felogin/Login/Login.html`` and ``Felogin/Login/Logout.html`` -- the
+  felogin template override
+- ``AdminModule/Dashboard.html`` and ``AdminModule/Help.html`` -- backend
+  module
+
+Available partials:
+
+- ``NrPasskeysFe/LoginAssets.html`` -- CSS, scripts and JavaScript
+  translations of the passkey login, rendered by ``Login/Index.html`` and by
+  the felogin override
 
 Replacing services
 ------------------

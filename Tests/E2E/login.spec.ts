@@ -299,6 +299,9 @@ test.describe('Passkey tab in the felogin form', () => {
         const panel = page.locator('#nr-passkeys-fe-panel-passkey');
         await expect(panel).toHaveAttribute('data-discoverable', '1');
         await expect(panel.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
+        // The eID controllers take the site from the request; the attribute
+        // that carried the RP ID under this name is gone.
+        await expect(panel).not.toHaveAttribute('data-site-identifier');
         await expect(page.locator(stylesheet)).toHaveCount(1);
     });
 

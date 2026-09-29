@@ -97,10 +97,7 @@ final readonly class InjectPasskeyLoginFields
             ['priority' => false],
         );
 
-        // Add passkey button to the login form via view variable
-        $view = $event->getView();
-        $view->assign('passkeyLoginEnabled', true);
-        $view->assign('passkeyRpId', $rpId);
-        $view->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
+        // The felogin template override reads the eID URL for its passkey tab.
+        $event->getView()->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
     }
 }

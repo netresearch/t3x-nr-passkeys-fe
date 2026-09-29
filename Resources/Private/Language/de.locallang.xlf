@@ -89,10 +89,6 @@
                 <source>Recovery code</source>
                 <target>Wiederherstellungscode</target>
             </trans-unit>
-            <trans-unit id="recovery.code.hint" resname="recovery.code.hint">
-                <source>Format: XXXX-XXXX</source>
-                <target>Format: XXXX-XXXX</target>
-            </trans-unit>
             <trans-unit id="recovery.button.verify" resname="recovery.button.verify">
                 <source>Verify code</source>
                 <target>Code überprüfen</target>
@@ -225,30 +221,6 @@
             </trans-unit>
 
             <!-- Management — enrollment form (inline) -->
-            <trans-unit id="management.enrollment.title" resname="management.enrollment.title">
-                <source>Register passkey</source>
-                <target>Passkey registrieren</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.label" resname="management.enrollment.label">
-                <source>Device name</source>
-                <target>Gerätename</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.placeholder" resname="management.enrollment.placeholder">
-                <source>e.g. "MacBook", "Android Phone"</source>
-                <target>z.B. "MacBook", "Android-Smartphone"</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.register" resname="management.enrollment.register">
-                <source>Register passkey</source>
-                <target>Passkey registrieren</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.registering" resname="management.enrollment.registering">
-                <source>Registering...</source>
-                <target>Registrierung...</target>
-            </trans-unit>
-            <trans-unit id="management.enrollment.success" resname="management.enrollment.success">
-                <source>Passkey registered successfully.</source>
-                <target>Passkey erfolgreich registriert.</target>
-            </trans-unit>
 
             <!-- Management — recovery codes -->
             <trans-unit id="management.recovery.title" resname="management.recovery.title">
@@ -267,45 +239,13 @@
                 <source>Manage recovery codes</source>
                 <target>Wiederherstellungscodes verwalten</target>
             </trans-unit>
-            <trans-unit id="management.recovery.codes.title" resname="management.recovery.codes.title">
-                <source>Recovery codes</source>
-                <target>Wiederherstellungscodes</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.warning.title" resname="management.recovery.codes.warning.title">
-                <source>Save these codes now!</source>
-                <target>Speichern Sie diese Codes jetzt!</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.warning.text" resname="management.recovery.codes.warning.text">
-                <source>These codes will not be shown again. Store them in a safe place (password manager, printed copy). Each code can be used once to regain access.</source>
-                <target>Diese Codes werden nicht erneut angezeigt. Bewahren Sie sie an einem sicheren Ort auf (Passwort-Manager, ausgedruckte Kopie). Jeder Code kann einmal verwendet werden, um den Zugriff wiederherzustellen.</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.remaining" resname="management.recovery.codes.remaining">
-                <source>Remaining codes</source>
-                <target>Verbleibende Codes</target>
-            </trans-unit>
             <trans-unit id="management.recovery.codes.download" resname="management.recovery.codes.download">
                 <source>Download codes as text file</source>
                 <target>Codes als Textdatei herunterladen</target>
             </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.title" resname="management.recovery.codes.generate.title">
-                <source>Generate new recovery codes</source>
-                <target>Neue Wiederherstellungscodes generieren</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.hint" resname="management.recovery.codes.generate.hint">
-                <source>Generating new codes will invalidate all existing recovery codes.</source>
-                <target>Das Generieren neuer Codes macht alle vorhandenen Wiederherstellungscodes ungültig.</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.generate.button" resname="management.recovery.codes.generate.button">
-                <source>Generate new codes</source>
-                <target>Neue Codes generieren</target>
-            </trans-unit>
             <trans-unit id="management.recovery.codes.generate.generating" resname="management.recovery.codes.generate.generating">
                 <source>Generating...</source>
                 <target>Generierung...</target>
-            </trans-unit>
-            <trans-unit id="management.recovery.codes.back" resname="management.recovery.codes.back">
-                <source>Back to passkey management</source>
-                <target>Zurück zur Passkey-Verwaltung</target>
             </trans-unit>
 
             <!-- ============================================================
@@ -355,10 +295,6 @@
                 <source>Skip for now</source>
                 <target>Vorerst überspringen</target>
             </trans-unit>
-            <trans-unit id="enrollment.link.noSupport" resname="enrollment.link.noSupport">
-                <source>My device doesn't support passkeys</source>
-                <target>Mein Gerät unterstützt keine Passkeys</target>
-            </trans-unit>
             <trans-unit id="enrollment.error.unsupported" resname="enrollment.error.unsupported">
                 <source>Your browser does not support Passkeys (WebAuthn). Please update your browser or use a different device.</source>
                 <target>Ihr Browser unterstützt keine Passkeys (WebAuthn). Bitte aktualisieren Sie Ihren Browser oder verwenden Sie ein anderes Gerät.</target>
@@ -384,10 +320,6 @@
             <trans-unit id="enrollment.success.message" resname="enrollment.success.message">
                 <source>You can now sign in with your passkey. You can manage your passkeys in your account settings.</source>
                 <target>Sie können sich jetzt mit Ihrem Passkey anmelden. Verwalten Sie Ihre Passkeys in Ihren Kontoeinstellungen.</target>
-            </trans-unit>
-            <trans-unit id="enrollment.success.continue" resname="enrollment.success.continue">
-                <source>Continue</source>
-                <target>Weiter</target>
             </trans-unit>
 
             <!-- ============================================================
