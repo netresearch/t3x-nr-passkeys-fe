@@ -161,13 +161,24 @@ test.describe('Passkey login plugin', () => {
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
-    // Pages of this site whose link leads elsewhere (runTests.conf): the
-    // login token must never be posted there, and no password link may point
-    // there. The plugin falls back to its own page and to no link.
-    for (const [path, what] of [
+    // Pages whose link would lead elsewhere, and pages that are no standard
+    // page (runTests.conf): the login token must never be posted there, and
+    // no password link may point there. The plugin falls back to its own page
+    // and to no link.
+    const refusedTargets: Array<[string, string]> = [
         ['/login-plugin-external', 'an external-URL page'],
         ['/login-plugin-shortcut', 'a shortcut into another site'],
-    ]) {
+        ['/login-plugin-refused-200', 'an external-URL page with a tab before "//"'],
+        ['/login-plugin-refused-201', 'an external-URL page with a line feed before "//"'],
+        ['/login-plugin-refused-202', 'an external-URL page with a carriage return before "//"'],
+        ['/login-plugin-refused-203', 'an external-URL page with a tab and a backslash'],
+        ['/login-plugin-refused-204', 'an external-URL page with a backslash before the user info'],
+        ['/login-plugin-refused-205', 'an external-URL page on another port'],
+        ['/login-plugin-refused-206', 'a link page to a page of this site'],
+        ['/login-plugin-refused-207', 'a folder'],
+        ['/login-plugin-refused-208', 'a shortcut to an external-URL page'],
+    ];
+    for (const [path, what] of refusedTargets) {
         test(`${what} is neither the login target nor the password link`, async ({ page }) => {
             await page.goto(path, { waitUntil: 'load' });
 
@@ -178,17 +189,61 @@ test.describe('Passkey login plugin', () => {
         });
     }
 
-    test('a redirect page only logged-in visitors may see is the login target', async ({ page }) => {
-        // The form arrives with the login, so /members-only (fe_group -2) is
-        // visible by then. The password link is shown to visitors who are not
-        // logged in, so that page is no password link.
-        await page.goto('/login-plugin-members', { waitUntil: 'load' });
+    test('links under config.forceAbsoluteUrls are kept', async ({ page }) => {
+        // config.forceAbsoluteUrls is set for this page only (runTests.conf).
+        // With a host in the site base TYPO3 builds absolute links on it;
+        // with the base '/' it builds paths.
+        const prefix = process.env.E2E_SITE_BASE_HOST === '1' ? `http://${process.env.E2E_SECURE_ALIAS_HOST}` : '';
+        await page.goto('/login-plugin-absolute', { waitUntil: 'load' });
 
-        await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', /\/members-only$/);
+        await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', `${prefix}/member`);
         await expect(
             page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' }),
-        ).toHaveCount(0);
+        ).toHaveAttribute('href', `${prefix}/login`);
     });
+
+    // Where a real passkey login lands, and what the page answers there. The
+    // member (group 7) is used because core grants "any logged-in user" (-2)
+    // only to a user with at least one group.
+    for (const [path, landing, what] of [
+        ['/login-plugin-members', '/members-only', 'a page for any logged-in user is where the login lands'],
+        ['/login-plugin-group', '/login-plugin-group', 'a page for a group is no login target; the login stays on the plugin page'],
+        ['/login-plugin-hide', '/login-plugin-hide', 'a page hidden at login is no login target; the login stays on the plugin page'],
+    ]) {
+        test(what, async ({ page }) => {
+            test.setTimeout(90_000);
+
+            const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
+
+            await loginWithPassword(page, 'e2e_member');
+            const registered = await registerPasskey(page, `E2E landing ${landing}`);
+            expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
+
+            await setAutomaticPresence(cdp, authenticatorId, false);
+            await logOut(page);
+
+            await page.goto(path, { waitUntil: 'load' });
+            await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', new RegExp(`${landing}$`));
+
+            const button = page.locator('#nr-passkeys-fe-login-btn');
+            await expect(button).toBeVisible({ timeout: 5000 });
+            await setAutomaticPresence(cdp, authenticatorId, true);
+            const landed = page.waitForResponse(
+                (response) => response.request().isNavigationRequest()
+                    && response.request().method() === 'POST'
+                    && new URL(response.url()).pathname === landing,
+                { timeout: 30_000 },
+            );
+            await button.click();
+
+            expect((await landed).status(), `the login has to land on ${landing} with a page, not an error`).toBe(200);
+            await expect(page).toHaveURL(new RegExp(`${landing}$`));
+            expect((await page.request.get(eidUrl('manageList'))).status()).toBe(200);
+
+            await removeAllCredentials(page);
+            await removeVirtualAuthenticator(cdp, authenticatorId);
+        });
+    }
 
     test('a known and an unknown username are answered the same way', async ({ page }) => {
         await page.goto('/login-plugin');

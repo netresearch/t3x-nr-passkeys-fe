@@ -18,6 +18,9 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use ReflectionClass;
+use RuntimeException;
+use TYPO3\CMS\Core\Domain\Repository\PageRepository;
+use TYPO3\CMS\Core\Error\Http\ShortcutTargetPageNotFoundException;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
@@ -37,7 +40,7 @@ final class LoginPluginControllerTest extends TestCase
     #[Test]
     public function isInstantiable(): void
     {
-        $subject = new LoginPluginController($this->createStub(SiteFinder::class));
+        $subject = new LoginPluginController($this->createStub(SiteFinder::class), $this->createStub(PageRepository::class));
         self::assertInstanceOf(LoginPluginController::class, $subject);
     }
 
@@ -146,7 +149,7 @@ final class LoginPluginControllerTest extends TestCase
     {
         // The form arrives with the login, so the visitor may see the page by
         // then; typolink only links it when asked to link restricted pages.
-        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18'], targets: [18 => ['main', '/members-only', true]]);
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '18'], targets: [18 => ['main', '/members-only', '-2']]);
 
         self::assertSame('/members-only', $vars['redirectUrl']);
     }
@@ -155,7 +158,7 @@ final class LoginPluginControllerTest extends TestCase
     public function aPasswordPageOnlyLoggedInUsersMaySeeIsNotLinked(): void
     {
         // The password link is shown to visitors who are not logged in yet.
-        $vars = $this->renderWithSettings(['passwordLoginPage' => '18'], targets: [18 => ['main', '/members-only', true]]);
+        $vars = $this->renderWithSettings(['passwordLoginPage' => '18'], targets: [18 => ['main', '/members-only', '-2']]);
 
         self::assertNull($vars['passwordFallbackUrl']);
     }
@@ -176,6 +179,16 @@ final class LoginPluginControllerTest extends TestCase
         yield 'javascript' => ['javascript:alert(1)'];
         yield 'other scheme on the site host' => ['ftp://main.example/file'];
         yield 'no scheme, not a path' => ['evil.example/landing'];
+        // Browsers strip tab, LF and CR from a URL, so these read as "//host".
+        yield 'tab in a path' => ["/\t/evil.example/landing"];
+        yield 'line feed in a path' => ["/\n/evil.example/landing"];
+        yield 'carriage return in a path' => ["/\r/evil.example/landing"];
+        yield 'tab and backslash' => ["/\t\\evil.example/landing"];
+        yield 'backslash before the user info' => ['http://evil.example\\@main.example/landing'];
+        yield 'space' => ['/ /evil.example/landing'];
+        yield 'delete character' => ["/\x7f/evil.example/landing"];
+        yield 'another port on the site host' => ['https://main.example:8443/landing'];
+        yield 'another scheme on the site host' => ['http://main.example/landing'];
     }
 
     #[Test]
@@ -189,6 +202,145 @@ final class LoginPluginControllerTest extends TestCase
 
         self::assertNull($vars['redirectUrl']);
         self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * Only a standard page is linked. Every other doktype is refused before a
+     * link is built, whatever link TYPO3 would build for it: the URL of an
+     * external-URL or link page is typed by an editor.
+     *
+     * @return iterable<string, array{int}>
+     */
+    public static function doktypesThatAreNoStandardPage(): iterable
+    {
+        yield 'external URL / link page (3)' => [3];
+        yield 'mount point (7)' => [7];
+        yield 'spacer (199)' => [199];
+        yield 'folder (254)' => [254];
+        yield 'backend user section (6)' => [6];
+    }
+
+    #[Test]
+    #[DataProvider('doktypesThatAreNoStandardPage')]
+    public function aPageThatIsNoStandardPageIsIgnored(int $doktype): void
+    {
+        // The built link is on-site, so only the doktype can refuse it.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '17', 'passwordLoginPage' => '17'],
+            targets: [17 => ['site' => 'main', 'uri' => '/member', 'doktype' => $doktype]],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function aShortcutToAStandardPageLinksItsTarget(): void
+    {
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'],
+            targets: [
+                22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 11],
+                11 => ['site' => 'main', 'uri' => '/member'],
+            ],
+        );
+
+        self::assertSame('/member', $vars['redirectUrl']);
+        self::assertSame('/member', $vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * @return iterable<string, array{array<int, array<string, mixed>>}>
+     */
+    public static function shortcutsThatLeadNowhereLinkable(): iterable
+    {
+        yield 'to an external URL page' => [[
+            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 17],
+            17 => ['site' => 'main', 'uri' => '/member', 'doktype' => 3],
+        ]];
+        yield 'to a page of another site' => [[
+            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 51],
+            51 => ['site' => 'other', 'uri' => '/other-page'],
+        ]];
+        yield 'to itself' => [[
+            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 22],
+        ]];
+        yield 'to a page core cannot resolve' => [[
+            22 => ['site' => 'main', 'uri' => '/shortcut', 'doktype' => 4, 'shortcut' => 99],
+        ]];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $targets
+     */
+    #[Test]
+    #[DataProvider('shortcutsThatLeadNowhereLinkable')]
+    public function aShortcutThatLeadsNowhereLinkableIsIgnored(array $targets): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '22', 'passwordLoginPage' => '22'], targets: $targets);
+
+        self::assertNull($vars['redirectUrl']);
+        self::assertNull($vars['passwordFallbackUrl']);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function restrictionsOtherThanAnyLoggedInUser(): iterable
+    {
+        yield 'a user group' => ['5'];
+        yield 'hide at login' => ['-1'];
+        yield 'any login or a group' => ['-2,5'];
+    }
+
+    #[Test]
+    #[DataProvider('restrictionsOtherThanAnyLoggedInUser')]
+    public function aLoginTargetWithAnotherRestrictionIsNotLinked(string $feGroup): void
+    {
+        // Only "any logged-in user" (-2) is known to be visible after the
+        // login. A "hide at login" page (-1) is one typolink does link for
+        // the anonymous visitor, so the controller has to refuse it itself.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '18'],
+            targets: [18 => ['main', '/restricted', $feGroup]],
+        );
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function aHideAtLoginPageIsStillAPasswordLink(): void
+    {
+        // The password link is followed before the login, where -1 is visible.
+        $vars = $this->renderWithSettings(
+            ['passwordLoginPage' => '18'],
+            targets: [18 => ['main', '/login', '-1']],
+        );
+
+        self::assertSame('/login', $vars['passwordFallbackUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkOnASiteWithoutAHostIsIgnored(): void
+    {
+        // A site with base "/" has no origin to compare with, and TYPO3 builds
+        // paths for it even with config.forceAbsoluteUrls. The host of the
+        // request is not trusted in its place: it comes from the client.
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '11'],
+            targets: [11 => ['main', 'https://main.example/member']],
+            siteBase: '/',
+        );
+
+        self::assertNull($vars['redirectUrl']);
+    }
+
+    #[Test]
+    public function anAbsoluteLinkWithTheDefaultPortSpelledOutIsKept(): void
+    {
+        $vars = $this->renderWithSettings(['redirectAfterLogin' => '11'], targets: [11 => ['main', 'https://main.example:443/member']]);
+
+        self::assertSame('https://main.example:443/member', $vars['redirectUrl']);
     }
 
     #[Test]
@@ -277,8 +429,13 @@ final class LoginPluginControllerTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function renderWithSettings(array $settings, array $targets = [], array $languageBases = []): array
-    {
+    private function renderWithSettings(
+        array $settings,
+        array $targets = [],
+        array $languageBases = [],
+        string $siteBase = 'https://main.example',
+    ): array {
+        $targets = \array_map($this->normalizeTarget(...), $targets);
         $siteFinder = $this->createStub(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willReturnCallback(
             static function (int $pageUid) use ($targets): Site {
@@ -286,10 +443,32 @@ final class LoginPluginControllerTest extends TestCase
                     throw new SiteNotFoundException('No site for page ' . $pageUid, 1);
                 }
 
-                return new Site($targets[$pageUid][0], 1, ['base' => 'https://' . $targets[$pageUid][0] . '.example/']);
+                return new Site($targets[$pageUid]['site'], 1, ['base' => 'https://' . $targets[$pageUid]['site'] . '.example/']);
             },
         );
-        $subject = $this->buildController($siteFinder);
+
+        // getPage() and resolveShortcutPage() as core answers them for the
+        // records described in $targets.
+        $pageRepository = $this->createStub(PageRepository::class);
+        $pageRepository->method('getPage')->willReturnCallback(
+            static fn(int $uid): array => isset($targets[$uid]) ? self::pageRecord($uid, $targets[$uid]) : [],
+        );
+        $pageRepository->method('resolveShortcutPage')->willReturnCallback(
+            static function (array $page) use ($targets): array {
+                $target = $targets[$page['uid']]['shortcut'] ?? null;
+                if ($target === null || !isset($targets[$target])) {
+                    throw new ShortcutTargetPageNotFoundException('Shortcut target not accessible', 1);
+                }
+
+                if ($target === $page['uid']) {
+                    // What 13.4 throws for a loop; 14.3 throws a subclass.
+                    throw new RuntimeException('Page shortcuts were looping in uids: ' . $target, 1294587212);
+                }
+
+                return self::pageRecord($target, $targets[$target]);
+            },
+        );
+        $subject = $this->buildController($siteFinder, $pageRepository);
 
         // The builder links the page last passed to setTargetPageUid(), and a
         // page only for logged-in users only when restricted pages are linked,
@@ -317,11 +496,14 @@ final class LoginPluginControllerTest extends TestCase
         $uriBuilder->method('build')->willReturnCallback(
             static function () use ($target, $targets): string {
                 $page = $targets[$target['uid']] ?? null;
-                if ($page === null || (($page[2] ?? false) && !$target['linkRestricted'])) {
+                // Like typolink: a page the anonymous visitor may see (no
+                // restriction, or "hide at login") is linked; others only
+                // with linkAccessRestrictedPages.
+                if ($page === null || (!\in_array($page['fe_group'], ['', '0', '-1'], true) && !$target['linkRestricted'])) {
                     return '';
                 }
 
-                return $page[1];
+                return $page['uri'];
             },
         );
 
@@ -336,7 +518,7 @@ final class LoginPluginControllerTest extends TestCase
 
         $this->injectExtbaseProperties(
             $subject,
-            $this->buildExtbaseRequest('main', 'https://main.example', $languageBases),
+            $this->buildExtbaseRequest('main', $siteBase, $languageBases, 'https://main.example/page'),
             $view,
             ['settings' => $settings, 'uriBuilder' => $uriBuilder],
         );
@@ -346,9 +528,41 @@ final class LoginPluginControllerTest extends TestCase
         return $assignedVars;
     }
 
-    private function buildController(?SiteFinder $siteFinder = null): LoginPluginController
+    /**
+     * A target is [site identifier, URI typolink builds, fe_group] or an
+     * array with the keys site, uri, fe_group, doktype and shortcut.
+     *
+     * @param array<int|string, mixed> $target
+     *
+     * @return array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int}
+     */
+    private function normalizeTarget(array $target): array
     {
-        $subject = new LoginPluginController($siteFinder ?? $this->createStub(SiteFinder::class));
+        return [
+            'site' => (string) ($target['site'] ?? $target[0]),
+            'uri' => (string) ($target['uri'] ?? $target[1] ?? ''),
+            'fe_group' => (string) ($target['fe_group'] ?? $target[2] ?? ''),
+            'doktype' => (int) ($target['doktype'] ?? PageRepository::DOKTYPE_DEFAULT),
+            'shortcut' => isset($target['shortcut']) ? (int) $target['shortcut'] : null,
+        ];
+    }
+
+    /**
+     * @param array{site: string, uri: string, fe_group: string, doktype: int, shortcut: ?int} $target
+     *
+     * @return array<string, int|string>
+     */
+    private static function pageRecord(int $uid, array $target): array
+    {
+        return ['uid' => $uid, 'doktype' => $target['doktype'], 'fe_group' => $target['fe_group']];
+    }
+
+    private function buildController(?SiteFinder $siteFinder = null, ?PageRepository $pageRepository = null): LoginPluginController
+    {
+        $subject = new LoginPluginController(
+            $siteFinder ?? $this->createStub(SiteFinder::class),
+            $pageRepository ?? $this->createStub(PageRepository::class),
+        );
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
         return $subject;
@@ -357,8 +571,12 @@ final class LoginPluginControllerTest extends TestCase
     /**
      * @param list<string> $languageBases
      */
-    private function buildExtbaseRequest(string $siteIdentifier, string $baseUrl, array $languageBases = []): Request
-    {
+    private function buildExtbaseRequest(
+        string $siteIdentifier,
+        string $baseUrl,
+        array $languageBases = [],
+        ?string $requestUrl = null,
+    ): Request {
         $languages = [];
         foreach ($languageBases as $languageId => $languageBase) {
             $languages[] = new SiteLanguage($languageId + 1, 'de_DE.UTF-8', new Uri($languageBase), []);
@@ -369,7 +587,7 @@ final class LoginPluginControllerTest extends TestCase
         $site->method('getBase')->willReturn(new Uri($baseUrl));
         $site->method('getLanguages')->willReturn($languages);
 
-        $serverRequest = new ServerRequest($baseUrl . '/page', 'GET');
+        $serverRequest = new ServerRequest($requestUrl ?? $baseUrl . '/page', 'GET');
         $serverRequest = $serverRequest->withAttribute('site', $site);
         $serverRequest = $serverRequest->withAttribute(
             'extbase',

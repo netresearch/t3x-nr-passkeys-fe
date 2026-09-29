@@ -33,6 +33,14 @@ parameters:
             identifier: function.alreadyNarrowedType
             path: ../Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
+        # TYPO3 13.4 PageRepository::resolveShortcutPage() declares only
+        # ShortcutTargetPageNotFoundException, yet getPageShortcut() throws a
+        # plain \RuntimeException when shortcuts loop; 14.3 declares subclasses.
+        -
+            identifier: catch.neverThrown
+            message: '#Dead catch - RuntimeException is never thrown#'
+            path: ../Classes/Controller/Plugin/LoginPluginController.php
+            reportUnmatched: false
         -
             message: '#Call to an undefined method TYPO3\\CMS\\Frontend\\Event\\AfterCacheableContentIsGeneratedEvent::getController\(\)#'
             path: ../Classes/EventListener/InjectPasskeyBanner.php

@@ -53,13 +53,18 @@ its :guilabel:`Plugin` tab:
     The page with the password login, usually a felogin plugin. It is
     linked only when all of these hold, and ignored otherwise:
 
-    - the page belongs to the site the plugin is rendered on;
+    - the page is a standard page (doktype 1), or a shortcut that TYPO3's own
+      shortcut resolution leads to a standard page. External-URL and link
+      pages, folders, spacers, mount points and every other page type are
+      ignored, so no URL an editor types reaches the plugin;
+    - that standard page belongs to the site the plugin is rendered on;
     - TYPO3 builds a link to it for a visitor who is not logged in (not for
       a hidden or access-restricted page);
-    - that link stays on the site: a path on the current host, or an
-      ``http``/``https`` URL on the host of the site's base or of one of its
-      languages. An external-URL page or a shortcut to another host is
-      ignored even though the page itself belongs to the site.
+    - the link TYPO3 built stays on the site: a path, or an ``http``/``https``
+      URL whose scheme, host and port are those of the site's base or of one
+      of its languages. A link containing a backslash, a space or a control
+      character is refused as well, because browsers remove or reinterpret
+      those characters.
 
 ..  confval:: settings.redirectAfterLogin
 
@@ -69,12 +74,22 @@ its :guilabel:`Plugin` tab:
     The page a successful passkey login leads to: the plugin's hidden login
     form posts to it, so the one-time login token only ever goes to a URL
     that passed these checks. The rules of
-    :confval:`settings.passwordLoginPage` apply, with one difference: a
-    page only logged-in visitors may see is linked, because the visitor is
-    logged in when the form arrives. Hosts are compared, not sites, so a
-    second site on one of this site's hosts counts as on-site. Where felogin
-    sits on the same page, the login is completed through felogin's form
-    and felogin's own redirect settings apply instead.
+    :confval:`settings.passwordLoginPage` apply, with one difference in
+    access: the page may be unrestricted or restricted to "Show at any
+    login" (``fe_group`` ``-2``), which is linked although the anonymous
+    visitor cannot see it yet. A page for a user group, "Hide at login" or a
+    combination is ignored, because the login does not necessarily grant it.
+    Where felogin sits on the same page, the login is completed through
+    felogin's form and felogin's own redirect settings apply instead.
+
+    ..  note::
+
+        TYPO3 counts a frontend user as logged in for "Show at any login"
+        only when the user belongs to at least one frontend user group
+        (``FrontendUserAuthentication::createUserAspect()`` in TYPO3 13.4 and
+        14.3). A user without a group who logs in with a passkey reaches
+        such a redirect page with "403 Access Denied". Put every user in a
+        group, or pick an unrestricted page.
 
 ..  confval:: settings.cssClass
 
