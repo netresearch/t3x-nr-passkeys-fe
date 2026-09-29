@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use ArrayObject;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -19,6 +20,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -448,35 +450,42 @@ final class LoginControllerTest extends TestCase
             ->withParsedBody([]);
     }
 
+    /**
+     * Let the rate limiter record which address each endpoint was charged for,
+     * then stop the request as an exceeded limit would.
+     *
+     * @return ArrayObject<int, string> "endpoint@address" per call
+     */
+    private function recordRateLimitedAddresses(): ArrayObject
+    {
+        $addresses = new ArrayObject();
+        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
+            static function (string $endpoint, string $ip) use ($addresses): never {
+                $addresses[] = $endpoint . '@' . $ip;
+                throw new RateLimitExceeded();
+            },
+        );
+
+        return $addresses;
+    }
+
     #[Test]
     public function optionsActionRateLimitsTheAddressFromTheNormalizedParams(): void
     {
-        $addresses = [];
-        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
-            static function (string $endpoint, string $ip) use (&$addresses): never {
-                $addresses[] = $endpoint . '@' . $ip;
-                throw new RuntimeException('stop here');
-            },
-        );
+        $addresses = $this->recordRateLimitedAddresses();
 
         // The server param differs on purpose: only the attribute may count.
         $request = $this->requestFrom(['REMOTE_ADDR' => '192.0.2.1'])
             ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.8'], [], '', ''));
         $this->subject->optionsAction($request);
 
-        self::assertSame(['fe_login_options@203.0.113.8'], $addresses);
+        self::assertSame(['fe_login_options@203.0.113.8'], $addresses->getArrayCopy());
     }
 
     #[Test]
     public function verifyActionRateLimitsTheAddressFromTheNormalizedParams(): void
     {
-        $addresses = [];
-        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
-            static function (string $endpoint, string $ip) use (&$addresses): never {
-                $addresses[] = $endpoint . '@' . $ip;
-                throw new RuntimeException('stop here');
-            },
-        );
+        $addresses = $this->recordRateLimitedAddresses();
 
         // The server param differs on purpose: only the attribute may count.
         $request = $this->requestFrom(['REMOTE_ADDR' => '192.0.2.1'])
@@ -485,8 +494,7 @@ final class LoginControllerTest extends TestCase
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(429, $response->getStatusCode());
-
-        self::assertSame(['fe_login_verify@203.0.113.9'], $addresses);
+        self::assertSame(['fe_login_verify@203.0.113.9'], $addresses->getArrayCopy());
     }
 
     #[Test]
@@ -494,13 +502,7 @@ final class LoginControllerTest extends TestCase
     {
         // A request that did not pass the middleware: the address is computed
         // from the server params with the SYS configuration, as core does.
-        $addresses = [];
-        $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
-            static function (string $endpoint, string $ip) use (&$addresses): never {
-                $addresses[] = $endpoint . '@' . $ip;
-                throw new RuntimeException('stop here');
-            },
-        );
+        $addresses = $this->recordRateLimitedAddresses();
         $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP'] = '10.0.0.1';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyHeaderMultiValue'] = 'first';
@@ -517,6 +519,6 @@ final class LoginControllerTest extends TestCase
             }
         }
 
-        self::assertSame(['fe_login_options@198.51.100.4'], $addresses);
+        self::assertSame(['fe_login_options@198.51.100.4'], $addresses->getArrayCopy());
     }
 }

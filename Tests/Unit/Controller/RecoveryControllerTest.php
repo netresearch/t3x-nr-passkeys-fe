@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
@@ -220,7 +221,7 @@ final class RecoveryControllerTest extends TestCase
         $this->rateLimiterService->method('checkLockout')->willReturnCallback(
             static function (string $username, string $ip) use (&$calls): never {
                 $calls[] = 'lockout:' . $username . '@' . $ip;
-                throw new RuntimeException('stop here');
+                throw new RateLimitExceeded();
             },
         );
 
