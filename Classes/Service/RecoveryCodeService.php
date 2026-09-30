@@ -45,7 +45,7 @@ final readonly class RecoveryCodeService
      * no credential. SAST tooling flagging this as "password hash disclosure"
      * is a false positive on the constant-time-padding pattern.
      */
-    // nosemgrep: secrets:S8215
+    // nosemgrep: secrets:S8215, generic.secrets.security.detected-bcrypt-hash.detected-bcrypt-hash
     private const DUMMY_HASH = '$2y$12$000000000000000000000uGBbLJHBfROXxjMI.RxFKYbIpkYl/6Gy';
 
     public function __construct(
