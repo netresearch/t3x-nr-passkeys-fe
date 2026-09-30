@@ -26,7 +26,7 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `js-tests.yml` | push main, PR, merge_group, dispatch | Vitest suite (`npm run test:js`) via the shared `node-test.yml`; coverage to Codecov flag `js` |
 | `harness-verify.yml` | push main, PR, dispatch | AGENTS.md/docs consistency (`Build/Scripts/verify-harness.sh`) |
 | `security.yml` | push, PR, schedule | TYPO3 security checks (typo3-ci-workflows `security.yml`) |
-| `codeql.yml` | push, PR, schedule | CodeQL analysis (JavaScript/TypeScript and workflow files; CodeQL has no PHP analyser) |
+| `codeql.yml` | push, PR, schedule | CodeQL analysis of the workflow files only (the reusable's default language `actions`); JavaScript/TypeScript is analysed by the `codeql` job in `checks.yml` (`languages: auto`); CodeQL has no PHP analyser |
 | `scorecard.yml` | push, schedule | OpenSSF Security Scorecard |
 | `dependency-review.yml` | pull_request | Dependency vulnerability review |
 | `pr-quality.yml` | pull_request | PR quality gates |
