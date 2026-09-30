@@ -13,7 +13,7 @@ integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
 
 ## Setup
 
-- PHP suites: `composer install` is enough for unit/fuzz; functional needs MySQL (CI or DDEV).
+- PHP suites: `composer install` is enough for unit/fuzz; functional needs MySQL, which `Build/Scripts/runTests.sh -s functional -d mysql` starts in a container.
 - JS/E2E suites: `npm install` at the repo root (`vitest.config.js` lives there).
 - E2E needs no DDEV: `Build/Scripts/runTests.sh -s e2e` installs its own TYPO3 in containers.
 
@@ -22,7 +22,7 @@ integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
 ```
 Tests/
   Unit/                  -> PHPUnit unit tests (fast, no DB, no TYPO3 bootstrap)
-  Functional/            -> PHPUnit functional tests (require MySQL, CI only)
+  Functional/            -> PHPUnit functional tests (require MySQL)
   Integration/           -> Multi-service tests against a real database; part of
                             the 'functional' testsuite, not a separate one
   Fuzz/                  -> Property-based fuzz tests (eris/eris, PHPUnit testsuite)
@@ -45,8 +45,8 @@ composer ci:test:php:unit
 # Fuzz tests (PHPUnit testsuite 'fuzz')
 composer ci:test:php:fuzz
 
-# Functional + integration tests (requires MySQL -- run in CI or DDEV)
-composer ci:test:php:functional
+# Functional + integration tests on MySQL (the runner starts it in a container)
+Build/Scripts/runTests.sh -s functional -d mysql
 
 # All PHP tests (unit + functional)
 composer ci:test:php:all
@@ -84,7 +84,7 @@ composer ci:mutation
 
 ### Functional and Integration Tests
 - Require the TYPO3 testing framework bootstrapped with MySQL
-- Run only in CI -- do not assume local MySQL availability
+- Run locally with `Build/Scripts/runTests.sh -s functional -d mysql`; no MySQL installation or DDEV is needed
 - Use `DatabaseConnectionTrait` for database access
 - Isolate each test with fixture loading / teardown
 - Extend `AbstractPasskeyFunctionalTestCase`, which carries the extension lists;
@@ -158,7 +158,7 @@ composer ci:mutation
 
 ## When stuck
 - Flaky fuzz test: re-run once; if still failing, treat as a real finding.
-- Functional tests failing locally: they need MySQL — run them in CI or DDEV, not on SQLite.
+- Functional tests failing locally: run them on MySQL (`Build/Scripts/runTests.sh -s functional -d mysql`), not on SQLite.
 - CacheManager errors in unit tests: register the stub in `setUp()` (see Conventions).
 
 ## Boundaries
