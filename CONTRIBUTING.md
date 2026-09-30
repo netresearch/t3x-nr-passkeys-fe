@@ -36,7 +36,7 @@ These dependency and static-security checks run on every pull request
 - **Dependency review** blocks a pull request that adds or changes a dependency with a known vulnerability of severity high or critical.
 - **Composer Audit** fails on any known vulnerability in the resolved PHP dependencies.
 - **PHP License Audit** fails when a PHP dependency is under SSPL or BSL.
-- **Opengrep** (SAST, `--config auto --error --severity WARNING`) fails on findings of severity WARNING or higher.
+- **Opengrep** (SAST, `--config auto --error --severity WARNING`) fails on any finding it reports.
 - **CodeQL** analyses the JavaScript and TypeScript code and the workflow files and reports alerts to code scanning; CodeQL has no PHP analyser, so the PHP code is scanned by Opengrep only.
 - **zizmor** audits the workflow files and reports to code scanning.
 - **Betterleaks** fails when a secret is committed.
