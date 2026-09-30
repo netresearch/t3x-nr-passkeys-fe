@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 
 import { browserBaseUrl, hostResolverRules } from './Tests/E2E/instance-address';

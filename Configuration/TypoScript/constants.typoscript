@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 plugin.tx_nrpasskeysfe {
     settings {
         # cat=plugin.tx_nrpasskeysfe//a; type=boolean; label=Discoverable login: Log in without a username, the passkey identifies the user. Used by login plugins whose FlexForm says "Use the site setting" and by the felogin integration. Off shows a username field.

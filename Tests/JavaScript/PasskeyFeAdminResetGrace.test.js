@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 /**
  * Tests for the "Reset grace period" button in PasskeyFeAdmin.js (backend
  * module): after a confirmation it posts the looked-up user to its route and

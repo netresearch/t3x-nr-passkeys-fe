@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 /**
  * Tests for the enforcement select in PasskeyFeAdmin.js (backend module):
  * a change posts the group and the level to its route and reports the

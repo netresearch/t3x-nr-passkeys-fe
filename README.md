@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 [![CI](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-nr-passkeys-fe/actions/workflows/ci.yml)
 [![PHPStan Level 10](https://img.shields.io/badge/PHPStan-Level%2010-brightgreen)](https://phpstan.org/)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL_v2-blue.svg)](https://www.gnu.org/licenses/gpl-2.0)

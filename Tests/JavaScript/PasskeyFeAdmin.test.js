@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 /**
  * Tests for PasskeyFeAdmin.js (backend module): the credential table must
  * paint status with core badge classes and mute revoked rows on the leaf

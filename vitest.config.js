@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 

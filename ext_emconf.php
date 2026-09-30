@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 // No declare() here — TER requires plain PHP in ext_emconf.php.
 
 $EM_CONF[$_EXTKEY] = [
