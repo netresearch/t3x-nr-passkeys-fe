@@ -11,7 +11,7 @@ responsibly.
 
 Report it through GitHub's private vulnerability reporting instead:
 [Report a vulnerability](https://github.com/netresearch/t3x-nr-passkeys-fe/security/advisories/new).
-The report is visible only to you, the repository admins, the organisation owners and the organisation's security managers.
+The report is visible only to you, the repository admins, the organisation owners, the organisation's security managers and anyone they add to the report.
 
 ## What to Include
 
