@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 /**
  * Tests for the shared helpers in the SHIPPED PasskeyUtils.js
  * (window.NrPasskeysFe): base64url conversion, DOM helpers, origin check and

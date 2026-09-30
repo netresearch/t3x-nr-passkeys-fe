@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 
 ## Description: Install all supported TYPO3 versions (13, 14) with nr_passkeys_fe extension
 ## Usage: install-all

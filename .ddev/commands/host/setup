@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 
 ## Description: Complete setup - render docs, install all TYPO3 versions with extension
 ## Usage: setup

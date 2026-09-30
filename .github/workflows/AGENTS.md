@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 <!-- FOR AI AGENTS - Scoped to .github/workflows/ -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
 <!-- Last updated: 2026-08-19 -->
@@ -24,14 +26,14 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `js-tests.yml` | push main, PR, merge_group, dispatch | Vitest suite (`npm run test:js`) via the shared `node-test.yml`; coverage to Codecov flag `js` |
 | `harness-verify.yml` | push main, PR, dispatch | AGENTS.md/docs consistency (`Build/Scripts/verify-harness.sh`) |
 | `security.yml` | push, PR, schedule | TYPO3 security checks (typo3-ci-workflows `security.yml`) |
-| `codeql.yml` | push, PR, schedule | CodeQL analysis (PHP + JS) |
+| `codeql.yml` | push, PR, schedule | CodeQL analysis of the workflow files only (the reusable's default language `actions`); JavaScript/TypeScript is analysed by the `codeql` job in `checks.yml` (`languages: auto`); CodeQL has no PHP analyser |
 | `scorecard.yml` | push, schedule | OpenSSF Security Scorecard |
 | `dependency-review.yml` | pull_request | Dependency vulnerability review |
 | `pr-quality.yml` | pull_request | PR quality gates |
 | `labeler.yml` | pull_request_target | Auto-label PRs by path |
 | `auto-merge-deps.yml` | pull_request_target | Auto-merge minor/patch dependency PRs |
 | `community.yml` | schedule, issues, PR target | Stale/lock/greetings automation |
-| `release.yml` | push tag `v*` | GitHub release with attestations |
+| `release.yml` | push tag `v*` | GitHub release with SBOM, signatures and attestations; also publishes to TER (typo3-ci-workflows `release-typo3-extension.yml`, `skip-ter` defaults to false) |
 | `ter-publish.yml` | push tag `v*` | Publish to TER (typo3-ci-workflows `publish-to-ter.yml`) |
 
 ## Build & test pipeline (ci.yml)
@@ -57,6 +59,9 @@ materialize on merge_group refs). Any job added there MUST also be added to
 - Secrets: `TYPO3_TER_ACCESS_TOKEN`, `CODECOV_TOKEN` (set in repo secrets)
 - Tag pushes (`v*`) trigger both `release.yml` and `ter-publish.yml`; the TER
   version is the tag without the `v` prefix and must match `ext_emconf.php`
+- The release commit of a major release also moves the supported line in
+  `SECURITY.md` to the new major; `Tests/Unit/SecurityPolicyTest.php` fails
+  otherwise
 
 ## Security
 

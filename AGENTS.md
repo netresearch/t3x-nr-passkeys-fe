@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
 <!-- Last updated: 2026-08-19 | Last verified: 2026-08-19 -->
@@ -14,7 +16,7 @@ Includes felogin integration, self-service management, recovery codes, per-site 
 enforcement (Off → Encourage → Required → Enforced), post-login enrollment interstitial,
 backend admin module, and 7 PSR-14 events.
 
-Requires ``netresearch/nr-passkeys-be`` ^0.12 as a Composer dependency (reuses WebAuthn
+Requires ``netresearch/nr-passkeys-be`` ^1.0 as a Composer dependency (reuses WebAuthn
 ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emconf.php`.
 
 | Key | Value |
@@ -51,7 +53,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 | Unit + functional | `composer ci:test:php:all` | 35s |
 | JS tests | `npm run test:js` | 2s |
 | E2E tests | `Build/Scripts/runTests.sh -s e2e` | 3m |
-| Mutation testing | `composer ci:mutation` | 60s |
+| Mutation testing | `composer ci:mutation` | 7m |
 | Local CI (no DB) | `make ci` | 25s |
 | DDEV full setup | `make up` | 5m |
 
@@ -101,10 +103,10 @@ Makefile                     -> make up, make ci, make help
 | eID controller returns JSON | Use `JsonBodyTrait`, PSR-7 JsonResponse |
 | Database access | Use QueryBuilder, never raw SQL |
 | Testing final classes | Use `dg/bypass-finals` + PHPUnit test doubles |
-| Functional test needs DB | Only run in CI (MySQL required) |
+| Functional test needs DB | Run `Build/Scripts/runTests.sh -s functional -d mysql` locally (MySQL in a container, no DDEV); CI runs the suite on MySQL |
 | Enforcement logic | Read site config first, then group overrides, dispatch event |
 | Recovery code verification | Always use constant-time comparison (hash_equals) |
-| Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together |
+| Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together; a major release also moves the supported line in `SECURITY.md` (`Tests/Unit/SecurityPolicyTest.php` fails otherwise) |
 | Adding admin API endpoint | Add to eID dispatcher routing, document in DeveloperGuide/Api.rst |
 | New PSR-14 event | Add to `Classes/Event/`, dispatch in relevant service/controller |
 | Passkey/recovery login via eID | eID verifies, returns token, JS submits token via felogin form, auth service reads token from cache |

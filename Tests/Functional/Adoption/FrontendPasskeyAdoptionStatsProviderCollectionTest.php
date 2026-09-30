@@ -81,6 +81,9 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends AbstractP
         // sorted by audienceKey (backend before frontend).
         self::assertCount(2, $chartData['datasets']);
         // Frontend segment: 2 users with passkeys, 5 - 2 = 3 without.
-        self::assertSame([2, 3], $chartData['datasets'][1]['data']);
+        // nr-passkeys-be 1.0.1 fills the slots of the other audiences with
+        // zeros ([0, 0, 2, 3]); 1.0.0 returned the pair alone. The pair is
+        // the last two entries of the frontend dataset in both.
+        self::assertSame([2, 3], \array_slice($chartData['datasets'][1]['data'], -2));
     }
 }

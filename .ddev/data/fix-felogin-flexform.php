@@ -4,6 +4,9 @@
  * Sets the felogin FlexForm pi_flexform with proper XML (PDO avoids shell quote stripping).
  *
  * Usage: php fix-felogin-flexform.php <db_name>
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
  */
 
 $dbName = $argv[1] ?? 'v13';

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 <!-- FOR AI AGENTS - Scoped to Configuration/ -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
 <!-- Last updated: 2026-08-19 -->
@@ -18,7 +20,7 @@ TYPO3 cache flush in the consuming installation.
 
 ## Tests
 
-- TCA is covered by `Tests/Functional/Configuration/TcaTest.php` — run `composer ci:test:php:functional` (MySQL, CI/DDEV only).
+- TCA is covered by `Tests/Functional/Configuration/TcaTest.php` — run `Build/Scripts/runTests.sh -s functional -d mysql` (MySQL in a container; CI runs the same suite on MySQL).
 - DI wiring errors surface in unit + functional bootstraps: `composer ci:test:php:all`.
 
 ## Structure

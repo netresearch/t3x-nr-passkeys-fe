@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 #
 # Columns that TCA auto-schema CANNOT derive:
 # - varbinary, blob, char(36): no TCA type maps to these SQL types

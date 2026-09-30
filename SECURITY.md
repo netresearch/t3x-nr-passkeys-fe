@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
 # Security Policy
 
 ## Reporting a Vulnerability
@@ -7,13 +9,9 @@ responsibly.
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, please report vulnerabilities through one of these channels:
-
-1. **GitHub Security Advisories** (preferred):
-   [Report a vulnerability](https://github.com/netresearch/t3x-nr-passkeys-fe/security/advisories/new)
-
-2. **Email**: Send details to the maintainers via the contact information in
-   [composer.json](composer.json).
+Report it through GitHub's private vulnerability reporting instead:
+[Report a vulnerability](https://github.com/netresearch/t3x-nr-passkeys-fe/security/advisories/new).
+The report is visible only to you, the repository admins, the organisation owners, the organisation's security managers and anyone they add to the report.
 
 ## What to Include
 
@@ -30,9 +28,28 @@ Instead, please report vulnerabilities through one of these channels:
 
 ## Supported Versions
 
-| Version | Supported          |
-|---------|--------------------|
-| 0.x     | :white_check_mark: |
+Only the latest major release line receives bug fixes and security fixes. A
+fix ships as the next patch or minor release from `main`; no fix is backported
+to an older release line.
+
+| Version | Bug fixes          | Security fixes     |
+|---------|--------------------|--------------------|
+| 2.x     | :white_check_mark: | :white_check_mark: |
+| < 2.0   | :x:                | :x:                |
+
+- **End of support:** a major release line `N.x` stops receiving bug fixes and
+  security fixes on the day `(N+1).0.0` is released. From then on, the fix for
+  a vulnerability is in the newest release only, and users of an older line
+  upgrade to it. The 1.x line ended with the release of 2.0.0 on 2026-09-30.
+- **Upgrading:** the [changelog](Documentation/Changelog/Index.rst) lists the
+  breaking changes of each release with the upgrade step they need.
+- **Getting support:** questions and bug reports go to the
+  [issue tracker](https://github.com/netresearch/t3x-nr-passkeys-fe/issues);
+  vulnerabilities are reported privately as described above.
+
+The table is updated by the release commit of every major release;
+`Tests/Unit/SecurityPolicyTest.php` fails when it names a line other than the
+one `ext_emconf.php` is on.
 
 ## Security Best Practices
 

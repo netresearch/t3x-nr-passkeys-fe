@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: GPL-2.0-or-later
+-- SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 -- Demo pages and frontend user for nr_passkeys_fe development environment
 -- This file uses @DEMO_PID@ as placeholder for the parent page ID.
 -- The install scripts substitute it at import time.

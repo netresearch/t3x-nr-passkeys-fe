@@ -1,3 +1,8 @@
+/*
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 /**
  * Tests for the button flow of the SHIPPED Resources/Public/JavaScript/PasskeyLogin.js.
  *

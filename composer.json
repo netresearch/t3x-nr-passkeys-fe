@@ -83,7 +83,10 @@
         "ci:test:php:unit": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.xml --testsuite unit \"$@\"; else ./Build/Scripts/runTests.sh -s unit \"$@\"; fi' --",
         "ci:test:php:functional": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.functional.xml \"$@\"; else ./Build/Scripts/runTests.sh -s functional \"$@\"; fi' --",
         "ci:test:php:fuzz": "sh -c 'if [ -f /.dockerenv ] || [ -n \"${CI:-}\" ]; then phpunit -c Build/phpunit.xml --testsuite fuzz \"$@\"; else ./Build/Scripts/runTests.sh -s fuzz \"$@\"; fi' --",
-        "ci:mutation": "Build/Scripts/runTests.sh -s mutation",
+        "ci:mutation": [
+            "Composer\\Config::disableProcessTimeout",
+            "Build/Scripts/runTests.sh -s mutation"
+        ],
         "ci:test:php:all": [
             "@ci:test:php:unit",
             "@ci:test:php:functional"
