@@ -53,7 +53,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 | Unit + functional | `composer ci:test:php:all` | 35s |
 | JS tests | `npm run test:js` | 2s |
 | E2E tests | `Build/Scripts/runTests.sh -s e2e` | 3m |
-| Mutation testing | `composer ci:mutation` | 60s |
+| Mutation testing | `composer ci:mutation` | 7m |
 | Local CI (no DB) | `make ci` | 25s |
 | DDEV full setup | `make up` | 5m |
 
