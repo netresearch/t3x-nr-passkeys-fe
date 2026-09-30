@@ -41,9 +41,10 @@ These dependency and static-security checks run on every pull request
 - **zizmor** audits the workflow files and reports to code scanning.
 - **Betterleaks** fails when a secret is committed.
 - **PR quality gate** (`pr-quality.yml`) runs a size check on non-draft pull requests and the solo-maintainer auto-approval for non-draft pull requests that an owner, member or collaborator opens from a branch of this repository.
+- **Fuzz tests** (`fuzz`) run the fuzz test suite in `Tests/Fuzz/`.
 - **All security checks**, the aggregate job, fails unless every one of these jobs succeeded or was skipped.
 
-The other workflows that run on pull requests: `ci.yml` (lint, code style, PHPStan, Rector, unit and functional tests, and the aggregate `All CI checks` job, which fails unless every CI job succeeded or was skipped), `check-template-drift.yml` (Template drift: compares the `.github/` files managed by the organisation's typo3-extension template with that template), `js-tests.yml` (Vitest), `e2e.yml` (Playwright), `harness-verify.yml`, and the standalone callers `security.yml`, `codeql.yml`, `dependency-review.yml` and `pr-quality.yml` of the same reusable workflows. `docs.yml` runs when `Documentation/**` changes.
+The other workflows triggered by the `pull_request` event: `ci.yml` (lint, code style, PHPStan, Rector, unit and functional tests, the documentation render, and the aggregate `All CI checks` job, which fails unless every CI job succeeded or was skipped), `check-template-drift.yml` (Template drift: compares the `.github/` files managed by the organisation's typo3-extension template with that template), `js-tests.yml` (Vitest), `e2e.yml` (Playwright), `harness-verify.yml`, and the standalone callers `security.yml`, `codeql.yml`, `dependency-review.yml` and `pr-quality.yml` of the same reusable workflows. `docs.yml` runs when `Documentation/**` changes.
 
 The only CI secrets this repository uses are `TYPO3_TER_ACCESS_TOKEN` (TER
 publishing on a release tag), `CODECOV_TOKEN` (coverage upload) and the merge
