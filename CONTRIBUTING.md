@@ -36,10 +36,14 @@ These dependency and static-security checks run on every pull request
 - **Dependency review** blocks a pull request that adds or changes a dependency with a known vulnerability of severity high or critical.
 - **Composer Audit** fails on any known vulnerability in the resolved PHP dependencies.
 - **PHP License Audit** fails when the `composer licenses` output matches its forbidden-licence pattern (default `"(SSPL|BSL)"`).
-- **Opengrep** (SAST, `--config auto --error --severity WARNING`) fails on any finding it reports.
+- **Opengrep** (SAST) scans the code; which of its findings block a pull request is set by the organisation's [static analysis rule](https://github.com/netresearch/.github/blob/main/SECURITY.md#static-analysis-sast).
 - **CodeQL** analyses the JavaScript and TypeScript code and the workflow files and reports alerts to code scanning; CodeQL has no PHP analyser, so the PHP code is scanned by Opengrep only.
 - **zizmor** audits the workflow files and reports to code scanning.
 - **Betterleaks** fails when a secret is committed.
+- **PR quality gate** (`pr-quality.yml`) runs a size check on non-draft pull requests and the solo-maintainer auto-approval for pull requests from this repository.
+- **All security checks**, the aggregate job, fails unless every one of these jobs succeeded or was skipped.
+
+The other workflows that run on pull requests: `ci.yml` (lint, code style, PHPStan, Rector, unit and functional tests, and the aggregate `All CI checks` job, which fails unless every CI job succeeded or was skipped), `check-template-drift.yml` (Template drift: compares the `.github/` files managed by the organisation's typo3-extension template with that template), `js-tests.yml` (Vitest), `e2e.yml` (Playwright), `harness-verify.yml`, and the standalone callers `security.yml`, `codeql.yml`, `dependency-review.yml` and `pr-quality.yml` of the same reusable workflows. `docs.yml` runs when `Documentation/**` changes.
 
 The only CI secrets this repository uses are `TYPO3_TER_ACCESS_TOKEN` (TER
 publishing on a release tag), `CODECOV_TOKEN` (coverage upload) and the merge
