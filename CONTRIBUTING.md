@@ -40,7 +40,7 @@ These dependency and static-security checks run on every pull request
 - **CodeQL** analyses the JavaScript and TypeScript code and the workflow files and reports alerts to code scanning; CodeQL has no PHP analyser, so the PHP code is scanned by Opengrep only.
 - **zizmor** audits the workflow files and reports to code scanning.
 - **Betterleaks** fails when a secret is committed.
-- **PR quality gate** (`pr-quality.yml`) runs a size check on non-draft pull requests and the solo-maintainer auto-approval for pull requests from this repository.
+- **PR quality gate** (`pr-quality.yml`) runs a size check on non-draft pull requests and the solo-maintainer auto-approval for non-draft pull requests that an owner, member or collaborator opens from a branch of this repository.
 - **All security checks**, the aggregate job, fails unless every one of these jobs succeeded or was skipped.
 
 The other workflows that run on pull requests: `ci.yml` (lint, code style, PHPStan, Rector, unit and functional tests, and the aggregate `All CI checks` job, which fails unless every CI job succeeded or was skipped), `check-template-drift.yml` (Template drift: compares the `.github/` files managed by the organisation's typo3-extension template with that template), `js-tests.yml` (Vitest), `e2e.yml` (Playwright), `harness-verify.yml`, and the standalone callers `security.yml`, `codeql.yml`, `dependency-review.yml` and `pr-quality.yml` of the same reusable workflows. `docs.yml` runs when `Documentation/**` changes.
