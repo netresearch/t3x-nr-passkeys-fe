@@ -24,14 +24,14 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `js-tests.yml` | push main, PR, merge_group, dispatch | Vitest suite (`npm run test:js`) via the shared `node-test.yml`; coverage to Codecov flag `js` |
 | `harness-verify.yml` | push main, PR, dispatch | AGENTS.md/docs consistency (`Build/Scripts/verify-harness.sh`) |
 | `security.yml` | push, PR, schedule | TYPO3 security checks (typo3-ci-workflows `security.yml`) |
-| `codeql.yml` | push, PR, schedule | CodeQL analysis (PHP + JS) |
+| `codeql.yml` | push, PR, schedule | CodeQL analysis (JavaScript/TypeScript and workflow files; CodeQL has no PHP analyser) |
 | `scorecard.yml` | push, schedule | OpenSSF Security Scorecard |
 | `dependency-review.yml` | pull_request | Dependency vulnerability review |
 | `pr-quality.yml` | pull_request | PR quality gates |
 | `labeler.yml` | pull_request_target | Auto-label PRs by path |
 | `auto-merge-deps.yml` | pull_request_target | Auto-merge minor/patch dependency PRs |
 | `community.yml` | schedule, issues, PR target | Stale/lock/greetings automation |
-| `release.yml` | push tag `v*` | GitHub release with attestations |
+| `release.yml` | push tag `v*` | GitHub release with SBOM, signatures and attestations; also publishes to TER (typo3-ci-workflows `release-typo3-extension.yml`, `skip-ter` defaults to false) |
 | `ter-publish.yml` | push tag `v*` | Publish to TER (typo3-ci-workflows `publish-to-ter.yml`) |
 
 ## Build & test pipeline (ci.yml)
