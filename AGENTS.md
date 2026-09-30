@@ -14,7 +14,7 @@ Includes felogin integration, self-service management, recovery codes, per-site 
 enforcement (Off → Encourage → Required → Enforced), post-login enrollment interstitial,
 backend admin module, and 7 PSR-14 events.
 
-Requires ``netresearch/nr-passkeys-be`` ^0.12 as a Composer dependency (reuses WebAuthn
+Requires ``netresearch/nr-passkeys-be`` ^1.0 as a Composer dependency (reuses WebAuthn
 ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emconf.php`.
 
 | Key | Value |

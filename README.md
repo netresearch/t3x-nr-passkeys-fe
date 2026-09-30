@@ -31,7 +31,7 @@ required.
 
 - PHP 8.2+
 - TYPO3 v13.4 LTS or v14.3 LTS
-- `netresearch/nr-passkeys-be` ^0.6 (installed automatically)
+- `netresearch/nr-passkeys-be` ^1.0 (installed automatically)
 - HTTPS (required by WebAuthn; `localhost` works for development)
 
 ### DDEV Quick Start
