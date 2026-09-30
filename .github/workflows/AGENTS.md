@@ -57,6 +57,9 @@ materialize on merge_group refs). Any job added there MUST also be added to
 - Secrets: `TYPO3_TER_ACCESS_TOKEN`, `CODECOV_TOKEN` (set in repo secrets)
 - Tag pushes (`v*`) trigger both `release.yml` and `ter-publish.yml`; the TER
   version is the tag without the `v` prefix and must match `ext_emconf.php`
+- The release commit of a major release also moves the supported line in
+  `SECURITY.md` to the new major; `Tests/Unit/SecurityPolicyTest.php` fails
+  otherwise
 
 ## Security
 

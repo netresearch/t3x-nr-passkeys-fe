@@ -104,7 +104,7 @@ Makefile                     -> make up, make ci, make help
 | Functional test needs DB | Only run in CI (MySQL required) |
 | Enforcement logic | Read site config first, then group overrides, dispatch event |
 | Recovery code verification | Always use constant-time comparison (hash_equals) |
-| Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together |
+| Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together; a major release also moves the supported line in `SECURITY.md` (`Tests/Unit/SecurityPolicyTest.php` fails otherwise) |
 | Adding admin API endpoint | Add to eID dispatcher routing, document in DeveloperGuide/Api.rst |
 | New PSR-14 event | Add to `Classes/Event/`, dispatch in relevant service/controller |
 | Passkey/recovery login via eID | eID verifies, returns token, JS submits token via felogin form, auth service reads token from cache |
