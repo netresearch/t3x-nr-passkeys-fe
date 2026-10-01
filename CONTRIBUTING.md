@@ -35,7 +35,7 @@ These dependency and static-security checks run on every pull request
 
 - **Dependency review** blocks a pull request that adds or changes a dependency with a known vulnerability of severity high or critical.
 - **Composer Audit** fails on any known vulnerability in the resolved PHP dependencies.
-- **PHP License Audit** fails when the `composer licenses` output matches its forbidden-licence pattern (default `"(SSPL|BSL)"`).
+- **PHP License Audit** fails when the `composer licenses` output matches its forbidden-licence pattern, which by default refuses `SSPL`, `BSL` and `BUSL` and every `SSPL-` or `BUSL-` identifier of any version (`BSL-1.0` passes).
 - **Opengrep** (SAST) scans the code; which of its findings block a pull request is set by the organisation's [static analysis rule](https://github.com/netresearch/.github/blob/main/SECURITY.md#static-analysis-sast).
 - **CodeQL** analyses the JavaScript and TypeScript code and the workflow files and reports alerts to code scanning; CodeQL has no PHP analyser, so the PHP code is scanned by Opengrep only.
 - **zizmor** audits the workflow files and reports to code scanning.
