@@ -8,7 +8,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/12178/badge)](https://www.bestpractices.dev/en/projects/12178)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
-# Passkeys Frontend Authentication
+# Passkeys Frontend Authentication for TYPO3
 
 TYPO3 extension for passwordless frontend authentication via WebAuthn/FIDO2 Passkeys.
 Enables ``fe_users`` to log in with TouchID, FaceID, YubiKey, or Windows Hello -- no password

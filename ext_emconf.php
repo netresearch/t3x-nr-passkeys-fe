@@ -9,7 +9,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Passkeys Frontend Authentication',
-    'description' => 'Passkey-first TYPO3 frontend authentication for fe_users (WebAuthn/FIDO2). Enables passwordless login with TouchID, FaceID, YubiKey, Windows Hello. By Netresearch.',
+    'description' => 'Passkey-first frontend login for fe_users (WebAuthn/FIDO2): passwordless sign-in with Touch ID, Face ID, YubiKey or Windows Hello.',
     'category' => 'fe',
     'author' => 'Netresearch DTT GmbH',
     'author_email' => '',
