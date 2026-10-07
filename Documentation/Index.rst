@@ -3,9 +3,9 @@
 
 ..  include:: Includes.rst.txt
 
-=====================================
+================================
 Passkeys Frontend Authentication
-=====================================
+================================
 
 :Extension key:
     nr_passkeys_fe
