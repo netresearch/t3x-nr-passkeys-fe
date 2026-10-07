@@ -34,7 +34,6 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `auto-merge-deps.yml` | pull_request_target | Auto-merge minor/patch dependency PRs |
 | `community.yml` | schedule, issues, PR target | Stale/lock/greetings automation |
 | `release.yml` | push tag `v*` | GitHub release with SBOM, signatures and attestations; also publishes to TER (typo3-ci-workflows `release-typo3-extension.yml`, `skip-ter` defaults to false) |
-| `ter-publish.yml` | push tag `v*` | Publish to TER (typo3-ci-workflows `publish-to-ter.yml`) |
 
 ## Build & test pipeline (ci.yml)
 
@@ -57,8 +56,9 @@ materialize on merge_group refs). Any job added there MUST also be added to
 - Use `fail_level: error` for all reviewdog-based linting actions
 - Do NOT use `--no-verify` in any workflow step
 - Secrets: `TYPO3_TER_ACCESS_TOKEN`, `CODECOV_TOKEN` (set in repo secrets)
-- Tag pushes (`v*`) trigger both `release.yml` and `ter-publish.yml`; the TER
-  version is the tag without the `v` prefix and must match `ext_emconf.php`
+- Tag pushes (`v*`) trigger `release.yml` only; it publishes to TER after the
+  GitHub release is built and signed. The TER version is the tag without the
+  `v` prefix and must match `ext_emconf.php`
 - The release commit of a major release also moves the supported line in
   `SECURITY.md` to the new major; `Tests/Unit/SecurityPolicyTest.php` fails
   otherwise
