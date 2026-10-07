@@ -23,7 +23,7 @@ EventListener — enforced by PHPat (see `Tests/Architecture/` and `docs/ARCHITE
 
 - After every change here: `composer ci:test:php:cgl` + `composer ci:test:php:phpstan` (level 10).
 - Unit tests: `composer ci:test:php:unit` (includes the PHPat architecture rules via PHPStan).
-- DB-touching code (repositories, upgrade wizards) needs functional tests: `Build/Scripts/runTests.sh -s functional -d mysql` (MySQL in a container; CI runs the same suite on MySQL).
+- DB-touching code (repositories, upgrade wizards) needs functional tests: `composer ci:test:php:functional` (SQLite) or `Build/Scripts/runTests.sh -s functional -d mysql` (MySQL), both in containers; CI runs the same suite on MySQL.
 
 ## Namespace Structure (verified)
 
