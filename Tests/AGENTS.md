@@ -13,7 +13,7 @@ integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
 
 ## Setup
 
-- PHP suites: `composer install` is enough for unit/fuzz; functional needs MySQL, which `Build/Scripts/runTests.sh -s functional -d mysql` starts in a container.
+- PHP suites: `composer install` is enough for unit/fuzz; functional needs a database, which the shared runner provides in containers: `composer ci:test:php:functional` runs it on SQLite (the runner's default), `Build/Scripts/runTests.sh -s functional -d mysql` on MySQL, the database CI uses.
 - JS/E2E suites: `npm install` at the repo root (`vitest.config.js` lives there).
 - E2E needs no DDEV: `Build/Scripts/runTests.sh -s e2e` installs its own TYPO3 in containers.
 
@@ -22,7 +22,7 @@ integration, fuzz), PHPat architecture rules, Vitest JS tests, Playwright E2E.
 ```
 Tests/
   Unit/                  -> PHPUnit unit tests (fast, no DB, no TYPO3 bootstrap)
-  Functional/            -> PHPUnit functional tests (require MySQL)
+  Functional/            -> PHPUnit functional tests (need a database: SQLite or MySQL)
   Integration/           -> Multi-service tests against a real database; part of
                             the 'functional' testsuite, not a separate one
   Fuzz/                  -> Property-based fuzz tests (eris/eris, PHPUnit testsuite)
@@ -45,7 +45,10 @@ composer ci:test:php:unit
 # Fuzz tests (PHPUnit testsuite 'fuzz')
 composer ci:test:php:fuzz
 
-# Functional + integration tests on MySQL (the runner starts it in a container)
+# Functional + integration tests on SQLite (the runner's default database)
+composer ci:test:php:functional
+
+# The same suite on MySQL, as CI runs it (the runner starts MySQL in a container)
 Build/Scripts/runTests.sh -s functional -d mysql
 
 # All PHP tests (unit + functional)
@@ -83,8 +86,8 @@ composer ci:mutation
 - Data providers: use `#[DataProvider]` attribute (PHPUnit 10+)
 
 ### Functional and Integration Tests
-- Require the TYPO3 testing framework bootstrapped with MySQL
-- Run locally with `Build/Scripts/runTests.sh -s functional -d mysql`; no MySQL installation or DDEV is needed
+- Require the TYPO3 testing framework bootstrapped with a database; CI uses MySQL (`functional-test-db: 'mysql'` in `.github/workflows/ci.yml`)
+- Run locally with `composer ci:test:php:functional` (SQLite) or `Build/Scripts/runTests.sh -s functional -d mysql` (MySQL); both run in containers, no database installation or DDEV is needed
 - Use `DatabaseConnectionTrait` for database access
 - Isolate each test with fixture loading / teardown
 - Extend `AbstractPasskeyFunctionalTestCase`, which carries the extension lists;
@@ -96,9 +99,12 @@ composer ci:mutation
 - Double a **site** by stubbing the concrete `Site`, not `SiteInterface`:
   `getSettings()` is declared on `Site` only. `Tests/Integration/SiteStubTrait`
   provides that double
-- SQLite is not a substitute for MySQL here: `credential_id` is `varbinary`, and
-  SQLite compares a BLOB column against a string parameter as unequal, so the
-  credential lookups fail there for reasons the code does not have
+- Binary columns are bound by type (see `FrontendCredentialRepository`):
+  `credential_id` and `user_handle` as `ParameterType::BINARY`,
+  `public_key_cose` as `ParameterType::LARGE_OBJECT`. SQLite
+  stores a string-bound parameter as TEXT, which never equals the stored BLOB,
+  so a query that binds these columns as strings passes on MySQL and fails on
+  SQLite; run the suite on both databases when changing such a query
 
 ### Fuzz Tests
 - Use `eris/eris` generator library
@@ -158,11 +164,11 @@ composer ci:mutation
 
 ## When stuck
 - Flaky fuzz test: re-run once; if still failing, treat as a real finding.
-- Functional tests failing locally: run them on MySQL (`Build/Scripts/runTests.sh -s functional -d mysql`), not on SQLite.
+- Functional tests failing on SQLite only: check how binary columns are bound (see Conventions), then compare with MySQL (`Build/Scripts/runTests.sh -s functional -d mysql`), the database CI uses.
 - CacheManager errors in unit tests: register the stub in `setUp()` (see Conventions).
 
 ## Boundaries
 - Do NOT add `sleep()` in tests
 - Do NOT share state between tests via class properties
 - Fuzz tests run in isolation: `phpunit -c Build/phpunit.xml --testsuite fuzz`
-- Functional tests need `--testsuite functional` and a running MySQL
+- Functional tests run with `-c Build/phpunit.functional.xml` (testsuite `functional`) and need a database, which `Build/Scripts/runTests.sh` provides

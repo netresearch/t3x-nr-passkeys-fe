@@ -103,7 +103,7 @@ Makefile                     -> make up, make ci, make help
 | eID controller returns JSON | Use `JsonBodyTrait`, PSR-7 JsonResponse |
 | Database access | Use QueryBuilder, never raw SQL |
 | Testing final classes | Use `dg/bypass-finals` + PHPUnit test doubles |
-| Functional test needs DB | Run `Build/Scripts/runTests.sh -s functional -d mysql` locally (MySQL in a container, no DDEV); CI runs the suite on MySQL |
+| Functional test needs DB | Run `composer ci:test:php:functional` (SQLite) or `Build/Scripts/runTests.sh -s functional -d mysql` (MySQL) locally; both run in containers, no DDEV. CI runs the suite on MySQL |
 | Enforcement logic | Read site config first, then group overrides, dispatch event |
 | Recovery code verification | Always use constant-time comparison (hash_equals) |
 | Releasing a version | Bump `ext_emconf.php` + `guides.xml` version together; a major release also moves the supported line in `SECURITY.md` (`Tests/Unit/SecurityPolicyTest.php` fails otherwise) |
