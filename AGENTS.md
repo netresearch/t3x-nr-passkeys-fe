@@ -32,7 +32,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 ## Global Rules
 - Conventional Commits: `type(scope): subject`
 - `declare(strict_types=1)` in all PHP files
-- PER-CS3.0 code style via php-cs-fixer
+- Shared code style of `netresearch/typo3-ci-workflows` (@PER-CS3x0 + @Symfony) via php-cs-fixer, `Build/.php-cs-fixer.php`
 - PHPStan level 10 (do not lower)
 - Do NOT commit `composer.lock` (library, not application)
 - DO commit `package-lock.json`: the e2e runner reads the resolved Playwright version out of it to pick a browser image that matches
