@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 
+# The shared config sets level 10, treatPhpDocTypesAsCertain, the
+# strictness flags, reportUnmatchedIgnoredErrors and the curated
+# ergebnis/phpstan-rules; phpstan/extension-installer registers
+# phpstan-typo3, phpat and the other PHPStan extensions.
 includes:
     - %currentWorkingDirectory%/.Build/vendor/netresearch/typo3-ci-workflows/config/phpstan/phpstan.neon
     - phpstan-baseline.neon
@@ -10,7 +14,6 @@ parameters:
         - ../Classes
         - ../Tests/Architecture
     tmpDir: ../.Build/var/phpstan
-    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
@@ -48,27 +51,8 @@ parameters:
             message: '#Parameter \#3 \$subject of function str_ireplace expects#'
             path: ../Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
-        # ergebnis/phpstan-rules produces version-dependent violations that
-        # differ between local and CI. Suppress all known ergebnis patterns
-        # by matching the MESSAGE TEXT (identifiers are not reliable across versions).
-        -
-            message: '#named argument for parameter#'
-            reportUnmatched: false
-        -
-            message: '#has a nullable return type declaration#'
-            reportUnmatched: false
-        -
-            message: '#has parameter .* with a nullable type declaration#'
-            reportUnmatched: false
-        -
-            message: '#has parameter .* with default value#'
-            reportUnmatched: false
-        -
-            message: '#is not allowed to extend#'
-            reportUnmatched: false
-        -
-            message: '#Language construct isset#'
-            reportUnmatched: false
+        # Findings of phpstan-strict-rules, phpstan-deprecation-rules,
+        # PHPStan core and phpstan-typo3, suppressed by message text.
         -
             message: '#Construct empty\(\) is not allowed#'
             reportUnmatched: false
