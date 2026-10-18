@@ -20,11 +20,5 @@ return $createConfig(
         // no_trailing_whitespace_in_string, no_unreachable_default_argument_value.
         '@PER-CS3x0:risky' => true,
         'strict_param'     => true,
-        // Keep class, function and const imports in separate groups; the
-        // shared value sorts them as one alphabetical list.
-        'ordered_imports' => [
-            'imports_order'  => ['class', 'function', 'const'],
-            'sort_algorithm' => 'alpha',
-        ],
     ],
 );
