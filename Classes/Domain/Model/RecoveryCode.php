@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Domain\Model;
 
+use function is_numeric;
+use function is_string;
+
 /**
  * Single-use recovery code for a TYPO3 frontend user.
  *
@@ -86,10 +89,10 @@ final class RecoveryCode
     public function toArray(): array
     {
         return [
-            'uid' => $this->uid,
-            'fe_user' => $this->feUser,
-            'code_hash' => $this->codeHash,
-            'used_at' => $this->usedAt,
+            'uid'        => $this->uid,
+            'fe_user'    => $this->feUser,
+            'code_hash'  => $this->codeHash,
+            'used_at'    => $this->usedAt,
             'created_at' => $this->createdAt,
         ];
     }
@@ -110,11 +113,11 @@ final class RecoveryCode
 
     private static function intVal(mixed $value, int $default = 0): int
     {
-        return \is_numeric($value) ? (int) $value : $default;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     private static function stringVal(mixed $value, string $default = ''): string
     {
-        return \is_string($value) ? $value : $default;
+        return is_string($value) ? $value : $default;
     }
 }

@@ -28,6 +28,8 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings; // Used for createFromSettingsTree()
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function http_build_query;
+
 #[CoversClass(PasskeyEnrollmentInterstitial::class)]
 final class PasskeyEnrollmentInterstitialTest extends TestCase
 {
@@ -44,10 +46,10 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
-        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
+        $this->enforcementService       = $this->createStub(FrontendEnforcementService::class);
+        $this->credentialRepository     = $this->createStub(FrontendCredentialRepository::class);
         $this->siteConfigurationService = $this->createStub(SiteConfigurationService::class);
-        $this->frontendConfiguration = new FrontendConfiguration(
+        $this->frontendConfiguration    = new FrontendConfiguration(
             postLoginEnrollmentEnabled: true,
         );
         $this->subject = new PasskeyEnrollmentInterstitial(
@@ -74,7 +76,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenUserHasPasskeys(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
+        $feUser  = $this->createAuthenticatedFeUser(42);
         $request = $this->buildRequest($feUser);
         $handler = $this->createPassThroughHandler();
 
@@ -92,7 +94,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
             new FrontendConfiguration(postLoginEnrollmentEnabled: false),
         );
 
-        $feUser = $this->createAuthenticatedFeUser(42);
+        $feUser  = $this->createAuthenticatedFeUser(42);
         $request = $this->buildRequest($feUser);
         $handler = $this->createPassThroughHandler();
 
@@ -103,7 +105,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenEidRequestForOurExtension(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
+        $feUser  = $this->createAuthenticatedFeUser(42);
         $request = $this->buildRequest($feUser, ['eID' => 'nr_passkeys_fe', 'action' => 'enrollOptions']);
         $handler = $this->createPassThroughHandler();
 
@@ -114,7 +116,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenPublicRouteAttributeIsSet(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
+        $feUser  = $this->createAuthenticatedFeUser(42);
         $request = $this->buildRequest($feUser, ['eID' => 'nr_passkeys_fe', 'action' => 'loginVerify']);
         $request = $request->withAttribute('nr_passkeys_fe.public_route', true);
 
@@ -127,8 +129,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenEnforcementLevelIsOff(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', '');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', '');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createPassThroughHandler();
 
@@ -144,8 +146,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenEnforcementLevelIsEncourage(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', '');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', '');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createPassThroughHandler();
 
@@ -161,8 +163,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenNoEnrollmentUrlConfigured(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', '');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', '');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createPassThroughHandler();
 
@@ -178,8 +180,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenRequiredAndInGracePeriodWithSessionSkip(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42, ['enrollment_skipped' => true]);
-        $site = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
+        $feUser  = $this->createAuthenticatedFeUser(42, ['enrollment_skipped' => true]);
+        $site    = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createPassThroughHandler();
 
@@ -199,8 +201,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function redirectsWhenRequiredAndInGracePeriodNoSessionSkip(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::never())->method('handle');
@@ -224,8 +226,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function redirectsWhenRequiredAndGraceExpired(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::never())->method('handle');
@@ -247,8 +249,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function redirectsWhenEnforcedNoSkip(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
         $request = $this->buildRequest($feUser, [], $site);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::never())->method('handle');
@@ -270,8 +272,8 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenAlreadyOnEnrollmentPage(): void
     {
-        $feUser = $this->createAuthenticatedFeUser(42);
-        $site = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
+        $feUser  = $this->createAuthenticatedFeUser(42);
+        $site    = $this->createSite('main', 'https://example.com', 'https://example.com/enroll');
         $request = $this->buildRequest($feUser, [], $site, '/enroll');
         $handler = $this->createPassThroughHandler();
 
@@ -338,7 +340,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
      */
     public static function statusesWithNoGracePeriodToStart(): iterable
     {
-        $status = static fn(string $level, bool $inGrace, int $graceDays, bool $started = false): FrontendEnforcementStatus => new FrontendEnforcementStatus(
+        $status = static fn (string $level, bool $inGrace, int $graceDays, bool $started = false): FrontendEnforcementStatus => new FrontendEnforcementStatus(
             effectiveLevel: $level,
             siteLevel: $level,
             groupLevel: 'off',
@@ -383,8 +385,9 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     private function createPassThroughHandler(): RequestHandlerInterface
     {
         $response = $this->createStub(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler  = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::once())->method('handle')->willReturn($response);
+
         return $handler;
     }
 
@@ -393,9 +396,10 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
      */
     private function createAuthenticatedFeUser(int $uid, array $sessionData = []): FrontendUserAuthentication&Stub
     {
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid, 'username' => 'testuser'];
         $feUser->method('getKey')->willReturn($sessionData ?: null);
+
         return $feUser;
     }
 
@@ -410,7 +414,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     ): ServerRequest {
         $uri = 'https://example.com' . $path;
         if ($queryParams !== []) {
-            $uri .= '?' . \http_build_query($queryParams);
+            $uri .= '?' . http_build_query($queryParams);
         }
 
         $request = new ServerRequest($uri, 'GET');
@@ -427,7 +431,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     private function createSite(string $identifier, string $base, string $enrollmentUrl): Site
     {
         $siteSettings = SiteSettings::createFromSettingsTree([]);
-        $site = new Site($identifier, 1, ['base' => $base], $siteSettings);
+        $site         = new Site($identifier, 1, ['base' => $base], $siteSettings);
 
         // Teach the mock to return the enrollment URL for this site
         $this->siteConfigurationService

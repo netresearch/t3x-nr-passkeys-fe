@@ -15,6 +15,9 @@ use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 
+use function array_intersect;
+use function array_map;
+
 /**
  * Integration tests for multi-site credential isolation.
  *
@@ -80,16 +83,16 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
         $siteACredentials = $this->repository->findByFeUser(1, 'site-a');
         $siteBCredentials = $this->repository->findByFeUser(1, 'site-b');
 
-        $siteAIds = \array_map(
-            static fn(FrontendCredential $c): string => $c->getCredentialId(),
+        $siteAIds = array_map(
+            static fn (FrontendCredential $c): string => $c->getCredentialId(),
             $siteACredentials,
         );
-        $siteBIds = \array_map(
-            static fn(FrontendCredential $c): string => $c->getCredentialId(),
+        $siteBIds = array_map(
+            static fn (FrontendCredential $c): string => $c->getCredentialId(),
             $siteBCredentials,
         );
 
-        $overlap = \array_intersect($siteAIds, $siteBIds);
+        $overlap = array_intersect($siteAIds, $siteBIds);
         self::assertEmpty($overlap, 'Credentials from site-a and site-b must be completely disjoint');
     }
 

@@ -18,6 +18,10 @@ use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function password_hash;
+use function str_replace;
+use function strlen;
+
 #[CoversClass(RecoveryCodeService::class)]
 final class RecoveryCodeServiceTest extends TestCase
 {
@@ -33,7 +37,7 @@ final class RecoveryCodeServiceTest extends TestCase
     {
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
-        $this->connection = $this->createStub(Connection::class);
+        $this->connection     = $this->createStub(Connection::class);
 
         $this->connectionPool->method('getConnectionForTable')
             ->willReturn($this->connection);
@@ -85,8 +89,8 @@ final class RecoveryCodeServiceTest extends TestCase
         $validChars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 
         foreach ($codes as $code) {
-            $rawCode = \str_replace('-', '', $code);
-            for ($i = 0; $i < \strlen($rawCode); $i++) {
+            $rawCode = str_replace('-', '', $code);
+            for ($i = 0; $i < strlen($rawCode); ++$i) {
                 self::assertStringContainsString(
                     $rawCode[$i],
                     $validChars,
@@ -99,7 +103,7 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function generateDeletesExistingCodesFirst(): void
     {
-        $connection = $this->createMock(Connection::class);
+        $connection     = $this->createMock(Connection::class);
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getConnectionForTable')->willReturn($connection);
         $subject = new RecoveryCodeService($connectionPool);
@@ -189,7 +193,7 @@ final class RecoveryCodeServiceTest extends TestCase
     {
         // Pre-hash a known code for testing
         $rawCodeValid = 'ABCDEFGH'; // Must be in valid alphabet
-        $hash = \password_hash($rawCodeValid, PASSWORD_BCRYPT, ['cost' => 4]);
+        $hash         = password_hash($rawCodeValid, PASSWORD_BCRYPT, ['cost' => 4]);
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
@@ -201,7 +205,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ->willReturn($queryBuilder);
 
         // Create a mock connection to verify the code is marked as used
-        $connection = $this->createMock(Connection::class);
+        $connection     = $this->createMock(Connection::class);
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getConnectionForTable')->willReturn($connection);
         $connectionPool->method('getQueryBuilderForTable')->willReturn($queryBuilder);
@@ -211,7 +215,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
-                self::callback(static fn(array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
+                self::callback(static fn (array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
                 ['uid' => 99],
             );
 
@@ -223,7 +227,7 @@ final class RecoveryCodeServiceTest extends TestCase
     public function verifyNormalisesInputByStrippingDashes(): void
     {
         $rawCode = 'TESTCODE';
-        $hash = \password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
+        $hash    = password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
@@ -244,7 +248,7 @@ final class RecoveryCodeServiceTest extends TestCase
     public function verifyNormalisesInputToUpperCase(): void
     {
         $rawCode = 'TESTCODE';
-        $hash = \password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
+        $hash    = password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => 4]);
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([
@@ -263,7 +267,7 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function verifyReturnsFalseForWrongCode(): void
     {
-        $hash = \password_hash('REALCODE', PASSWORD_BCRYPT, ['cost' => 4]);
+        $hash = password_hash('REALCODE', PASSWORD_BCRYPT, ['cost' => 4]);
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([

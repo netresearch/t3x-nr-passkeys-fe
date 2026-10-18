@@ -35,7 +35,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
     {
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
-        $this->subject = new FrontendCredentialRepository($this->connectionPool);
+        $this->subject        = new FrontendCredentialRepository($this->connectionPool);
     }
 
     // ---------------------------------------------------------------
@@ -278,7 +278,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static fn(array $data): bool => isset($data['last_used_at'], $data['tstamp'])
+                self::callback(static fn (array $data): bool => isset($data['last_used_at'], $data['tstamp'])
                     && $data['last_used_at'] > 0
                     && $data['tstamp'] > 0),
                 ['uid' => 42],
@@ -302,7 +302,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static fn(array $data): bool => isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
+                self::callback(static fn (array $data): bool => isset($data['revoked_at'], $data['revoked_by'], $data['tstamp'])
                     && $data['revoked_at'] > 0
                     && $data['revoked_by'] === 99),
                 ['uid' => 5],
@@ -345,7 +345,7 @@ final class FrontendCredentialRepositoryTest extends TestCase
             ->method('update')
             ->with(
                 'tx_nrpasskeysfe_credential',
-                self::callback(static fn(array $data): bool => ($data['sign_count'] ?? null) === 42
+                self::callback(static fn (array $data): bool => ($data['sign_count'] ?? null) === 42
                     && isset($data['tstamp'])),
                 ['uid' => 5],
             );
@@ -371,21 +371,21 @@ final class FrontendCredentialRepositoryTest extends TestCase
         int $storagePid = 0,
     ): array {
         return [
-            'uid' => $uid,
-            'fe_user' => $feUser,
-            'credential_id' => $credentialId,
+            'uid'             => $uid,
+            'fe_user'         => $feUser,
+            'credential_id'   => $credentialId,
             'public_key_cose' => 'cose-data',
-            'sign_count' => 0,
-            'user_handle' => 'handle',
-            'aaguid' => '00000000-0000-0000-0000-000000000000',
-            'transports' => '["usb"]',
-            'label' => 'Test Key',
+            'sign_count'      => 0,
+            'user_handle'     => 'handle',
+            'aaguid'          => '00000000-0000-0000-0000-000000000000',
+            'transports'      => '["usb"]',
+            'label'           => 'Test Key',
             'site_identifier' => $siteIdentifier,
-            'storage_pid' => $storagePid,
-            'created_at' => 1700000000,
-            'last_used_at' => 0,
-            'revoked_at' => 0,
-            'revoked_by' => 0,
+            'storage_pid'     => $storagePid,
+            'created_at'      => 1700000000,
+            'last_used_at'    => 0,
+            'revoked_at'      => 0,
+            'revoked_by'      => 0,
         ];
     }
 

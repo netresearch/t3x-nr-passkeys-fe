@@ -32,6 +32,9 @@ use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
 use TYPO3\CMS\Extbase\Mvc\Request;
 use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
 
+use function array_map;
+use function in_array;
+
 #[CoversClass(LoginPluginController::class)]
 final class LoginPluginControllerTest extends TestCase
 {
@@ -60,10 +63,11 @@ final class LoginPluginControllerTest extends TestCase
         $subject = $this->buildController();
 
         $assignedVars = [];
-        $view = $this->createStub(ViewInterface::class);
+        $view         = $this->createStub(ViewInterface::class);
         $view->method('assignMultiple')->willReturnCallback(
             static function (array $vars) use (&$assignedVars, $view): ViewInterface {
                 $assignedVars = $vars;
+
                 return $view;
             },
         );
@@ -364,9 +368,9 @@ final class LoginPluginControllerTest extends TestCase
     /**
      * Render indexAction for the site "main" and return what it assigned.
      *
-     * @param array<string, mixed>                          $settings
+     * @param array<string, mixed>                              $settings
      * @param array<int, array{0: string, 1: string, 2?: bool}> $targets       page uid => [site identifier, URI typolink builds, only for logged-in users]
-     * @param list<string>                                  $languageBases bases of the current site's languages
+     * @param list<string>                                      $languageBases bases of the current site's languages
      *
      * @return array<string, mixed>
      */
@@ -377,7 +381,7 @@ final class LoginPluginControllerTest extends TestCase
         string $siteBase = 'https://main.example',
         ?ArrayObject $resolverCalls = null,
     ): array {
-        $targets = \array_map($this->normalizeTarget(...), $targets);
+        $targets    = array_map($this->normalizeTarget(...), $targets);
         $siteFinder = $this->createStub(SiteFinder::class);
         $siteFinder->method('getSiteByPageId')->willReturnCallback(
             static function (int $pageUid) use ($targets): Site {
@@ -409,23 +413,26 @@ final class LoginPluginControllerTest extends TestCase
         // The builder links the page last passed to setTargetPageUid(), and a
         // page only for logged-in users only when restricted pages are linked,
         // as typolink does.
-        $target = new ArrayObject(['uid' => 0, 'linkRestricted' => false]);
+        $target     = new ArrayObject(['uid' => 0, 'linkRestricted' => false]);
         $uriBuilder = $this->createStub(UriBuilder::class);
         $uriBuilder->method('reset')->willReturnCallback(
             static function () use ($target, $uriBuilder): UriBuilder {
                 $target['linkRestricted'] = false;
+
                 return $uriBuilder;
             },
         );
         $uriBuilder->method('setTargetPageUid')->willReturnCallback(
             static function (int $uid) use ($target, $uriBuilder): UriBuilder {
                 $target['uid'] = $uid;
+
                 return $uriBuilder;
             },
         );
         $uriBuilder->method('setLinkAccessRestrictedPages')->willReturnCallback(
             static function (bool $link) use ($target, $uriBuilder): UriBuilder {
                 $target['linkRestricted'] = $link;
+
                 return $uriBuilder;
             },
         );
@@ -435,7 +442,7 @@ final class LoginPluginControllerTest extends TestCase
                 // Like typolink: a page the anonymous visitor may see (no
                 // restriction, or "hide at login") is linked; others only
                 // with linkAccessRestrictedPages.
-                if ($page === null || (!\in_array($page['fe_group'], ['', '0', '-1'], true) && !$target['linkRestricted'])) {
+                if ($page === null || (!in_array($page['fe_group'], ['', '0', '-1'], true) && !$target['linkRestricted'])) {
                     return '';
                 }
 
@@ -444,10 +451,11 @@ final class LoginPluginControllerTest extends TestCase
         );
 
         $assignedVars = [];
-        $view = $this->createStub(ViewInterface::class);
+        $view         = $this->createStub(ViewInterface::class);
         $view->method('assignMultiple')->willReturnCallback(
             static function (array $vars) use (&$assignedVars, $view): ViewInterface {
                 $assignedVars = $vars;
+
                 return $view;
             },
         );
@@ -475,10 +483,10 @@ final class LoginPluginControllerTest extends TestCase
     private function normalizeTarget(array $target): array
     {
         return [
-            'site' => (string) ($target['site'] ?? $target[0]),
-            'uri' => (string) ($target['uri'] ?? $target[1] ?? ''),
-            'fe_group' => (string) ($target['fe_group'] ?? $target[2] ?? ''),
-            'linkable' => (bool) ($target['linkable'] ?? true),
+            'site'       => (string) ($target['site'] ?? $target[0]),
+            'uri'        => (string) ($target['uri'] ?? $target[1] ?? ''),
+            'fe_group'   => (string) ($target['fe_group'] ?? $target[2] ?? ''),
+            'linkable'   => (bool) ($target['linkable'] ?? true),
             'resolvesTo' => isset($target['resolvesTo']) ? (int) $target['resolvesTo'] : null,
         ];
     }
@@ -491,6 +499,7 @@ final class LoginPluginControllerTest extends TestCase
         );
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
+
         return $subject;
     }
 
@@ -519,6 +528,7 @@ final class LoginPluginControllerTest extends TestCase
             'extbase',
             new ExtbaseRequestParameters(LoginPluginController::class),
         );
+
         return new Request($serverRequest);
     }
 

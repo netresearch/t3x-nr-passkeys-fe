@@ -28,6 +28,18 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function bin2hex;
+use function hash;
+use function hrtime;
+use function intdiv;
+use function is_array;
+use function is_scalar;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function random_bytes;
+use function usleep;
+
 /**
  * Handles the WebAuthn login ceremony for frontend users.
  *
@@ -74,8 +86,8 @@ final readonly class LoginController
      */
     public function optionsAction(ServerRequestInterface $request): ResponseInterface
     {
-        $body = $this->getJsonBody($request);
-        $username = isset($body['username']) && \is_scalar($body['username'])
+        $body     = $this->getJsonBody($request);
+        $username = isset($body['username']) && is_scalar($body['username'])
             ? (string) $body['username']
             : '';
 
@@ -91,12 +103,13 @@ final readonly class LoginController
             $site = $this->siteConfigurationService->getCurrentSite($request);
         } catch (Throwable $e) {
             $this->logger->error('FE login options: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
-        $rawChallenge = $this->challengeService->generateChallenge();
+        $rawChallenge   = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($rawChallenge);
-        $challenge = \bin2hex($rawChallenge);
+        $challenge      = bin2hex($rawChallenge);
 
         // Discoverable (usernameless) login — no username in body
         if ($username === '') {
@@ -104,7 +117,7 @@ final readonly class LoginController
                 $result = $this->webAuthnService->createDiscoverableAssertionOptions($challenge, $site);
 
                 return new JsonResponse([
-                    'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
+                    'options'        => json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
                     'challengeToken' => $challengeToken,
                     // The conditional-UI ceremony holds this challenge until the
                     // user picks a passkey from the autofill menu, which may be
@@ -116,6 +129,7 @@ final readonly class LoginController
                 $this->logger->error('FE discoverable assertion options failed', [
                     'error' => $e->getMessage(),
                 ]);
+
                 return new JsonResponse(['error' => 'Internal error'], 500);
             }
         }
@@ -123,7 +137,7 @@ final readonly class LoginController
         // Username-first. Every answer below leaves at the same budget: the
         // branches do different work, and a caller who times enough requests
         // reads that difference as an answer about the account.
-        $deadline = \hrtime(true) + self::USERNAME_FIRST_BUDGET_NS;
+        $deadline = hrtime(true) + self::USERNAME_FIRST_BUDGET_NS;
 
         $feUserUid = $this->findFeUserUid($username);
         if ($feUserUid === null) {
@@ -137,7 +151,7 @@ final readonly class LoginController
 
         try {
             $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
-            $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
+            $credentials    = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
 
             if ($credentials === []) {
                 // Same for a user who exists but has enrolled no passkey on
@@ -152,14 +166,14 @@ final readonly class LoginController
             $result = $this->webAuthnService->createAssertionOptions($feUserUid, $challenge, $site);
 
             return $this->answerAtBudget(new JsonResponse([
-                'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
-                'challengeToken' => $challengeToken,
+                'options'             => json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
+                'challengeToken'      => $challengeToken,
                 'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
             ]), $deadline);
         } catch (Throwable $e) {
             $this->logger->error('FE assertion options failed', [
-                'username_hash' => \hash('sha256', $username),
-                'error' => $e->getMessage(),
+                'username_hash' => hash('sha256', $username),
+                'error'         => $e->getMessage(),
             ]);
 
             return $this->answerAtBudget(new JsonResponse(['error' => 'Internal error'], 500), $deadline);
@@ -176,10 +190,10 @@ final readonly class LoginController
     {
         $body = $this->getJsonBody($request);
 
-        $assertion = isset($body['assertion']) && \is_array($body['assertion'])
-            ? \json_encode($body['assertion'], JSON_THROW_ON_ERROR)
+        $assertion = isset($body['assertion']) && is_array($body['assertion'])
+            ? json_encode($body['assertion'], JSON_THROW_ON_ERROR)
             : '';
-        $challengeToken = isset($body['challengeToken']) && \is_string($body['challengeToken'])
+        $challengeToken = isset($body['challengeToken']) && is_string($body['challengeToken'])
             ? $body['challengeToken']
             : '';
 
@@ -200,8 +214,9 @@ final readonly class LoginController
         } catch (RuntimeException $e) {
             $this->logger->warning('FE login verify: invalid challenge token', [
                 'error' => $e->getMessage(),
-                'ip' => $ip,
+                'ip'    => $ip,
             ]);
+
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
 
@@ -209,6 +224,7 @@ final readonly class LoginController
             $site = $this->siteConfigurationService->getCurrentSite($request);
         } catch (Throwable $e) {
             $this->logger->error('FE login verify: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -217,7 +233,7 @@ final readonly class LoginController
         try {
             $result = $this->webAuthnService->verifyAssertionResponse(
                 assertionJson: $assertion,
-                challenge: \bin2hex($challenge),
+                challenge: bin2hex($challenge),
                 site: $site,
             );
 
@@ -228,7 +244,7 @@ final readonly class LoginController
             // Store verified result in a short-lived cache token.
             // The JS will submit this token via the felogin form so the auth
             // service can authenticate without needing site context.
-            $token = \bin2hex(\random_bytes(32));
+            $token = bin2hex(random_bytes(32));
             $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');
             $cache->set(
@@ -243,15 +259,15 @@ final readonly class LoginController
             ]);
 
             return new JsonResponse([
-                'status' => 'ok',
-                'feUserUid' => $feUserUid,
+                'status'     => 'ok',
+                'feUserUid'  => $feUserUid,
                 'loginToken' => $token,
             ]);
         } catch (RuntimeException $e) {
             $this->rateLimiterService->recordFailure('', $ip);
 
             $this->logger->warning('FE passkey assertion verification failed', [
-                'ip' => $ip,
+                'ip'         => $ip,
                 'error_code' => $e->getCode(),
             ]);
 
@@ -291,9 +307,9 @@ final readonly class LoginController
      */
     private function answerAtBudget(ResponseInterface $response, int $deadline): ResponseInterface
     {
-        $remainingNs = $deadline - \hrtime(true);
+        $remainingNs = $deadline - hrtime(true);
         if ($remainingNs > 0) {
-            \usleep(\intdiv($remainingNs, 1000));
+            usleep(intdiv($remainingNs, 1000));
 
             return $response;
         }
@@ -301,8 +317,8 @@ final readonly class LoginController
         // Past the budget, so this answer is as slow as its own work and the
         // floor protects nothing. Without this line the failure is invisible.
         $this->logger->warning('FE login options exceeded the constant-time budget', [
-            'budget_ms' => \intdiv(self::USERNAME_FIRST_BUDGET_NS, 1_000_000),
-            'over_by_ms' => \intdiv(-$remainingNs, 1_000_000),
+            'budget_ms'  => intdiv(self::USERNAME_FIRST_BUDGET_NS, 1_000_000),
+            'over_by_ms' => intdiv(-$remainingNs, 1_000_000),
         ]);
 
         return $response;
@@ -326,8 +342,8 @@ final readonly class LoginController
             $result = $this->webAuthnService->createDecoyAssertionOptions($username, $challenge, $site);
 
             return new JsonResponse([
-                'options' => \json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
-                'challengeToken' => $challengeToken,
+                'options'             => json_decode($result['optionsJson'], true, 512, JSON_THROW_ON_ERROR),
+                'challengeToken'      => $challengeToken,
                 'challengeTtlSeconds' => $this->configurationService->getConfiguration()->getChallengeTtlSeconds(),
             ]);
         } catch (Throwable $e) {

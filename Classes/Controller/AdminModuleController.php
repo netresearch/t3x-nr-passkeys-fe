@@ -18,6 +18,8 @@ use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
+use function round;
+
 /**
  * Backend module controller for the FE passkey management admin module.
  *
@@ -27,10 +29,10 @@ final readonly class AdminModuleController
 {
     /** @var array<string, string> */
     private const ENFORCEMENT_LEVELS = [
-        'off' => 'Off',
+        'off'       => 'Off',
         'encourage' => 'Encourage',
-        'required' => 'Required',
-        'enforced' => 'Enforced',
+        'required'  => 'Required',
+        'enforced'  => 'Enforced',
     ];
 
     public function __construct(
@@ -55,23 +57,23 @@ final readonly class AdminModuleController
         $groupData = [];
         foreach ($stats->perGroupStats as $groupUid => $group) {
             $groupData[] = [
-                'uid' => (int) $groupUid,
-                'title' => $group['groupName'],
-                'enforcement' => $group['enforcement'],
-                'totalUsers' => $group['userCount'],
-                'usersWithPasskeys' => $group['withPasskeys'],
+                'uid'                => (int) $groupUid,
+                'title'              => $group['groupName'],
+                'enforcement'        => $group['enforcement'],
+                'totalUsers'         => $group['userCount'],
+                'usersWithPasskeys'  => $group['withPasskeys'],
                 'adoptionPercentage' => $group['userCount'] > 0
-                    ? \round(($group['withPasskeys'] / $group['userCount']) * 100, 1)
+                    ? round(($group['withPasskeys'] / $group['userCount']) * 100, 1)
                     : 0.0,
             ];
         }
 
         $moduleTemplate->assignMultiple([
-            'totalUsers' => $stats->totalUsers,
-            'usersWithPasskeys' => $stats->usersWithPasskeys,
+            'totalUsers'         => $stats->totalUsers,
+            'usersWithPasskeys'  => $stats->usersWithPasskeys,
             'adoptionPercentage' => $stats->adoptionPercentage,
-            'groups' => $groupData,
-            'enforcementLevels' => $this->getEnforcementLevelOptions(),
+            'groups'             => $groupData,
+            'enforcementLevels'  => $this->getEnforcementLevelOptions(),
         ]);
 
         $this->pageRenderer->loadJavaScriptModule(
@@ -121,7 +123,7 @@ final readonly class AdminModuleController
     private function buildDocHeaderMenu(ModuleTemplate $moduleTemplate, string $activeTab): void
     {
         $menuRegistry = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry();
-        $menu = $menuRegistry->makeMenu();
+        $menu         = $menuRegistry->makeMenu();
         $menu->setIdentifier('NrPasskeysFeMenu');
 
         $dashboardItem = $menu->makeMenuItem()

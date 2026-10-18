@@ -11,6 +11,8 @@ namespace Netresearch\NrPasskeysFe\Domain\Dto;
 
 use DateTimeImmutable;
 
+use function intdiv;
+
 /**
  * Read-only snapshot of a frontend user's passkey enforcement status.
  *
@@ -62,6 +64,6 @@ final readonly class FrontendEnforcementStatus
             ? $this->graceDeadline->getTimestamp() - $now->getTimestamp()
             : 0;
 
-        return $secondsLeft > 0 ? \intdiv($secondsLeft + 86399, 86400) : 0;
+        return $secondsLeft > 0 ? intdiv($secondsLeft + 86399, 86400) : 0;
     }
 }

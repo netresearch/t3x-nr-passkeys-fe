@@ -27,6 +27,9 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function is_numeric;
+use function time;
+
 /**
  * The interstitial starts a due grace period against real fe_users and
  * fe_groups rows, on the enrollment page too, before that page is rendered:
@@ -42,7 +45,7 @@ final class PasskeyEnrollmentInterstitialTest extends AbstractPasskeyFunctionalT
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../Controller/Plugin/Fixtures/enforcement.csv');
         $this->get(ConnectionPool::class)->getConnectionForTable('fe_users')
-            ->update('fe_users', ['passkey_grace_period_start' => \time() - 20 * self::DAY], ['uid' => 4]);
+            ->update('fe_users', ['passkey_grace_period_start' => time() - 20 * self::DAY], ['uid' => 4]);
     }
 
     /**
@@ -59,7 +62,7 @@ final class PasskeyEnrollmentInterstitialTest extends AbstractPasskeyFunctionalT
     #[DataProvider('pagesAndOutcomes')]
     public function aDueGracePeriodIsStartedOnTheFirstRequest(string $path, string $enrollmentUrl, int $status): void
     {
-        $before = \time();
+        $before = time();
 
         self::assertSame($status, $this->process(3, $path, $enrollmentUrl)->getStatusCode());
         self::assertGreaterThanOrEqual($before, $this->graceStartOf(3));
@@ -103,10 +106,10 @@ final class PasskeyEnrollmentInterstitialTest extends AbstractPasskeyFunctionalT
         );
 
         $site = new Site('main', 1, [
-            'base' => 'https://example.com/',
+            'base'     => 'https://example.com/',
             'settings' => ['nr_passkeys_fe' => ['enrollmentPageUrl' => $enrollmentUrl]],
         ]);
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $feUserUid];
         $feUser->method('getKey')->willReturn(null);
 
@@ -130,6 +133,6 @@ final class PasskeyEnrollmentInterstitialTest extends AbstractPasskeyFunctionalT
             ->select(['passkey_grace_period_start'], 'fe_users', ['uid' => $feUserUid])
             ->fetchOne();
 
-        return \is_numeric($value) ? (int) $value : -1;
+        return is_numeric($value) ? (int) $value : -1;
     }
 }

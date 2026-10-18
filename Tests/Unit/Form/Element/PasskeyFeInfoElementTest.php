@@ -19,6 +19,9 @@ use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
+use function define;
+use function defined;
+
 #[CoversClass(PasskeyFeInfoElement::class)]
 final class PasskeyFeInfoElementTest extends TestCase
 {
@@ -29,8 +32,8 @@ final class PasskeyFeInfoElementTest extends TestCase
         parent::setUp();
 
         // TYPO3 constant used by AbstractFormElement::wrapWithFieldsetAndLegend()
-        if (!\defined('LF')) {
-            \define('LF', "\n");
+        if (!defined('LF')) {
+            define('LF', "\n");
         }
 
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
@@ -46,9 +49,9 @@ final class PasskeyFeInfoElementTest extends TestCase
     public function renderReturnsEmptyHtmlForNonFeUsersTable(): void
     {
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject              = new PasskeyFeInfoElement($credentialRepository);
         $subject->setData([
-            'tableName' => 'be_users',
+            'tableName'   => 'be_users',
             'databaseRow' => ['uid' => 1],
         ]);
 
@@ -63,9 +66,9 @@ final class PasskeyFeInfoElementTest extends TestCase
     public function renderReturnsEmptyHtmlForZeroUid(): void
     {
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject              = new PasskeyFeInfoElement($credentialRepository);
         $subject->setData([
-            'tableName' => 'fe_users',
+            'tableName'   => 'fe_users',
             'databaseRow' => ['uid' => 0],
         ]);
 
@@ -80,9 +83,9 @@ final class PasskeyFeInfoElementTest extends TestCase
     public function renderReturnsEmptyHtmlForMissingUid(): void
     {
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $subject = new PasskeyFeInfoElement($credentialRepository);
+        $subject              = new PasskeyFeInfoElement($credentialRepository);
         $subject->setData([
-            'tableName' => 'fe_users',
+            'tableName'   => 'fe_users',
             'databaseRow' => [],
         ]);
 
@@ -99,8 +102,8 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
@@ -117,20 +120,20 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
         $credential = FrontendCredential::fromArray([
-            'uid' => 1,
-            'fe_user' => 42,
-            'label' => 'My iPhone',
-            'credential_id' => 'abc123',
-            'created_at' => 1700000000,
-            'last_used_at' => 1700001000,
-            'revoked_at' => 0,
-            'aaguid' => 'aaguid-value-here',
+            'uid'             => 1,
+            'fe_user'         => 42,
+            'label'           => 'My iPhone',
+            'credential_id'   => 'abc123',
+            'created_at'      => 1700000000,
+            'last_used_at'    => 1700001000,
+            'revoked_at'      => 0,
+            'aaguid'          => 'aaguid-value-here',
             'site_identifier' => 'main',
         ]);
 
@@ -149,19 +152,19 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
         $credential = FrontendCredential::fromArray([
-            'uid' => 1,
-            'fe_user' => 42,
-            'label' => 'My iPhone',
-            'credential_id' => 'abc123',
-            'created_at' => 1700000000,
-            'last_used_at' => 0,
-            'revoked_at' => 0,
+            'uid'             => 1,
+            'fe_user'         => 42,
+            'label'           => 'My iPhone',
+            'credential_id'   => 'abc123',
+            'created_at'      => 1700000000,
+            'last_used_at'    => 0,
+            'revoked_at'      => 0,
             'site_identifier' => 'main',
         ]);
 
@@ -181,19 +184,19 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
         $credential = FrontendCredential::fromArray([
-            'uid' => 1,
-            'fe_user' => 42,
-            'label' => 'Old key',
-            'credential_id' => 'xyz789',
-            'created_at' => 1700000000,
-            'last_used_at' => 0,
-            'revoked_at' => 1700005000,
+            'uid'             => 1,
+            'fe_user'         => 42,
+            'label'           => 'Old key',
+            'credential_id'   => 'xyz789',
+            'created_at'      => 1700000000,
+            'last_used_at'    => 0,
+            'revoked_at'      => 1700005000,
             'site_identifier' => 'main',
         ]);
 
@@ -214,20 +217,20 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
         $credential = FrontendCredential::fromArray([
-            'uid' => 1,
-            'fe_user' => 42,
-            'label' => 'YubiKey',
-            'credential_id' => 'yk001',
-            'created_at' => 1700000000,
-            'last_used_at' => 0,
-            'revoked_at' => 0,
-            'aaguid' => '2fc0579f-8113-47ea-b116-bb5a8db9202a',
+            'uid'             => 1,
+            'fe_user'         => 42,
+            'label'           => 'YubiKey',
+            'credential_id'   => 'yk001',
+            'created_at'      => 1700000000,
+            'last_used_at'    => 0,
+            'revoked_at'      => 0,
+            'aaguid'          => '2fc0579f-8113-47ea-b116-bb5a8db9202a',
             'site_identifier' => 'main',
         ]);
 
@@ -244,18 +247,18 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
         $credential = FrontendCredential::fromArray([
-            'uid' => 1,
-            'fe_user' => 42,
-            'label' => 'Test Key',
-            'credential_id' => 'test001',
-            'created_at' => 1700000000,
-            'revoked_at' => 0,
+            'uid'             => 1,
+            'fe_user'         => 42,
+            'label'           => 'Test Key',
+            'credential_id'   => 'test001',
+            'created_at'      => 1700000000,
+            'revoked_at'      => 0,
             'site_identifier' => 'my-site',
         ]);
 
@@ -272,8 +275,8 @@ final class PasskeyFeInfoElementTest extends TestCase
         $this->setUpLanguageService();
 
         $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
+            'tableName'      => 'fe_users',
+            'databaseRow'    => ['uid' => 42],
             'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
         ]);
 
@@ -296,6 +299,7 @@ final class PasskeyFeInfoElementTest extends TestCase
     {
         $subject = new PasskeyFeInfoElement($this->credentialRepository);
         $subject->setData($data);
+
         return $subject;
     }
 
@@ -314,16 +318,17 @@ final class PasskeyFeInfoElementTest extends TestCase
         $languageService->method('sL')->willReturnCallback(
             static function (string $key): string {
                 $map = [
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.enabled' => 'passkey(s) registered',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.none' => 'No passkeys',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.status.active' => 'Active',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.enabled'        => 'passkey(s) registered',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.none'           => 'No passkeys',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.status.active'  => 'Active',
                     'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.status.revoked' => 'Revoked',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.created' => 'Created',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.lastUsed' => 'Last used',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.never' => 'Never',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.site' => 'Site',
-                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.aaguid' => 'AAGUID',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.created'        => 'Created',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.lastUsed'       => 'Last used',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.never'          => 'Never',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.site'           => 'Site',
+                    'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:admin.fe_passkeys.aaguid'         => 'AAGUID',
                 ];
+
                 return $map[$key] ?? '';
             },
         );

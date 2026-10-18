@@ -20,6 +20,12 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use function random_bytes;
+use function random_int;
+use function str_repeat;
+use function str_replace;
+use function strlen;
+
 #[CoversClass(RecoveryCodeService::class)]
 final class RecoveryCodeFuzzTest extends TestCase
 {
@@ -39,7 +45,7 @@ final class RecoveryCodeFuzzTest extends TestCase
 
         // Minimal stubs so generate() can be called without a real database
         $queryBuilder = $this->createStub(QueryBuilder::class);
-        $exprBuilder = $this->createStub(ExpressionBuilder::class);
+        $exprBuilder  = $this->createStub(ExpressionBuilder::class);
         $exprBuilder->method('eq')->willReturn('1=1');
         $queryBuilder->method('expr')->willReturn($exprBuilder);
         $queryBuilder->method('select')->willReturnSelf();
@@ -90,8 +96,8 @@ final class RecoveryCodeFuzzTest extends TestCase
         $codes = $this->subject->generate(feUserUid: 1, count: 100);
 
         foreach ($codes as $code) {
-            $stripped = \str_replace('-', '', $code);
-            for ($i = 0; $i < \strlen($stripped); $i++) {
+            $stripped = str_replace('-', '', $code);
+            for ($i = 0; $i < strlen($stripped); ++$i) {
                 self::assertStringContainsString(
                     $stripped[$i],
                     self::ALPHABET,
@@ -107,7 +113,7 @@ final class RecoveryCodeFuzzTest extends TestCase
         $codes = $this->subject->generate(feUserUid: 1, count: 20);
 
         foreach ($codes as $code) {
-            self::assertSame(9, \strlen($code), "Code must be 9 characters (4-4 + dash): got '{$code}'");
+            self::assertSame(9, strlen($code), "Code must be 9 characters (4-4 + dash): got '{$code}'");
             self::assertSame('-', $code[4], "Code must have dash at position 4: got '{$code}'");
         }
     }
@@ -132,12 +138,12 @@ final class RecoveryCodeFuzzTest extends TestCase
         yield 'unicode' => ['🔑KEY-ABCD'];
         yield 'sql injection' => ["'; DROP TABLE tx_nrpasskeysfe_recovery_code; --"];
         yield 'html injection' => ['<SCRIP-ALERT'];
-        yield 'binary' => [\random_bytes(9)];
+        yield 'binary' => [random_bytes(9)];
         yield 'all zeros' => ['0000-0000'];
         yield 'ambiguous chars O and I' => ['OOOO-IIII'];
         yield 'whitespace only' => ['    -    '];
         yield 'tabs and newlines' => ["\t\t\t\t-\n\n\n\n"];
-        yield 'very long string' => [\str_repeat('ABCD-', 1000)];
+        yield 'very long string' => [str_repeat('ABCD-', 1000)];
         yield 'valid format wrong chars' => ['0000-0000'];
         yield 'dash at start' => ['-ABCDEFGH'];
         yield 'dash at end' => ['ABCDEFGH-'];
@@ -157,9 +163,9 @@ final class RecoveryCodeFuzzTest extends TestCase
     #[Test]
     public function verifyReturnsFalseForAllRandomInputs(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $randomCode = \random_bytes(\random_int(1, 50));
-            $result = $this->subject->verify(feUserUid: 1, code: $randomCode);
+        for ($i = 0; $i < 100; ++$i) {
+            $randomCode = random_bytes(random_int(1, 50));
+            $result     = $this->subject->verify(feUserUid: 1, code: $randomCode);
 
             self::assertIsBool($result);
             // Should not throw; result can be true or false depending on content

@@ -32,7 +32,7 @@ final class RecoveryFlowTest extends AbstractPasskeyFunctionalTestCase
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../Fixtures/fe_users.csv');
-        $this->recoveryCodeService = $this->get(RecoveryCodeService::class);
+        $this->recoveryCodeService  = $this->get(RecoveryCodeService::class);
         $this->credentialRepository = $this->get(FrontendCredentialRepository::class);
     }
 
@@ -140,9 +140,9 @@ final class RecoveryFlowTest extends AbstractPasskeyFunctionalTestCase
     {
         $this->saveCredential(2, 'recovery-single-use-cred', 'site-a');
         $codes = $this->recoveryCodeService->generate(2, 5);
-        $code = $codes[0];
+        $code  = $codes[0];
 
-        $firstResult = $this->recoveryCodeService->verify(2, $code);
+        $firstResult  = $this->recoveryCodeService->verify(2, $code);
         $secondResult = $this->recoveryCodeService->verify(2, $code);
 
         self::assertTrue($firstResult, 'First use must succeed');
@@ -188,7 +188,7 @@ final class RecoveryFlowTest extends AbstractPasskeyFunctionalTestCase
     {
         $this->saveCredential(2, 'recovery-norm-cred', 'site-a');
         $codes = $this->recoveryCodeService->generate(2, 5);
-        $code = $codes[0];
+        $code  = $codes[0];
 
         // The code after normalisation: strip dashes, uppercase, trim spaces => should NOT match
         // because the normalisation in verify strips dashes but not spaces.

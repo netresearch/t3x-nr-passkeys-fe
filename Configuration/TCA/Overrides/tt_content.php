@@ -11,7 +11,7 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
-\defined('TYPO3') || die();
+\defined('TYPO3') || exit;
 
 /**
  * Give a plugin content type its FlexForm and show it on a "Plugin" tab.

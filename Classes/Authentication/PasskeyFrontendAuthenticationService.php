@@ -30,6 +30,18 @@ use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function array_key_exists;
+use function assert;
+use function bin2hex;
+use function hash;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function parse_url;
+use function strlen;
+
 /**
  * Authentication service for passwordless frontend login via Passkeys (WebAuthn).
  *
@@ -58,24 +70,25 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     /**
      * Decoded passkey payload from uident, cached per request.
      *
-     * @var array{assertion: string, challengeToken: string}|array{_token_authenticated: true}|null|false false = not yet parsed
+     * @var array{assertion: string, challengeToken: string}|array{_token_authenticated: true}|false|null false = not yet parsed
      */
     private array|false|null $passkeyPayload = false;
 
     public function getUser(): array|false
     {
-        $loginData = $this->login;
+        $loginData   = $this->login;
         $rawUsername = $loginData['uname'] ?? '';
-        $username = \is_string($rawUsername) ? $rawUsername : '';
+        $username    = is_string($rawUsername) ? $rawUsername : '';
 
         // Check for token-based passkey login (pre-verified by eID endpoint)
         $tokenUid = $this->resolvePasskeyToken();
         if ($tokenUid > 0) {
             $this->getLogger()->info('FE passkey token login', ['fe_user_uid' => $tokenUid]);
             $user = $this->fetchUserByUid($tokenUid);
-            if (\is_array($user)) {
+            if (is_array($user)) {
                 // Mark as token-authenticated so authUser() knows to return 200
                 $this->passkeyPayload = ['_token_authenticated' => true];
+
                 return $user;
             }
 
@@ -89,8 +102,8 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         }
 
         $this->getLogger()->info('FE passkey login attempt', [
-            'username' => $username,
-            'assertion_length' => \strlen($payload['assertion'] ?? ''),
+            'username'         => $username,
+            'assertion_length' => strlen($payload['assertion'] ?? ''),
         ]);
 
         if ($username === '' || $username === '__passkey__') {
@@ -98,14 +111,16 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $feUserUid = $this->getWebAuthnService()->findFeUserUidFromAssertion($payload['assertion'] ?? '');
             if ($feUserUid === null) {
                 $this->getLogger()->info('Discoverable login: could not resolve user from assertion');
+
                 return false;
             }
 
             $user = $this->fetchUserByUid($feUserUid);
-            if (!\is_array($user)) {
+            if (!is_array($user)) {
                 $this->getLogger()->info('Discoverable login: user not found for resolved UID', [
                     'fe_user_uid' => $feUserUid,
                 ]);
+
                 return false;
             }
 
@@ -114,11 +129,12 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
         // Username-first: look up the user via standard TYPO3 mechanism
         $user = $this->fetchUserRecord($username);
-        if (!\is_array($user)) {
+        if (!is_array($user)) {
             // Don't reveal whether user exists
             $this->getLogger()->info('FE passkey login attempt for unknown user', [
-                'username_hash' => \hash('sha256', $username),
+                'username_hash' => hash('sha256', $username),
             ]);
+
             return false;
         }
 
@@ -129,8 +145,9 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $this->getRateLimiterService()->checkLockout($username, $ip);
         } catch (Throwable) {
             $this->getLogger()->warning('FE passkey login blocked: account locked out', [
-                'username_hash' => \hash('sha256', $username),
+                'username_hash' => hash('sha256', $username),
             ]);
+
             return false;
         }
 
@@ -144,7 +161,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // (TYPO3 creates new instances via makeInstanceService), so we cannot
         // rely on instance properties set in getUser().
         $tokenUid = $this->resolvePasskeyToken();
-        if ($tokenUid > 0 && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+        if ($tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $this->getLogger()->info('FE passkey token auth accepted', [
                 'fe_user_uid' => $tokenUid,
             ]);
@@ -152,9 +169,9 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // Now consume the token (one-time use)
             try {
                 $rawUident = $this->login['uident'] ?? '';
-                $data = \json_decode(\is_string($rawUident) ? $rawUident : '', true);
-                $token = \is_array($data) ? ($data['token'] ?? '') : '';
-                if (\is_string($token) && $token !== '') {
+                $data      = json_decode(is_string($rawUident) ? $rawUident : '', true);
+                $token     = is_array($data) ? ($data['token'] ?? '') : '';
+                if (is_string($token) && $token !== '') {
                     GeneralUtility::makeInstance(CacheManager::class)
                         ->getCache('nr_passkeys_fe_nonce')
                         ->remove('passkey_login_' . $token);
@@ -173,8 +190,8 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         }
 
         $rawUname = $this->login['uname'] ?? '';
-        $username = \is_string($rawUname) ? $rawUname : '';
-        $ip = $this->getRemoteAddress();
+        $username = is_string($rawUname) ? $rawUname : '';
+        $ip       = $this->getRemoteAddress();
 
         try {
             // Check lockout (may have changed between getUser and authUser)
@@ -184,6 +201,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $site = $this->resolveSite();
             if (!$site instanceof SiteInterface) {
                 $this->getLogger()->warning('FE passkey auth failed: no site context available');
+
                 return 0;
             }
 
@@ -194,6 +212,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 $this->getLogger()->warning('FE passkey auth: invalid challenge token', [
                     'error' => $e->getMessage(),
                 ]);
+
                 return 0;
             }
 
@@ -201,7 +220,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // format used when creating assertion options in the eID endpoint.
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
                 assertionJson: $payload['assertion'],
-                challenge: \bin2hex($rawChallenge),
+                challenge: bin2hex($rawChallenge),
                 site: $site,
             );
 
@@ -209,8 +228,8 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $this->getRateLimiterService()->recordSuccess($username, $ip);
 
             $this->getLogger()->info('FE passkey authentication successful', [
-                'fe_user_uid' => $user['uid'] ?? 0,
-                'username' => $username,
+                'fe_user_uid'    => $user['uid'] ?? 0,
+                'username'       => $username,
                 'credential_uid' => $result['credential']->getUid(),
             ]);
 
@@ -223,11 +242,11 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $this->getRateLimiterService()->recordFailure($username, $ip);
 
             $this->getLogger()->warning('FE passkey authentication failed', [
-                'fe_user_uid' => $user['uid'] ?? 0,
-                'username' => $username,
-                'error_code' => $e->getCode(),
+                'fe_user_uid'   => $user['uid'] ?? 0,
+                'username'      => $username,
+                'error_code'    => $e->getCode(),
                 'error_message' => $e->getMessage(),
-                'ip' => $ip,
+                'ip'            => $ip,
             ]);
 
             // Return 0 = authentication failed
@@ -242,19 +261,19 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
      */
     private function handlePasswordLogin(array $user): int
     {
-        $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+        $uid = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
 
         // Check enforcement: block password login when enforced and user has passkeys
         if ($uid > 0) {
             $site = $this->resolveSite();
             if ($site instanceof SiteInterface) {
                 $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
-                $status = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
+                $status         = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
 
                 if ($status->passkeyCount > 0 && $status->effectiveLevel === 'enforced') {
                     $this->getLogger()->warning('FE password login blocked by enforcement', [
                         'fe_user_uid' => $uid,
-                        'username' => $user['username'] ?? '',
+                        'username'    => $user['username'] ?? '',
                     ]);
 
                     return 0;
@@ -283,23 +302,23 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     private function resolvePasskeyToken(): int
     {
         $rawUident = $this->login['uident'] ?? '';
-        $uident = \is_string($rawUident) ? $rawUident : '';
+        $uident    = is_string($rawUident) ? $rawUident : '';
         if ($uident === '' || $uident[0] !== '{') {
             return 0;
         }
 
         try {
-            $data = \json_decode($uident, true, 8, JSON_THROW_ON_ERROR);
+            $data = json_decode($uident, true, 8, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return 0;
         }
 
-        if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey_token') {
+        if (!is_array($data) || ($data['_type'] ?? '') !== 'passkey_token') {
             return 0;
         }
 
         $token = $data['token'] ?? '';
-        if (!\is_string($token) || $token === '') {
+        if (!is_string($token) || $token === '') {
             return 0;
         }
 
@@ -311,6 +330,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $feUserUid = $cache->get($cacheKey);
             if ($feUserUid === false) {
                 $this->getLogger()->warning('FE passkey token not found or expired');
+
                 return 0;
             }
 
@@ -318,12 +338,14 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // service instance and needs to read the same token. The 120s TTL
             // ensures automatic expiry. The token is consumed after authUser().
 
-            $uid = \is_numeric($feUserUid) ? (int) $feUserUid : 0;
+            $uid = is_numeric($feUserUid) ? (int) $feUserUid : 0;
+
             return $uid;
         } catch (Throwable $e) {
             $this->getLogger()->warning('FE passkey token resolution failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return 0;
         }
     }
@@ -340,7 +362,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     {
         if ($this->passkeyPayload !== false) {
             // Token-authenticated payloads are handled by resolvePasskeyToken()
-            if (\is_array($this->passkeyPayload) && \array_key_exists('_token_authenticated', $this->passkeyPayload)) {
+            if (is_array($this->passkeyPayload) && array_key_exists('_token_authenticated', $this->passkeyPayload)) {
                 return null;
             }
 
@@ -353,31 +375,32 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         $this->passkeyPayload = null;
 
         $rawUident = $this->login['uident'] ?? '';
-        $uident = \is_string($rawUident) ? $rawUident : '';
+        $uident    = is_string($rawUident) ? $rawUident : '';
         if ($uident === '' || $uident[0] !== '{') {
             return null;
         }
 
         try {
-            $data = \json_decode($uident, true, 16, JSON_THROW_ON_ERROR);
+            $data = json_decode($uident, true, 16, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return null;
         }
 
-        if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey') {
+        if (!is_array($data) || ($data['_type'] ?? '') !== 'passkey') {
             return null;
         }
 
-        $assertion = $data['assertion'] ?? null;
+        $assertion      = $data['assertion'] ?? null;
         $challengeToken = $data['challengeToken'] ?? null;
 
-        if (!\is_array($assertion) || !\is_string($challengeToken) || $challengeToken === '') {
+        if (!is_array($assertion) || !is_string($challengeToken) || $challengeToken === '') {
             $this->getLogger()->warning('FE passkey payload has invalid structure');
+
             return null;
         }
 
         $this->passkeyPayload = [
-            'assertion' => \json_encode($assertion, JSON_THROW_ON_ERROR),
+            'assertion'      => json_encode($assertion, JSON_THROW_ON_ERROR),
             'challengeToken' => $challengeToken,
         ];
 
@@ -432,10 +455,10 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // Fallback: resolve site by matching request host against configured sites
         try {
             $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
-            $host = $request->getUri()->getHost();
+            $host       = $request->getUri()->getHost();
 
             foreach ($siteFinder->getAllSites() as $site) {
-                $siteHost = \parse_url((string) $site->getBase(), PHP_URL_HOST);
+                $siteHost = parse_url((string) $site->getBase(), PHP_URL_HOST);
                 if ($siteHost === $host) {
                     return $site;
                 }
@@ -475,7 +498,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     {
         $remoteAddress = $this->authInfo['REMOTE_ADDR'] ?? '';
 
-        return \is_string($remoteAddress) ? $remoteAddress : '';
+        return is_string($remoteAddress) ? $remoteAddress : '';
     }
 
     private function getWebAuthnService(): FrontendWebAuthnService
@@ -533,7 +556,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             }
         }
 
-        \assert($this->logger instanceof LoggerInterface);
+        assert($this->logger instanceof LoggerInterface);
 
         return $this->logger;
     }

@@ -16,6 +16,11 @@ use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function array_filter;
+use function implode;
+use function in_array;
+use function is_string;
+
 /**
  * Writes the passkey enforcement level of a frontend user group.
  *
@@ -37,7 +42,7 @@ final readonly class FrontendGroupEnforcementService
 
     public static function isValidLevel(string $level): bool
     {
-        return \in_array($level, self::LEVELS, true);
+        return in_array($level, self::LEVELS, true);
     }
 
     /**
@@ -65,7 +70,7 @@ final readonly class FrontendGroupEnforcementService
 
         if ($dataHandler->errorLog !== []) {
             // errorLog is typed array<string> on 14.3 and plain array on 13.4.
-            throw new RuntimeException(\implode(' ', \array_filter($dataHandler->errorLog, \is_string(...))), 1790000001);
+            throw new RuntimeException(implode(' ', array_filter($dataHandler->errorLog, is_string(...))), 1790000001);
         }
 
         // An empty error log does not prove the write: DataHandler drops a
@@ -90,6 +95,6 @@ final readonly class FrontendGroupEnforcementService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_string($value) ? $value : null;
+        return is_string($value) ? $value : null;
     }
 }

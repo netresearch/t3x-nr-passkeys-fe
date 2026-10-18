@@ -25,6 +25,8 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function json_decode;
+
 #[CoversClass(EnrollmentController::class)]
 final class EnrollmentControllerTest extends TestCase
 {
@@ -41,8 +43,8 @@ final class EnrollmentControllerTest extends TestCase
         parent::setUp();
 
         $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
-        $this->site = $this->createStub(SiteInterface::class);
+        $this->siteConfigService  = $this->createStub(SiteConfigurationService::class);
+        $this->site               = $this->createStub(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -73,7 +75,7 @@ final class EnrollmentControllerTest extends TestCase
 
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->buildRequestWithUser(42);
+        $request  = $this->buildRequestWithUser(42);
         $response = $this->subject->statusAction($request);
 
         self::assertSame(200, $response->getStatusCode());
@@ -103,7 +105,7 @@ final class EnrollmentControllerTest extends TestCase
 
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->buildRequestWithUser(42);
+        $request  = $this->buildRequestWithUser(42);
         $response = $this->subject->statusAction($request);
 
         $body = $this->decodeBody($response);
@@ -117,7 +119,7 @@ final class EnrollmentControllerTest extends TestCase
         $this->siteConfigService->method('getCurrentSite')
             ->willThrowException(new RuntimeException('No site'));
 
-        $request = $this->buildRequestWithUser(42);
+        $request  = $this->buildRequestWithUser(42);
         $response = $this->subject->statusAction($request);
 
         self::assertSame(500, $response->getStatusCode());
@@ -130,7 +132,7 @@ final class EnrollmentControllerTest extends TestCase
     #[Test]
     public function skipActionReturns400WhenNonceMissing(): void
     {
-        $request = $this->buildRequestWithUser(42, []);
+        $request  = $this->buildRequestWithUser(42, []);
         $response = $this->subject->skipAction($request);
 
         self::assertSame(400, $response->getStatusCode());
@@ -140,7 +142,7 @@ final class EnrollmentControllerTest extends TestCase
     public function skipActionReturns403WhenNonceDoesNotMatchSession(): void
     {
         // No TSFE globals configured → getSessionNonce returns '' → mismatch
-        $request = $this->buildRequestWithUser(42, ['nonce' => 'wrong-nonce-value']);
+        $request  = $this->buildRequestWithUser(42, ['nonce' => 'wrong-nonce-value']);
         $response = $this->subject->skipAction($request);
 
         self::assertSame(403, $response->getStatusCode());
@@ -152,7 +154,7 @@ final class EnrollmentControllerTest extends TestCase
         $nonce = 'valid-enrollment-nonce-abc123';
 
         // Mock FrontendUserAuthentication with session nonce
-        $feUser = $this->createMock(FrontendUserAuthentication::class);
+        $feUser       = $this->createMock(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => 42];
         $feUser->method('getKey')
             ->with('ses', 'nr_passkeys_fe_enrollment_nonce')
@@ -161,7 +163,7 @@ final class EnrollmentControllerTest extends TestCase
             ->method('setKey')
             ->willReturnCallback(function (string $type, string $key, mixed $value): void {
                 static $callCount = 0;
-                $callCount++;
+                ++$callCount;
                 self::assertSame('ses', $type);
                 if ($callCount === 1) {
                     self::assertSame('nr_passkeys_fe_skip_enrollment', $key);
@@ -190,7 +192,7 @@ final class EnrollmentControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, array $body = []): ServerRequest
     {
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))
@@ -200,6 +202,6 @@ final class EnrollmentControllerTest extends TestCase
 
     private function decodeBody(ResponseInterface $response): array
     {
-        return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }
 }

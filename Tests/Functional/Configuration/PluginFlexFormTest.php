@@ -18,6 +18,10 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function array_map;
+use function explode;
+use function trim;
+
 /**
  * Each plugin content type shows its FlexForm in the content element form,
  * and FormEngine resolves the plugin's own data structure for it, on both
@@ -34,11 +38,11 @@ final class PluginFlexFormTest extends AbstractPasskeyFunctionalTestCase
     public static function pluginProvider(): iterable
     {
         yield 'login' => ['nrpasskeysfe_passkeylogin', [
-            'settings.discoverableEnabled' => 'select',
+            'settings.discoverableEnabled'  => 'select',
             'settings.showPasswordFallback' => 'check',
-            'settings.passwordLoginPage' => 'group',
-            'settings.redirectAfterLogin' => 'group',
-            'settings.cssClass' => 'input',
+            'settings.passwordLoginPage'    => 'group',
+            'settings.redirectAfterLogin'   => 'group',
+            'settings.cssClass'             => 'input',
         ]];
         yield 'management' => ['nrpasskeysfe_passkeymanagement', ['settings.cssClass' => 'input']];
         yield 'enrollment' => ['nrpasskeysfe_passkeyenrollment', ['settings.cssClass' => 'input']];
@@ -61,9 +65,9 @@ final class PluginFlexFormTest extends AbstractPasskeyFunctionalTestCase
         $showitem = $GLOBALS['TCA']['tt_content']['types'][$cType]['showitem'] ?? '';
         self::assertIsString($showitem);
 
-        $fields = \array_map(
-            static fn(string $item): string => \trim(\explode(';', $item)[0]),
-            \explode(',', $showitem),
+        $fields = array_map(
+            static fn (string $item): string => trim(explode(';', $item)[0]),
+            explode(',', $showitem),
         );
         self::assertContains('pi_flexform', $fields, $cType . ' has no pi_flexform field in its form');
     }
@@ -80,7 +84,7 @@ final class PluginFlexFormTest extends AbstractPasskeyFunctionalTestCase
     public function formEngineResolvesThePluginsOwnDataStructure(string $cType, array $expectedFields): void
     {
         $flexFormTools = GeneralUtility::makeInstance(FlexFormTools::class);
-        $fieldTca = $GLOBALS['TCA']['tt_content']['columns']['pi_flexform'];
+        $fieldTca      = $GLOBALS['TCA']['tt_content']['columns']['pi_flexform'];
         self::assertIsArray($fieldTca);
 
         $row = ['uid' => 1, 'pid' => 1, 'CType' => $cType, 'list_type' => ''];
@@ -88,11 +92,11 @@ final class PluginFlexFormTest extends AbstractPasskeyFunctionalTestCase
         if ((new Typo3Version())->getMajorVersion() >= 14) {
             // 14.x resolves the data structure through the record type's
             // columnsOverrides and needs the table schema, as FormEngine passes it.
-            $schema = $this->get(TcaSchemaFactory::class)->get('tt_content');
-            $identifier = $flexFormTools->getDataStructureIdentifier($fieldTca, 'tt_content', 'pi_flexform', $row, $schema);
+            $schema        = $this->get(TcaSchemaFactory::class)->get('tt_content');
+            $identifier    = $flexFormTools->getDataStructureIdentifier($fieldTca, 'tt_content', 'pi_flexform', $row, $schema);
             $dataStructure = $flexFormTools->parseDataStructureByIdentifier($identifier, $schema);
         } else {
-            $identifier = $flexFormTools->getDataStructureIdentifier($fieldTca, 'tt_content', 'pi_flexform', $row);
+            $identifier    = $flexFormTools->getDataStructureIdentifier($fieldTca, 'tt_content', 'pi_flexform', $row);
             $dataStructure = $flexFormTools->parseDataStructureByIdentifier($identifier);
         }
 

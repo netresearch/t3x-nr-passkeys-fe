@@ -20,6 +20,12 @@ use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\Event\AfterCacheableContentIsGeneratedEvent;
 
+use function htmlspecialchars;
+use function is_array;
+use function method_exists;
+use function sprintf;
+use function str_ireplace;
+
 /**
  * Injects passkey enrollment banner into FE page responses.
  *
@@ -60,7 +66,7 @@ final readonly class InjectPasskeyBanner
         }
 
         $userRow = $feUser->user;
-        if (!\is_array($userRow) || empty($userRow['uid'])) {
+        if (!is_array($userRow) || empty($userRow['uid'])) {
             return;
         }
 
@@ -77,7 +83,7 @@ final readonly class InjectPasskeyBanner
         }
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
-        $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
+        $status         = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
         $effectiveLevel = $status->effectiveLevel;
 
         // Only show banner for encourage, required (in grace), or enforced
@@ -103,13 +109,13 @@ final readonly class InjectPasskeyBanner
         // Inject banner before </body> and disable caching (user-specific content)
         // TYPO3 v14+ exposes getContent()/setContent() on the event directly;
         // TYPO3 v13 stores content on the TypoScriptFrontendController.
-        if (\method_exists($event, 'getContent')) {
+        if (method_exists($event, 'getContent')) {
             $content = $event->getContent();
-            $content = \str_ireplace('</body>', $banner . '</body>', $content);
+            $content = str_ireplace('</body>', $banner . '</body>', $content);
             $event->setContent($content);
         } else {
-            $controller = $event->getController();
-            $controller->content = \str_ireplace('</body>', $banner . '</body>', $controller->content);
+            $controller          = $event->getController();
+            $controller->content = str_ireplace('</body>', $banner . '</body>', $controller->content);
         }
 
         $event->disableCaching();
@@ -130,7 +136,7 @@ final readonly class InjectPasskeyBanner
         ?DateTimeImmutable $graceDeadline,
         int $graceDaysRemaining,
     ): string {
-        $enrollmentUrlEscaped = \htmlspecialchars($enrollmentUrl, ENT_QUOTES, 'UTF-8');
+        $enrollmentUrlEscaped = htmlspecialchars($enrollmentUrl, ENT_QUOTES, 'UTF-8');
 
         $title = LocalizationUtility::translate('banner.encourage.title', 'NrPasskeysFe')
             ?? 'Passkeys available for your account';
@@ -140,7 +146,7 @@ final readonly class InjectPasskeyBanner
         if ($level === 'required' && $graceDeadline instanceof DateTimeImmutable) {
             $title = LocalizationUtility::translate('banner.required.title', 'NrPasskeysFe')
                 ?? 'Passkey setup required';
-            $description = \sprintf(
+            $description = sprintf(
                 LocalizationUtility::translate('banner.required.grace_description', 'NrPasskeysFe')
                     ?? 'You have %d day(s) left to register a passkey. Your account access will be restricted after the grace period ends.',
                 $graceDaysRemaining,
@@ -152,8 +158,8 @@ final readonly class InjectPasskeyBanner
                 ?? 'Passkey enrollment is required to continue accessing your account.';
         }
 
-        $titleEscaped = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-        $descriptionEscaped = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+        $titleEscaped       = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $descriptionEscaped = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
 
         $dismissButton = '';
         if ($isDismissible) {
@@ -163,22 +169,22 @@ final readonly class InjectPasskeyBanner
 
         $enrollLink = '';
         if ($enrollmentUrl !== '') {
-            $ctaLabel = LocalizationUtility::translate('banner.button.setup', 'NrPasskeysFe') ?? 'Set up now';
-            $ctaLabelEscaped = \htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
-            $enrollLink = '<a href="' . $enrollmentUrlEscaped . '" class="nr-passkeys-banner__cta">'
+            $ctaLabel        = LocalizationUtility::translate('banner.button.setup', 'NrPasskeysFe') ?? 'Set up now';
+            $ctaLabelEscaped = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
+            $enrollLink      = '<a href="' . $enrollmentUrlEscaped . '" class="nr-passkeys-banner__cta">'
                 . $ctaLabelEscaped . '</a>';
         }
 
         return <<<HTML
-<div class="nr-passkeys-banner" role="alert" data-nr-passkeys-fe="banner" data-enforcement="{$level}" data-level="{$level}" style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px 24px;z-index:9999;display:flex;align-items:center;gap:16px;font-family:sans-serif;font-size:14px;">
-  <span class="nr-passkeys-banner__icon" aria-hidden="true">&#128274;</span>
-  <div class="nr-passkeys-banner__content" style="flex:1;">
-    <strong>{$titleEscaped}</strong>
-    <span style="margin-left:8px;">{$descriptionEscaped}</span>
-  </div>
-  {$enrollLink}
-  {$dismissButton}
-</div>
-HTML;
+            <div class="nr-passkeys-banner" role="alert" data-nr-passkeys-fe="banner" data-enforcement="{$level}" data-level="{$level}" style="position:fixed;bottom:0;left:0;right:0;background:#1a73e8;color:#fff;padding:12px 24px;z-index:9999;display:flex;align-items:center;gap:16px;font-family:sans-serif;font-size:14px;">
+              <span class="nr-passkeys-banner__icon" aria-hidden="true">&#128274;</span>
+              <div class="nr-passkeys-banner__content" style="flex:1;">
+                <strong>{$titleEscaped}</strong>
+                <span style="margin-left:8px;">{$descriptionEscaped}</span>
+              </div>
+              {$enrollLink}
+              {$dismissButton}
+            </div>
+            HTML;
     }
 }

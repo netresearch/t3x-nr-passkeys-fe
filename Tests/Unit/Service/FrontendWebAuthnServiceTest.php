@@ -26,6 +26,26 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use Webauthn\CredentialRecord;
 use Webauthn\PublicKeyCredentialDescriptor;
 
+use function array_diff;
+use function array_intersect;
+use function array_map;
+use function array_unique;
+use function array_values;
+use function assert;
+use function base64_encode;
+use function bin2hex;
+use function count;
+use function implode;
+use function json_encode;
+use function min;
+use function random_bytes;
+use function rtrim;
+use function sort;
+use function str_repeat;
+use function strlen;
+use function strtr;
+use function substr;
+
 #[CoversClass(FrontendWebAuthnService::class)]
 final class FrontendWebAuthnServiceTest extends TestCase
 {
@@ -44,15 +64,15 @@ final class FrontendWebAuthnServiceTest extends TestCase
         parent::setUp();
 
         // Set up TYPO3 encryption key for user handle derivation
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = str_repeat('a', 64);
 
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
 
         // The decoy descriptors are keyed by the encryption key, so the stub
         // answers with the same one the user-handle derivation above uses.
         $this->configurationService = $this->createStub(ExtensionConfigurationService::class);
-        $this->configurationService->method('getEncryptionKey')->willReturn(\str_repeat('a', 64));
+        $this->configurationService->method('getEncryptionKey')->willReturn(str_repeat('a', 64));
 
         $this->subject = new FrontendWebAuthnService(
             $this->credentialRepository,
@@ -91,8 +111,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
 
         self::assertArrayHasKey('options', $result);
         self::assertArrayHasKey('optionsJson', $result);
@@ -115,8 +135,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->credentialRepository->method('findByFeUser')
             ->willReturn([$existingCred]);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
 
         $options = $result['options'];
         self::assertCount(1, $options->excludeCredentials);
@@ -129,8 +149,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
 
         self::assertSame($challenge, $result['options']->challenge);
     }
@@ -146,8 +166,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createAssertionOptions(1, $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createAssertionOptions(1, $challenge, $this->site);
 
         self::assertArrayHasKey('options', $result);
         self::assertArrayHasKey('optionsJson', $result);
@@ -166,8 +186,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->credentialRepository->method('findByFeUser')
             ->willReturn([$cred1, $cred2]);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createAssertionOptions(7, $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createAssertionOptions(7, $challenge, $this->site);
 
         self::assertCount(2, $result['options']->allowCredentials);
     }
@@ -181,8 +201,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->createDiscoverableAssertionOptions($challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->createDiscoverableAssertionOptions($challenge, $this->site);
 
         self::assertSame([], $result['options']->allowCredentials);
         self::assertSame('example.com', $result['options']->rpId);
@@ -216,7 +236,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $challenge = \random_bytes(32);
+        $challenge = random_bytes(32);
 
         $result1 = $this->subject->createRegistrationOptions(42, 'user', $challenge, $this->site);
         $result2 = $this->subject->createRegistrationOptions(42, 'user', $challenge, $this->site);
@@ -231,7 +251,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
         $this->credentialRepository->method('findByFeUser')->willReturn([]);
 
-        $challenge = \random_bytes(32);
+        $challenge = random_bytes(32);
 
         $result1 = $this->subject->createRegistrationOptions(1, 'user1', $challenge, $this->site);
         $result2 = $this->subject->createRegistrationOptions(2, 'user2', $challenge, $this->site);
@@ -262,7 +282,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700200040);
 
-        $service->createRegistrationOptions(1, 'user', \random_bytes(32), $this->site);
+        $service->createRegistrationOptions(1, 'user', random_bytes(32), $this->site);
     }
 
     #[Test]
@@ -284,7 +304,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700200040);
 
-        $service->createRegistrationOptions(1, 'user', \random_bytes(32), $this->site);
+        $service->createRegistrationOptions(1, 'user', random_bytes(32), $this->site);
     }
 
     // ---------------------------------------------------------------
@@ -298,23 +318,23 @@ final class FrontendWebAuthnServiceTest extends TestCase
      */
     private function buildAssertionJson(string $credentialId = 'credential-id-123'): string
     {
-        $b64 = static fn(string $bin): string => \rtrim(\strtr(\base64_encode($bin), '+/', '-_'), '=');
+        $b64 = static fn (string $bin): string => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
 
-        $clientData = \json_encode([
-            'type' => 'webauthn.get',
-            'challenge' => $b64(\random_bytes(32)),
-            'origin' => 'https://example.com',
+        $clientData = json_encode([
+            'type'      => 'webauthn.get',
+            'challenge' => $b64(random_bytes(32)),
+            'origin'    => 'https://example.com',
         ], JSON_THROW_ON_ERROR);
 
-        return \json_encode([
-            'id' => $b64($credentialId),
-            'rawId' => $b64($credentialId),
-            'type' => 'public-key',
+        return json_encode([
+            'id'       => $b64($credentialId),
+            'rawId'    => $b64($credentialId),
+            'type'     => 'public-key',
             'response' => [
-                'clientDataJSON' => $b64($clientData),
-                'authenticatorData' => $b64(\str_repeat("\x00", 37)),
-                'signature' => $b64('sig'),
-                'userHandle' => null,
+                'clientDataJSON'    => $b64($clientData),
+                'authenticatorData' => $b64(str_repeat("\x00", 37)),
+                'signature'         => $b64('sig'),
+                'userHandle'        => null,
             ],
         ], JSON_THROW_ON_ERROR);
     }
@@ -427,7 +447,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // list is generated rather than stored.
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
 
-        $first = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
+        $first  = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
         $second = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'c', $this->site);
 
         self::assertSame(
@@ -441,17 +461,17 @@ final class FrontendWebAuthnServiceTest extends TestCase
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
 
-        $first = $this->subject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
+        $first  = $this->subject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
         $second = $this->subject->createDecoyAssertionOptions('bob@example.com', 'c', $this->site);
 
         // The ids, not the fingerprints: length and transports come from the
         // selector derivation, so they differ per username even when the ids
         // themselves do not. An id that is the same for every username is what
         // gives the answer away, and comparing fingerprints would pass anyway.
-        $mine = \array_map(static fn(PublicKeyCredentialDescriptor $d): string => \bin2hex($d->id), $first['options']->allowCredentials);
-        $theirs = \array_map(static fn(PublicKeyCredentialDescriptor $d): string => \bin2hex($d->id), $second['options']->allowCredentials);
+        $mine   = array_map(static fn (PublicKeyCredentialDescriptor $d): string => bin2hex($d->id), $first['options']->allowCredentials);
+        $theirs = array_map(static fn (PublicKeyCredentialDescriptor $d): string => bin2hex($d->id), $second['options']->allowCredentials);
 
-        self::assertSame([], \array_intersect($mine, $theirs));
+        self::assertSame([], array_intersect($mine, $theirs));
 
         // Inequality is not enough. Drop the username from the id derivation
         // and every account shares one byte stream, cut to the length the
@@ -459,10 +479,10 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // other, which is the same disclosure in a shape `assertNotSame` likes.
         foreach ($mine as $id) {
             foreach ($theirs as $other) {
-                $shared = \min(\strlen($id), \strlen($other));
+                $shared = min(strlen($id), strlen($other));
                 self::assertNotSame(
-                    \substr($id, 0, $shared),
-                    \substr($other, 0, $shared),
+                    substr($id, 0, $shared),
+                    substr($other, 0, $shared),
                     "no decoy id may be a prefix of another username's",
                 );
             }
@@ -478,7 +498,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $mine = $this->subject->createDecoyAssertionOptions('alice@example.com', 'c', $this->site);
 
         $otherConfiguration = $this->createStub(ExtensionConfigurationService::class);
-        $otherConfiguration->method('getEncryptionKey')->willReturn(\str_repeat('b', 64));
+        $otherConfiguration->method('getEncryptionKey')->willReturn(str_repeat('b', 64));
         $otherSubject = new FrontendWebAuthnService(
             $this->credentialRepository,
             $this->siteConfigService,
@@ -503,31 +523,31 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // two of them; 64 bytes is the case that needs a second HMAC block.
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
 
-        $lengths = [];
+        $lengths       = [];
         $transportSets = [];
-        $counts = [];
+        $counts        = [];
 
         for ($i = 0; $i < 200; ++$i) {
             $credentials = $this->subject
                 ->createDecoyAssertionOptions('user' . $i . '@example.com', 'c', $this->site)['options']
                 ->allowCredentials;
 
-            $counts[] = \count($credentials);
+            $counts[] = count($credentials);
             foreach ($credentials as $descriptor) {
                 self::assertSame('public-key', $descriptor->type);
-                $lengths[] = \strlen($descriptor->id);
+                $lengths[]       = strlen($descriptor->id);
                 $transportSets[] = $descriptor->transports;
             }
         }
 
-        self::assertSame([], \array_diff(\array_unique($lengths), [16, 20, 32, 64]));
+        self::assertSame([], array_diff(array_unique($lengths), [16, 20, 32, 64]));
         self::assertSame([16, 20, 32, 64], $this->sortedUnique($lengths), 'every id length has to occur');
         self::assertSame([1, 2, 3], $this->sortedUnique($counts));
 
         foreach ($transportSets as $transports) {
             self::assertSame(
                 [],
-                \array_diff($transports, ['internal', 'hybrid', 'usb', 'nfc']),
+                array_diff($transports, ['internal', 'hybrid', 'usb', 'nfc']),
                 'a decoy claims only transports a real authenticator reports',
             );
         }
@@ -540,9 +560,9 @@ final class FrontendWebAuthnServiceTest extends TestCase
      */
     private function descriptorFingerprints(array $descriptors): array
     {
-        return \array_map(
-            static fn(PublicKeyCredentialDescriptor $descriptor): string => \bin2hex($descriptor->id)
-                . '|' . \implode(',', $descriptor->transports),
+        return array_map(
+            static fn (PublicKeyCredentialDescriptor $descriptor): string => bin2hex($descriptor->id)
+                . '|' . implode(',', $descriptor->transports),
             $descriptors,
         );
     }
@@ -554,8 +574,8 @@ final class FrontendWebAuthnServiceTest extends TestCase
      */
     private function sortedUnique(array $values): array
     {
-        $unique = \array_values(\array_unique($values));
-        \sort($unique);
+        $unique = array_values(array_unique($values));
+        sort($unique);
 
         return $unique;
     }
@@ -564,7 +584,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     {
         $method = (new ReflectionClass($this->subject))->getMethod('credentialToSource');
         $record = $method->invoke($this->subject, $credential);
-        \assert($record instanceof CredentialRecord);
+        assert($record instanceof CredentialRecord);
 
         return $record;
     }

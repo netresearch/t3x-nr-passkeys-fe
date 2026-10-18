@@ -19,6 +19,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
+use function json_encode;
+
 /**
  * Integration tests for the complete login-related service flow.
  *
@@ -52,7 +54,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../Fixtures/fe_users.csv');
         $this->credentialRepository = $this->get(FrontendCredentialRepository::class);
-        $this->recoveryCodeService = $this->get(RecoveryCodeService::class);
+        $this->recoveryCodeService  = $this->get(RecoveryCodeService::class);
     }
 
     // ---------------------------------------------------------------
@@ -97,8 +99,8 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
     {
         $service = new PasskeyFrontendAuthenticationService();
         // Missing challengeToken field
-        $malformedPayload = \json_encode([
-            '_type' => 'passkey',
+        $malformedPayload = json_encode([
+            '_type'     => 'passkey',
             'assertion' => ['id' => 'test'],
             // no challengeToken
         ]);
@@ -145,13 +147,13 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         // Create a fe_groups row with enforcement = 'off'
         $connection = $this->getConnectionPool()->getConnectionForTable('fe_groups');
         $connection->insert('fe_groups', [
-            'uid' => 100,
-            'pid' => 1,
-            'title' => 'Test Group Off',
-            'passkey_enforcement' => 'off',
+            'uid'                       => 100,
+            'pid'                       => 1,
+            'title'                     => 'Test Group Off',
+            'passkey_enforcement'       => 'off',
             'passkey_grace_period_days' => 14,
-            'hidden' => 0,
-            'deleted' => 0,
+            'hidden'                    => 0,
+            'deleted'                   => 0,
         ]);
 
         // Assign fe_user 1 to this group
@@ -161,7 +163,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         $site = $this->makeSiteWithSettings();
 
         $enforcementService = $this->get(FrontendEnforcementService::class);
-        $status = $enforcementService->getStatus(1, 'site-a', $site);
+        $status             = $enforcementService->getStatus(1, 'site-a', $site);
 
         self::assertSame('off', $status->effectiveLevel);
         self::assertSame('off', $status->groupLevel);
@@ -173,13 +175,13 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         // Create a fe_groups row with enforcement = 'encourage'
         $connection = $this->getConnectionPool()->getConnectionForTable('fe_groups');
         $connection->insert('fe_groups', [
-            'uid' => 101,
-            'pid' => 1,
-            'title' => 'Test Group Encourage',
-            'passkey_enforcement' => 'encourage',
+            'uid'                       => 101,
+            'pid'                       => 1,
+            'title'                     => 'Test Group Encourage',
+            'passkey_enforcement'       => 'encourage',
             'passkey_grace_period_days' => 14,
-            'hidden' => 0,
-            'deleted' => 0,
+            'hidden'                    => 0,
+            'deleted'                   => 0,
         ]);
 
         $usersConnection = $this->getConnectionPool()->getConnectionForTable('fe_users');
@@ -188,7 +190,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         $site = $this->makeSiteWithSettings();
 
         $enforcementService = $this->get(FrontendEnforcementService::class);
-        $status = $enforcementService->getStatus(1, 'site-a', $site);
+        $status             = $enforcementService->getStatus(1, 'site-a', $site);
 
         self::assertSame('encourage', $status->effectiveLevel);
         self::assertSame('encourage', $status->groupLevel);
@@ -214,13 +216,13 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         // Create fe_groups with 'enforced' enforcement
         $connection = $this->getConnectionPool()->getConnectionForTable('fe_groups');
         $connection->insert('fe_groups', [
-            'uid' => 200,
-            'pid' => 1,
-            'title' => 'Test Group Enforced',
-            'passkey_enforcement' => 'enforced',
+            'uid'                       => 200,
+            'pid'                       => 1,
+            'title'                     => 'Test Group Enforced',
+            'passkey_enforcement'       => 'enforced',
             'passkey_grace_period_days' => 0,
-            'hidden' => 0,
-            'deleted' => 0,
+            'hidden'                    => 0,
+            'deleted'                   => 0,
         ]);
 
         $usersConnection = $this->getConnectionPool()->getConnectionForTable('fe_users');
@@ -232,7 +234,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         // We test the enforcement service directly since the auth service
         // requires $GLOBALS['TYPO3_REQUEST'] to resolve the site
         $enforcementService = $this->get(FrontendEnforcementService::class);
-        $status = $enforcementService->getStatus(1, 'site-a', $site);
+        $status             = $enforcementService->getStatus(1, 'site-a', $site);
 
         // Verify enforcement + passkey count means password should be blocked
         self::assertSame('enforced', $status->effectiveLevel);
@@ -266,7 +268,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         self::assertGreaterThan(0, $this->recoveryCodeService->countRemaining(2));
 
         // During login, user provides a recovery code instead of passkey
-        $code = $codes[0];
+        $code     = $codes[0];
         $verified = $this->recoveryCodeService->verify(2, $code);
 
         self::assertTrue($verified, 'Recovery code must verify successfully during login flow');
@@ -279,7 +281,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
     #[Test]
     public function usedRecoveryCodeCannotBeUsedAgainDuringLoginFlow(): void
     {
-        $codes = $this->recoveryCodeService->generate(3, 5);
+        $codes     = $this->recoveryCodeService->generate(3, 5);
         $firstCode = $codes[0];
 
         // First use succeeds

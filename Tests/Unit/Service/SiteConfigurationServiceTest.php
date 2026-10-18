@@ -20,6 +20,10 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 
+use function array_key_exists;
+use function explode;
+use function is_array;
+
 #[CoversClass(SiteConfigurationService::class)]
 final class SiteConfigurationServiceTest extends TestCase
 {
@@ -246,10 +250,10 @@ final class SiteConfigurationServiceTest extends TestCase
         $settings->method('get')->willReturnCallback(
             static function (string $key, mixed $default = null) use ($data): mixed {
                 // Support dot-notation: nr_passkeys_fe.rpId
-                $parts = \explode('.', $key);
+                $parts = explode('.', $key);
                 $value = $data;
                 foreach ($parts as $part) {
-                    if (!\is_array($value) || !\array_key_exists($part, $value)) {
+                    if (!is_array($value) || !array_key_exists($part, $value)) {
                         return $default;
                     }
 

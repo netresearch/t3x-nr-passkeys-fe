@@ -13,6 +13,10 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function file_get_contents;
+use function preg_match;
+use function preg_match_all;
+
 /**
  * Ties the support table in SECURITY.md to the version in ext_emconf.php:
  * the major line the extension is on is the one marked supported, and every
@@ -52,23 +56,23 @@ final class SecurityPolicyTest extends TestCase
     {
         $major = $this->currentMajor();
 
-        \preg_match_all('/^\| ([^|]+?) +\|[^\n]*:white_check_mark:/m', $this->securityPolicy(), $matches);
+        preg_match_all('/^\| ([^|]+?) +\|[^\n]*:white_check_mark:/m', $this->securityPolicy(), $matches);
 
         self::assertSame([$major . '.x'], $matches[1]);
     }
 
     private function currentMajor(): string
     {
-        $emconf = \file_get_contents(self::ROOT . 'ext_emconf.php');
+        $emconf = file_get_contents(self::ROOT . 'ext_emconf.php');
         self::assertIsString($emconf);
-        self::assertSame(1, \preg_match("/'version' => '(\\d+)\\.\\d+\\.\\d+'/", $emconf, $match));
+        self::assertSame(1, preg_match("/'version' => '(\\d+)\\.\\d+\\.\\d+'/", $emconf, $match));
 
         return $match[1];
     }
 
     private function securityPolicy(): string
     {
-        $policy = \file_get_contents(self::ROOT . 'SECURITY.md');
+        $policy = file_get_contents(self::ROOT . 'SECURITY.md');
         self::assertIsString($policy);
 
         return $policy;

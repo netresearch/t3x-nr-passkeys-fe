@@ -23,6 +23,9 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 
+use function array_column;
+use function json_decode;
+
 /**
  * The dashboard's enforcement select, end to end below the HTTP layer: the
  * action and DataHandler against a real database, as an administrator and as
@@ -50,7 +53,7 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
             ['status' => 'ok', 'groupUid' => 2, 'enforcement' => 'encourage'],
-            \json_decode((string) $response->getBody(), true),
+            json_decode((string) $response->getBody(), true),
         );
         self::assertSame('encourage', $this->storedLevel(2));
         // Only the requested group changed.
@@ -86,7 +89,7 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
         self::assertSame(409, $response->getStatusCode());
         self::assertSame(
             ['error' => 'Frontend user groups are not versioned in workspaces. Switch to the Live workspace to change the enforcement level.'],
-            \json_decode((string) $response->getBody(), true),
+            json_decode((string) $response->getBody(), true),
         );
         self::assertSame('off', $this->storedLevel(2));
         self::assertSame(0, $this->countRows('sys_history', ['tablename' => 'fe_groups']));
@@ -94,10 +97,10 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
         // The message comes from the extension's language files: in German it
         // is the de.locallang.xlf target, not the English fallback in the code.
         $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->create('de');
-        $german = $this->post(['groupUid' => 2, 'enforcement' => 'required']);
+        $german          = $this->post(['groupUid' => 2, 'enforcement' => 'required']);
         self::assertSame(
             ['error' => 'Frontend-Benutzergruppen werden in Arbeitsumgebungen nicht versioniert. Wechseln Sie in die LIVE-Arbeitsumgebung, um die Durchsetzungsstufe zu ändern.'],
-            \json_decode((string) $german->getBody(), true),
+            json_decode((string) $german->getBody(), true),
         );
     }
 
@@ -107,8 +110,8 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
         // A workspace may allow live editing of tables without versioning;
         // there DataHandler writes the live fe_groups record, so the save is
         // allowed.
-        $backendUser = $this->actAs(1);
-        $backendUser->workspace = 1;
+        $backendUser               = $this->actAs(1);
+        $backendUser->workspace    = 1;
         $backendUser->workspaceRec = ['uid' => 1, 'live_edit' => 1];
 
         $response = $this->post(['groupUid' => 2, 'enforcement' => 'required']);
@@ -214,7 +217,7 @@ final class UpdateEnforcementActionTest extends AbstractPasskeyFunctionalTestCas
         $items = $GLOBALS['TCA']['fe_groups']['columns']['passkey_enforcement']['config']['items'] ?? [];
         self::assertIsArray($items);
 
-        self::assertSame(FrontendGroupEnforcementService::LEVELS, \array_column($items, 'value'));
+        self::assertSame(FrontendGroupEnforcementService::LEVELS, array_column($items, 'value'));
     }
 
     private function actAs(int $backendUserUid): BackendUserAuthentication

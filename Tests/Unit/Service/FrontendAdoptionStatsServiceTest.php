@@ -33,7 +33,7 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
     {
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
-        $this->subject = new FrontendAdoptionStatsService($this->connectionPool);
+        $this->subject        = new FrontendAdoptionStatsService($this->connectionPool);
     }
 
     // ---------------------------------------------------------------
@@ -261,9 +261,9 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
     }
 
     /**
-     * @param list<array<string, mixed>>     $groups
-     * @param array<int, int>                $usersPerGroup
-     * @param array<int, int>                $usersWithPasskeysPerGroup
+     * @param list<array<string, mixed>> $groups
+     * @param array<int, int>            $usersPerGroup
+     * @param array<int, int>            $usersWithPasskeysPerGroup
      */
     private function setupMocks(
         int $totalFeUsers,
@@ -302,8 +302,8 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         // 4. countUsersPerGroup - one QB per group
         foreach ($groups as $group) {
             $groupUid = (int) ($group['uid'] ?? 0);
-            $count = $usersPerGroup[$groupUid] ?? 0;
-            $result = $this->createStub(Result::class);
+            $count    = $usersPerGroup[$groupUid] ?? 0;
+            $result   = $this->createStub(Result::class);
             $result->method('fetchOne')->willReturn($count);
             $queryBuilders[] = $this->createQueryBuilderMock($result);
         }
@@ -311,8 +311,8 @@ final class FrontendAdoptionStatsServiceTest extends TestCase
         // 5. countUsersWithPasskeysPerGroup - one QB per group
         foreach ($groups as $group) {
             $groupUid = (int) ($group['uid'] ?? 0);
-            $count = $usersWithPasskeysPerGroup[$groupUid] ?? 0;
-            $result = $this->createStub(Result::class);
+            $count    = $usersWithPasskeysPerGroup[$groupUid] ?? 0;
+            $result   = $this->createStub(Result::class);
             $result->method('fetchOne')->willReturn($count);
             $queryBuilders[] = $this->createQueryBuilderMock($result);
         }

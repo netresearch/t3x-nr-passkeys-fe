@@ -25,6 +25,18 @@ use Throwable;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function array_map;
+use function assert;
+use function bin2hex;
+use function count;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function mb_substr;
+use function trim;
+
 /**
  * Handles passkey self-service management for authenticated frontend users.
  *
@@ -54,22 +66,23 @@ final readonly class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
-        $username = \is_string($userRow['username'] ?? null) ? (string) $userRow['username'] : '';
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $username  = is_string($userRow['username'] ?? null) ? (string) $userRow['username'] : '';
 
         try {
             $site = $this->siteConfigurationService->getCurrentSite($request);
         } catch (Throwable $e) {
             $this->logger->error('Management: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
-        $rawChallenge = $this->challengeService->generateChallenge();
+        $rawChallenge   = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($rawChallenge);
-        $challenge = \bin2hex($rawChallenge);
+        $challenge      = bin2hex($rawChallenge);
 
         try {
             $result = $this->enrollmentService->startEnrollment(
@@ -80,7 +93,7 @@ final readonly class ManagementController
             );
 
             return new JsonResponse([
-                'options' => \json_decode(
+                'options' => json_decode(
                     $this->webAuthnService->serializeCreationOptions($result['options']),
                     true,
                     512,
@@ -91,7 +104,7 @@ final readonly class ManagementController
         } catch (RuntimeException $e) {
             $this->logger->error('FE registration options failed', [
                 'fe_user_uid' => $feUserUid,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
 
             if ($e->getCode() === 1700300001) {
@@ -112,30 +125,30 @@ final readonly class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         $body = $this->getJsonBody($request);
 
         $credentialData = $body['credential'] ?? null;
-        $credentialJson = \is_array($credentialData)
-            ? \json_encode($credentialData, JSON_THROW_ON_ERROR)
+        $credentialJson = is_array($credentialData)
+            ? json_encode($credentialData, JSON_THROW_ON_ERROR)
             : '';
 
-        $challengeToken = isset($body['challengeToken']) && \is_string($body['challengeToken'])
+        $challengeToken = isset($body['challengeToken']) && is_string($body['challengeToken'])
             ? $body['challengeToken']
             : '';
 
         $rawLabel = $body['label'] ?? 'Passkey';
-        $label = \is_string($rawLabel) ? $rawLabel : 'Passkey';
+        $label    = is_string($rawLabel) ? $rawLabel : 'Passkey';
 
         if ($credentialJson === '' || $challengeToken === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $label = \mb_substr(\trim($label), 0, 128);
+        $label = mb_substr(trim($label), 0, 128);
         if ($label === '') {
             $label = 'Passkey';
         }
@@ -145,8 +158,9 @@ final readonly class ManagementController
         } catch (RuntimeException $e) {
             $this->logger->warning('FE registration verify: invalid challenge token', [
                 'fe_user_uid' => $feUserUid,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
+
             return new JsonResponse(['error' => 'Invalid or expired challenge'], 400);
         }
 
@@ -154,6 +168,7 @@ final readonly class ManagementController
             $site = $this->siteConfigurationService->getCurrentSite($request);
         } catch (Throwable $e) {
             $this->logger->error('Management: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -161,31 +176,31 @@ final readonly class ManagementController
             $credential = $this->enrollmentService->completeEnrollment(
                 feUserUid: $feUserUid,
                 attestationJson: $credentialJson,
-                challenge: \bin2hex($challenge),
+                challenge: bin2hex($challenge),
                 label: $label,
                 site: $site,
             );
 
             $this->logger->info('FE passkey enrolled', [
-                'fe_user_uid' => $feUserUid,
+                'fe_user_uid'    => $feUserUid,
                 'credential_uid' => $credential->getUid(),
-                'label' => $label,
+                'label'          => $label,
             ]);
 
             return new JsonResponse([
-                'status' => 'ok',
+                'status'     => 'ok',
                 'credential' => [
-                    'uid' => $credential->getUid(),
-                    'label' => $credential->getLabel(),
-                    'aaguid' => $credential->getAaguid(),
-                    'createdAt' => $credential->getCreatedAt(),
+                    'uid'        => $credential->getUid(),
+                    'label'      => $credential->getLabel(),
+                    'aaguid'     => $credential->getAaguid(),
+                    'createdAt'  => $credential->getCreatedAt(),
                     'lastUsedAt' => $credential->getLastUsedAt(),
                 ],
             ]);
         } catch (RuntimeException $e) {
             $this->logger->error('FE passkey registration failed', [
                 'fe_user_uid' => $feUserUid,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
 
             if ($e->getCode() === 1700300001) {
@@ -205,27 +220,28 @@ final readonly class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
-            $site = $this->siteConfigurationService->getCurrentSite($request);
+            $site           = $this->siteConfigurationService->getCurrentSite($request);
             $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
         } catch (Throwable $e) {
             $this->logger->error('Management list: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
         $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
 
-        $list = \array_map(
-            static fn(FrontendCredential $cred): array => [
-                'uid' => $cred->getUid(),
-                'label' => $cred->getLabel(),
-                'aaguid' => $cred->getAaguid(),
-                'createdAt' => $cred->getCreatedAt(),
+        $list = array_map(
+            static fn (FrontendCredential $cred): array => [
+                'uid'        => $cred->getUid(),
+                'label'      => $cred->getLabel(),
+                'aaguid'     => $cred->getAaguid(),
+                'createdAt'  => $cred->getCreatedAt(),
                 'lastUsedAt' => $cred->getLastUsedAt(),
             ],
             $credentials,
@@ -233,7 +249,7 @@ final readonly class ManagementController
 
         return new JsonResponse([
             'credentials' => $list,
-            'count' => \count($list),
+            'count'       => count($list),
         ]);
     }
 
@@ -247,21 +263,21 @@ final readonly class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
-        $body = $this->getJsonBody($request);
+        $body          = $this->getJsonBody($request);
         $credentialUid = $this->intFrom($body['uid'] ?? null);
-        $rawLabel = $body['label'] ?? null;
-        $label = \is_string($rawLabel) ? $rawLabel : '';
+        $rawLabel      = $body['label'] ?? null;
+        $label         = is_string($rawLabel) ? $rawLabel : '';
 
         if ($credentialUid === 0 || $label === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $label = \mb_substr(\trim($label), 0, 128);
+        $label = mb_substr(trim($label), 0, 128);
         if ($label === '') {
             return new JsonResponse(['error' => 'Label must not be empty'], 400);
         }
@@ -274,9 +290,9 @@ final readonly class ManagementController
         $this->credentialRepository->updateLabel($credentialUid, $label);
 
         $this->logger->info('FE passkey renamed', [
-            'fe_user_uid' => $feUserUid,
+            'fe_user_uid'    => $feUserUid,
             'credential_uid' => $credentialUid,
-            'new_label' => $label,
+            'new_label'      => $label,
         ]);
 
         return new JsonResponse(['status' => 'ok']);
@@ -292,12 +308,12 @@ final readonly class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
-        $body = $this->getJsonBody($request);
+        $body          = $this->getJsonBody($request);
         $credentialUid = $this->intFrom($body['uid'] ?? null);
 
         if ($credentialUid === 0) {
@@ -315,7 +331,7 @@ final readonly class ManagementController
         $this->eventDispatcher->dispatch(new PasskeyRemovedEvent($credential, $feUserUid));
 
         $this->logger->info('FE passkey removed', [
-            'fe_user_uid' => $feUserUid,
+            'fe_user_uid'    => $feUserUid,
             'credential_uid' => $credentialUid,
         ]);
 
@@ -324,6 +340,6 @@ final readonly class ManagementController
 
     private function intFrom(mixed $value): int
     {
-        return \is_numeric($value) ? (int) $value : 0;
+        return is_numeric($value) ? (int) $value : 0;
     }
 }

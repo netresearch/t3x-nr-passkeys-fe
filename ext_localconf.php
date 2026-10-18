@@ -1,24 +1,24 @@
 <?php
 
 /*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
- * SPDX-FileCopyrightText: Netresearch DTT GmbH
  */
 
 declare(strict_types=1);
 
+use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
+use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
+use Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController;
 use Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController;
 use Netresearch\NrPasskeysFe\Controller\Plugin\ManagementPluginController;
-use Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController;
+use Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement;
 use TYPO3\CMS\Core\Log\LogLevel;
 use TYPO3\CMS\Core\Log\Writer\FileWriter;
-use Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement;
-use Netresearch\NrPasskeysFe\Controller\EidDispatcher;
-use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
-defined('TYPO3') || die();
+defined('TYPO3') || exit;
 
 // Configure Extbase plugins (required for rendering)
 // These Extbase controllers render Fluid templates; actual WebAuthn logic runs via eID/JavaScript.
@@ -58,16 +58,16 @@ ExtensionManagementUtility::addService(
     'auth',
     PasskeyFrontendAuthenticationService::class,
     [
-        'title' => 'Passkey Frontend Authentication',
+        'title'       => 'Passkey Frontend Authentication',
         'description' => 'Authenticates frontend users via WebAuthn/Passkey assertions',
-        'subtype' => 'authUserFE,getUserFE',
-        'available' => true,
-        'priority' => 80,
-        'quality' => 80,
-        'os' => '',
-        'exec' => '',
-        'className' => PasskeyFrontendAuthenticationService::class,
-    ]
+        'subtype'     => 'authUserFE,getUserFE',
+        'available'   => true,
+        'priority'    => 80,
+        'quality'     => 80,
+        'os'          => '',
+        'exec'        => '',
+        'className'   => PasskeyFrontendAuthenticationService::class,
+    ],
 );
 
 // Security audit logging for FE passkey authentication events
@@ -87,9 +87,9 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkey
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1742000000] = [
     'nodeName' => 'passkeyFeInfo',
     'priority' => 40,
-    'class' => PasskeyFeInfoElement::class,
+    'class'    => PasskeyFeInfoElement::class,
 ];
 
 // Register eID for passkey FE API endpoints
-$GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['nr_passkeys_fe'] =
-    EidDispatcher::class . '::processRequest';
+$GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['nr_passkeys_fe']
+    = EidDispatcher::class . '::processRequest';

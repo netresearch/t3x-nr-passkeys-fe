@@ -24,6 +24,16 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function assert;
+use function bin2hex;
+use function count;
+use function hash;
+use function is_numeric;
+use function is_scalar;
+use function random_bytes;
+use function random_int;
+use function usleep;
+
 /**
  * Handles recovery code management for frontend users.
  *
@@ -53,32 +63,33 @@ final readonly class RecoveryController
     public function generateAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
             $codes = $this->recoveryCodeService->generate($feUserUid);
         } catch (Throwable $e) {
             $this->logger->error('FE recovery code generation failed', [
                 'fe_user_uid' => $feUserUid,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
+
             return new JsonResponse(['error' => 'Failed to generate recovery codes'], 500);
         }
 
-        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, \count($codes)));
+        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, count($codes)));
 
         $this->logger->info('FE recovery codes generated', [
             'fe_user_uid' => $feUserUid,
-            'count' => \count($codes),
+            'count'       => count($codes),
         ]);
 
         return new JsonResponse([
             'status' => 'ok',
-            'codes' => $codes,
-            'count' => \count($codes),
+            'codes'  => $codes,
+            'count'  => count($codes),
         ]);
     }
 
@@ -93,10 +104,10 @@ final readonly class RecoveryController
     {
         $body = $this->getJsonBody($request);
 
-        $username = isset($body['username']) && \is_scalar($body['username'])
+        $username = isset($body['username']) && is_scalar($body['username'])
             ? (string) $body['username']
             : '';
-        $code = isset($body['code']) && \is_scalar($body['code'])
+        $code = isset($body['code']) && is_scalar($body['code'])
             ? (string) $body['code']
             : '';
 
@@ -117,7 +128,8 @@ final readonly class RecoveryController
         $feUserUid = $this->findFeUserUid($username);
         if ($feUserUid === null) {
             // Prevent user enumeration
-            \usleep(\random_int(50000, 150000));
+            usleep(random_int(50000, 150000));
+
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
 
@@ -127,8 +139,8 @@ final readonly class RecoveryController
             $this->rateLimiterService->recordFailure($username, $ip);
 
             $this->logger->warning('FE recovery code verification failed', [
-                'username_hash' => \hash('sha256', $username),
-                'ip' => $ip,
+                'username_hash' => hash('sha256', $username),
+                'ip'            => $ip,
             ]);
 
             return new JsonResponse(['error' => 'Authentication failed'], 401);
@@ -141,7 +153,7 @@ final readonly class RecoveryController
         ]);
 
         // Create a one-time login token (same mechanism as passkey login)
-        $token = \bin2hex(\random_bytes(32));
+        $token = bin2hex(random_bytes(32));
         $cache = GeneralUtility::makeInstance(CacheManager::class)
             ->getCache('nr_passkeys_fe_nonce');
         $cache->set(
@@ -152,8 +164,8 @@ final readonly class RecoveryController
         );
 
         return new JsonResponse([
-            'status' => 'ok',
-            'feUserUid' => $feUserUid,
+            'status'     => 'ok',
+            'feUserUid'  => $feUserUid,
             'loginToken' => $token,
         ]);
     }

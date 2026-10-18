@@ -14,6 +14,10 @@ use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use function array_map;
+use function is_numeric;
+use function time;
+
 /**
  * Repository for frontend passkey credentials.
  *
@@ -39,7 +43,7 @@ final readonly class FrontendCredentialRepository
     public function findByCredentialId(string $credentialId): ?FrontendCredential
     {
         $queryBuilder = $this->getQueryBuilder();
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -72,7 +76,7 @@ final readonly class FrontendCredentialRepository
         string $siteIdentifier,
     ): ?FrontendCredential {
         $queryBuilder = $this->getQueryBuilder();
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -110,7 +114,7 @@ final readonly class FrontendCredentialRepository
     public function findByFeUser(int $feUserUid, string $siteIdentifier): array
     {
         $queryBuilder = $this->getQueryBuilder();
-        $rows = $queryBuilder
+        $rows         = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -128,7 +132,7 @@ final readonly class FrontendCredentialRepository
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return \array_map(
+        return array_map(
             FrontendCredential::fromArray(...),
             $rows,
         );
@@ -144,7 +148,7 @@ final readonly class FrontendCredentialRepository
     public function findAllByFeUser(int $feUserUid): array
     {
         $queryBuilder = $this->getQueryBuilder();
-        $rows = $queryBuilder
+        $rows         = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -157,7 +161,7 @@ final readonly class FrontendCredentialRepository
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return \array_map(
+        return array_map(
             FrontendCredential::fromArray(...),
             $rows,
         );
@@ -183,7 +187,7 @@ final readonly class FrontendCredentialRepository
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -192,12 +196,12 @@ final readonly class FrontendCredentialRepository
     public function save(FrontendCredential $credential): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $now        = time();
 
         $data = $credential->toArray();
         unset($data['uid']);
-        $data['tstamp'] = $now;
-        $data['crdate'] = $now;
+        $data['tstamp']     = $now;
+        $data['crdate']     = $now;
         $data['created_at'] = $now;
 
         // Bind the binary columns by their schema type so the stored storage class
@@ -206,9 +210,9 @@ final readonly class FrontendCredentialRepository
             self::TABLE,
             $data,
             [
-                'credential_id' => ParameterType::BINARY,
+                'credential_id'   => ParameterType::BINARY,
                 'public_key_cose' => ParameterType::LARGE_OBJECT,
-                'user_handle' => ParameterType::BINARY,
+                'user_handle'     => ParameterType::BINARY,
             ],
         );
 
@@ -221,12 +225,12 @@ final readonly class FrontendCredentialRepository
     public function updateLastUsed(int $uid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $now        = time();
         $connection->update(
             self::TABLE,
             [
                 'last_used_at' => $now,
-                'tstamp' => $now,
+                'tstamp'       => $now,
             ],
             ['uid' => $uid],
         );
@@ -238,13 +242,13 @@ final readonly class FrontendCredentialRepository
     public function revoke(int $uid, int $revokedBy): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $now        = time();
         $connection->update(
             self::TABLE,
             [
                 'revoked_at' => $now,
                 'revoked_by' => $revokedBy,
-                'tstamp' => $now,
+                'tstamp'     => $now,
             ],
             ['uid' => $uid],
         );
@@ -258,7 +262,7 @@ final readonly class FrontendCredentialRepository
     public function revokeAllByFeUser(int $feUserUid, int $revokedBy): int
     {
         $queryBuilder = $this->getQueryBuilder();
-        $now = \time();
+        $now          = time();
 
         return $queryBuilder
             ->update(self::TABLE)
@@ -281,7 +285,7 @@ final readonly class FrontendCredentialRepository
     public function findByUidAndFeUser(int $uid, int $feUserUid): ?FrontendCredential
     {
         $queryBuilder = $this->getQueryBuilder();
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -314,8 +318,8 @@ final readonly class FrontendCredentialRepository
         $connection->update(
             self::TABLE,
             [
-                'label' => $label,
-                'tstamp' => \time(),
+                'label'  => $label,
+                'tstamp' => time(),
             ],
             ['uid' => $uid],
         );
@@ -338,14 +342,14 @@ final readonly class FrontendCredentialRepository
      */
     public function updateAfterAssertion(int $uid, int $signCount): void
     {
-        $now = \time();
+        $now        = time();
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $connection->update(
             self::TABLE,
             [
-                'sign_count' => $signCount,
+                'sign_count'   => $signCount,
                 'last_used_at' => $now,
-                'tstamp' => $now,
+                'tstamp'       => $now,
             ],
             ['uid' => $uid],
         );
@@ -361,7 +365,7 @@ final readonly class FrontendCredentialRepository
             self::TABLE,
             [
                 'sign_count' => $newCount,
-                'tstamp' => \time(),
+                'tstamp'     => time(),
             ],
             ['uid' => $uid],
         );

@@ -9,16 +9,16 @@ declare(strict_types=1);
 
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-\defined('TYPO3') || die();
+\defined('TYPO3') || exit;
 
 $tempColumns = [
     'passkey_enforcement' => [
-        'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_enforcement',
+        'label'       => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_enforcement',
         'description' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_enforcement.description',
-        'config' => [
-            'type' => 'select',
+        'config'      => [
+            'type'       => 'select',
             'renderType' => 'selectSingle',
-            'items' => [
+            'items'      => [
                 [
                     'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_enforcement.off',
                     'value' => 'off',
@@ -40,12 +40,12 @@ $tempColumns = [
         ],
     ],
     'passkey_grace_period_days' => [
-        'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_grace_period_days',
+        'label'       => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_grace_period_days',
         'description' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_groups.passkey_grace_period_days.description',
-        'config' => [
-            'type' => 'number',
-            'size' => 5,
-            'range' => ['lower' => 1, 'upper' => 365],
+        'config'      => [
+            'type'    => 'number',
+            'size'    => 5,
+            'range'   => ['lower' => 1, 'upper' => 365],
             'default' => 14,
         ],
         'displayCond' => 'FIELD:passkey_enforcement:=:required',

@@ -15,6 +15,9 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+use function in_array;
+use function is_string;
+
 /**
  * Marks eID requests for public passkey actions so downstream middleware
  * (especially authentication) can exempt them.
@@ -48,10 +51,10 @@ final readonly class PasskeyPublicRouteResolver implements MiddlewareInterface
         }
 
         $action = $queryParams['action'] ?? null;
-        if (!\is_string($action)) {
+        if (!is_string($action)) {
             return false;
         }
 
-        return \in_array($action, EidDispatcher::PUBLIC_ACTIONS, true);
+        return in_array($action, EidDispatcher::PUBLIC_ACTIONS, true);
     }
 }

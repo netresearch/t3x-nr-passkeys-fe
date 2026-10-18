@@ -19,6 +19,21 @@ use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\MathUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
+use function array_filter;
+use function array_map;
+use function array_unique;
+use function array_values;
+use function in_array;
+use function is_bool;
+use function is_int;
+use function is_string;
+use function parse_url;
+use function preg_match;
+use function rtrim;
+use function str_starts_with;
+use function strtolower;
+use function substr;
+
 /**
  * Extbase controller for the PasskeyLogin frontend plugin.
  * Assigns template variables for the eID URL and site config,
@@ -34,22 +49,22 @@ final class LoginPluginController extends ActionController
     public function indexAction(): ResponseInterface
     {
         /** @var SiteInterface|null $site */
-        $site = $this->request->getAttribute('site');
+        $site           = $this->request->getAttribute('site');
         $siteIdentifier = $site?->getIdentifier() ?? '';
-        $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
-        $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
+        $baseUrl        = rtrim((string) ($site?->getBase() ?? ''), '/');
+        $eidUrl         = $baseUrl . '/?eID=nr_passkeys_fe';
 
         // Default to discoverable (passkey-first). Empty string/null/missing = use default (true).
-        $discoverableRaw = $this->settings['discoverableEnabled'] ?? '';
+        $discoverableRaw     = $this->settings['discoverableEnabled'] ?? '';
         $discoverableEnabled = $discoverableRaw === '' || $discoverableRaw === null ? true : (bool) $discoverableRaw;
 
-        $showPasswordRaw = $this->settings['showPasswordFallback'] ?? '';
+        $showPasswordRaw      = $this->settings['showPasswordFallback'] ?? '';
         $showPasswordFallback = $showPasswordRaw === '' || $showPasswordRaw === null ? true : (bool) $showPasswordRaw;
 
         $this->view->assignMultiple([
-            'eidUrl' => $eidUrl,
-            'siteIdentifier' => $siteIdentifier,
-            'showUsernameField' => !$discoverableEnabled,
+            'eidUrl'              => $eidUrl,
+            'siteIdentifier'      => $siteIdentifier,
+            'showUsernameField'   => !$discoverableEnabled,
             'discoverableEnabled' => $discoverableEnabled,
             // The link needs a page to point to: without one, or with one
             // this plugin must not link to, the switch has nothing to show.
@@ -126,21 +141,21 @@ final class LoginPluginController extends ActionController
      */
     private function staysOnSite(string $uri, SiteInterface $site): bool
     {
-        if ($uri === '' || \preg_match('/[\x00-\x20\x7f\\\\]/', $uri) === 1) {
+        if ($uri === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $uri) === 1) {
             return false;
         }
 
-        if (\str_starts_with($uri, '/')) {
-            return !\str_starts_with($uri, '//');
+        if (str_starts_with($uri, '/')) {
+            return !str_starts_with($uri, '//');
         }
 
         $origin = $this->originOf(
-            \parse_url($uri, PHP_URL_SCHEME),
-            \parse_url($uri, PHP_URL_HOST),
-            \parse_url($uri, PHP_URL_PORT),
+            parse_url($uri, PHP_URL_SCHEME),
+            parse_url($uri, PHP_URL_HOST),
+            parse_url($uri, PHP_URL_PORT),
         );
 
-        return $origin !== null && \in_array($origin, $this->allowedOrigins($site), true);
+        return $origin !== null && in_array($origin, $this->allowedOrigins($site), true);
     }
 
     /**
@@ -153,12 +168,12 @@ final class LoginPluginController extends ActionController
             $bases[] = $language->getBase();
         }
 
-        $origins = \array_map(
-            fn(UriInterface $base): ?string => $this->originOf($base->getScheme(), $base->getHost(), $base->getPort()),
+        $origins = array_map(
+            fn (UriInterface $base): ?string => $this->originOf($base->getScheme(), $base->getHost(), $base->getPort()),
             $bases,
         );
 
-        return \array_values(\array_unique(\array_filter($origins, static fn(?string $origin): bool => $origin !== null)));
+        return array_values(array_unique(array_filter($origins, static fn (?string $origin): bool => $origin !== null)));
     }
 
     /**
@@ -167,13 +182,13 @@ final class LoginPluginController extends ActionController
      */
     private function originOf(mixed $scheme, mixed $host, mixed $port): ?string
     {
-        $scheme = \is_string($scheme) ? \strtolower($scheme) : '';
-        $host = \is_string($host) ? \strtolower($host) : '';
-        if ($host === '' || !\in_array($scheme, ['http', 'https'], true)) {
+        $scheme = is_string($scheme) ? strtolower($scheme) : '';
+        $host   = is_string($host) ? strtolower($host) : '';
+        if ($host === '' || !in_array($scheme, ['http', 'https'], true)) {
             return null;
         }
 
-        $port = \is_int($port) ? $port : ($scheme === 'https' ? 443 : 80);
+        $port = is_int($port) ? $port : ($scheme === 'https' ? 443 : 80);
 
         return $scheme . '://' . $host . ':' . $port;
     }
@@ -183,11 +198,11 @@ final class LoginPluginController extends ActionController
      */
     private function pageUidFrom(mixed $pageReference): ?int
     {
-        if (\is_string($pageReference) && \str_starts_with($pageReference, 'pages_')) {
-            $pageReference = \substr($pageReference, 6);
+        if (is_string($pageReference) && str_starts_with($pageReference, 'pages_')) {
+            $pageReference = substr($pageReference, 6);
         }
 
-        return !\is_bool($pageReference) && MathUtility::canBeInterpretedAsInteger($pageReference)
+        return !is_bool($pageReference) && MathUtility::canBeInterpretedAsInteger($pageReference)
             ? (int) $pageReference
             : null;
     }

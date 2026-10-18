@@ -14,12 +14,12 @@ return [
     'frontend' => [
         'nr-passkeys-fe/public-route-resolver' => [
             'target' => PasskeyPublicRouteResolver::class,
-            'after' => ['typo3/cms-frontend/site'],
+            'after'  => ['typo3/cms-frontend/site'],
             'before' => ['typo3/cms-frontend/authentication'],
         ],
         'nr-passkeys-fe/enrollment-interstitial' => [
             'target' => PasskeyEnrollmentInterstitial::class,
-            'after' => ['typo3/cms-frontend/authentication'],
+            'after'  => ['typo3/cms-frontend/authentication'],
         ],
     ],
 ];

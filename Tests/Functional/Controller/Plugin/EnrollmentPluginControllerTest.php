@@ -26,6 +26,9 @@ use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
 use TYPO3\CMS\Extbase\Mvc\Request;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function is_numeric;
+use function time;
+
 /**
  * The enrollment plugin shows the logged-in user's real enforcement state,
  * resolved by the same FrontendEnforcementService the interstitial and the
@@ -44,8 +47,8 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
         // Grace periods run from a start time relative to now: user 1 started
         // four days into a fourteen-day period, user 4 twenty days ago.
         $connection = $this->get(ConnectionPool::class)->getConnectionForTable('fe_users');
-        $connection->update('fe_users', ['passkey_grace_period_start' => \time() - 4 * self::DAY], ['uid' => 1]);
-        $connection->update('fe_users', ['passkey_grace_period_start' => \time() - 20 * self::DAY], ['uid' => 4]);
+        $connection->update('fe_users', ['passkey_grace_period_start' => time() - 4 * self::DAY], ['uid' => 1]);
+        $connection->update('fe_users', ['passkey_grace_period_start' => time() - 20 * self::DAY], ['uid' => 4]);
     }
 
     /**
@@ -87,7 +90,7 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
     public function aGracePeriodThatIsOverIsNotStartedAgain(): void
     {
         $start = $this->graceStartOf(4);
-        $vars = $this->renderForFrontendUser(4);
+        $vars  = $this->renderForFrontendUser(4);
 
         self::assertSame($start, $this->graceStartOf(4));
         self::assertTrue($vars['enrollmentRequired']);
@@ -105,7 +108,7 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
     public function aStartedLastDayOfGraceCountsAsOneDay(): void
     {
         $this->get(ConnectionPool::class)->getConnectionForTable('fe_users')
-            ->update('fe_users', ['passkey_grace_period_start' => \time() - 13 * self::DAY - 12 * 3600], ['uid' => 1]);
+            ->update('fe_users', ['passkey_grace_period_start' => time() - 13 * self::DAY - 12 * 3600], ['uid' => 1]);
 
         self::assertSame(1, $this->renderForFrontendUser(1)['gracePeriodDaysRemaining']);
     }
@@ -124,7 +127,7 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
             ->select(['passkey_grace_period_start'], 'fe_users', ['uid' => $feUserUid])
             ->fetchOne();
 
-        return \is_numeric($value) ? (int) $value : -1;
+        return is_numeric($value) ? (int) $value : -1;
     }
 
     /**
@@ -137,10 +140,10 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
         $subject->injectStreamFactory(new StreamFactory());
 
         $site = new Site('main', 1, [
-            'base' => 'https://example.com/',
+            'base'     => 'https://example.com/',
             'settings' => ['nr_passkeys_fe' => ['enforcementLevel' => $siteLevel]],
         ]);
-        $feUser = new FrontendUserAuthentication();
+        $feUser       = new FrontendUserAuthentication();
         $feUser->user = ['uid' => $feUserUid];
 
         $request = (new ServerRequest('https://example.com/enrollment', 'GET'))
@@ -149,10 +152,11 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
             ->withAttribute('extbase', new ExtbaseRequestParameters(EnrollmentPluginController::class));
 
         $assigned = [];
-        $view = $this->createStub(ViewInterface::class);
+        $view     = $this->createStub(ViewInterface::class);
         $view->method('assignMultiple')->willReturnCallback(
             static function (array $vars) use (&$assigned, $view): ViewInterface {
                 $assigned = $vars;
+
                 return $view;
             },
         );

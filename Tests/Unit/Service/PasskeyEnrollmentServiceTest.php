@@ -25,6 +25,8 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+use function random_bytes;
+
 #[CoversClass(PasskeyEnrollmentService::class)]
 final class PasskeyEnrollmentServiceTest extends TestCase
 {
@@ -44,11 +46,11 @@ final class PasskeyEnrollmentServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
+        $this->webAuthnService      = $this->createStub(FrontendWebAuthnService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
-        $this->eventDispatcher = $this->createStub(EventDispatcherInterface::class);
-        $this->site = $this->createStub(SiteInterface::class);
+        $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
+        $this->eventDispatcher      = $this->createStub(EventDispatcherInterface::class);
+        $this->site                 = $this->createStub(SiteInterface::class);
 
         $configuration = new FrontendConfiguration(maxPasskeysPerUser: 10);
 
@@ -76,8 +78,8 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $this->webAuthnService->method('createRegistrationOptions')
             ->willReturn($expected);
 
-        $challenge = \random_bytes(32);
-        $result = $this->subject->startEnrollment(1, 'testuser', $challenge, $this->site);
+        $challenge = random_bytes(32);
+        $result    = $this->subject->startEnrollment(1, 'testuser', $challenge, $this->site);
 
         self::assertSame($expected, $result);
     }
@@ -90,7 +92,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700300001);
 
-        $this->subject->startEnrollment(1, 'user', \random_bytes(32), $this->site);
+        $this->subject->startEnrollment(1, 'user', random_bytes(32), $this->site);
     }
 
     // ---------------------------------------------------------------
@@ -100,11 +102,11 @@ final class PasskeyEnrollmentServiceTest extends TestCase
     #[Test]
     public function completeEnrollmentVerifiesAndSavesCredential(): void
     {
-        $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
+        $webAuthnService      = $this->createMock(FrontendWebAuthnService::class);
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
 
         $configuration = new FrontendConfiguration(maxPasskeysPerUser: 10);
-        $subject = new PasskeyEnrollmentService(
+        $subject       = new PasskeyEnrollmentService(
             $webAuthnService,
             $credentialRepository,
             $configuration,
@@ -125,8 +127,8 @@ final class PasskeyEnrollmentServiceTest extends TestCase
             ->method('save')
             ->with($credential);
 
-        $challenge = \random_bytes(32);
-        $result = $subject->completeEnrollment(
+        $challenge = random_bytes(32);
+        $result    = $subject->completeEnrollment(
             1,
             '{"attestation":"json"}',
             $challenge,
@@ -149,7 +151,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $this->subject->completeEnrollment(
             1,
             '{}',
-            \random_bytes(32),
+            random_bytes(32),
             'Key',
             $this->site,
         );
@@ -172,7 +174,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
                 return $event;
             });
 
-        $this->subject->completeEnrollment(1, '{}', \random_bytes(32), 'Key', $this->site);
+        $this->subject->completeEnrollment(1, '{}', random_bytes(32), 'Key', $this->site);
 
         self::assertCount(2, $dispatchedEvents);
         self::assertInstanceOf(BeforePasskeyEnrollmentEvent::class, $dispatchedEvents[0]);
@@ -197,7 +199,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
                 return $event;
             });
 
-        $this->subject->completeEnrollment(1, '{}', \random_bytes(32), 'Key', $this->site);
+        $this->subject->completeEnrollment(1, '{}', random_bytes(32), 'Key', $this->site);
 
         self::assertCount(2, $dispatchedEvents);
         self::assertInstanceOf(AfterPasskeyEnrollmentEvent::class, $dispatchedEvents[1]);
@@ -217,7 +219,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $result = $this->subject->completeEnrollment(
             1,
             '{}',
-            \random_bytes(32),
+            random_bytes(32),
             'Work Laptop Key',
             $this->site,
         );
@@ -238,7 +240,7 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $result = $this->subject->completeEnrollment(
             1,
             '{}',
-            \random_bytes(32),
+            random_bytes(32),
             'Key',
             $this->site,
         );
@@ -258,6 +260,6 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700200022);
 
-        $this->subject->completeEnrollment(1, '{}', \random_bytes(32), 'Key', $this->site);
+        $this->subject->completeEnrollment(1, '{}', random_bytes(32), 'Key', $this->site);
     }
 }

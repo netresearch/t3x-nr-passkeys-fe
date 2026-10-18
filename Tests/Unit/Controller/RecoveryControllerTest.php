@@ -29,6 +29,9 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function json_decode;
+use function str_starts_with;
+
 #[CoversClass(RecoveryController::class)]
 final class RecoveryControllerTest extends TestCase
 {
@@ -45,11 +48,11 @@ final class RecoveryControllerTest extends TestCase
         parent::setUp();
 
         $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
-        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
-        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
+        $this->rateLimiterService  = $this->createStub(RateLimiterService::class);
+        $this->userLookupService   = $this->createStub(FrontendUserLookupService::class);
 
         // Register a cache stub for the login token
-        $cacheStub = $this->createStub(FrontendInterface::class);
+        $cacheStub        = $this->createStub(FrontendInterface::class);
         $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
@@ -73,7 +76,7 @@ final class RecoveryControllerTest extends TestCase
         $codes = ['ABCD-EFGH', 'WXYZ-1234', 'MNOP-QRST'];
         $this->recoveryCodeService->method('generate')->willReturn($codes);
 
-        $request = $this->buildRequestWithUser(42);
+        $request  = $this->buildRequestWithUser(42);
         $response = $this->subject->generateAction($request);
 
         self::assertSame(200, $response->getStatusCode());
@@ -88,7 +91,7 @@ final class RecoveryControllerTest extends TestCase
         $this->recoveryCodeService->method('generate')
             ->willThrowException(new RuntimeException('DB error'));
 
-        $request = $this->buildRequestWithUser(42);
+        $request  = $this->buildRequestWithUser(42);
         $response = $this->subject->generateAction($request);
 
         self::assertSame(500, $response->getStatusCode());
@@ -101,7 +104,7 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns400WhenFieldsMissing(): void
     {
-        $request = $this->buildRequest([]);
+        $request  = $this->buildRequest([]);
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
@@ -110,7 +113,7 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns400WhenOnlyUsernamePresent(): void
     {
-        $request = $this->buildRequest(['username' => 'user@example.com']);
+        $request  = $this->buildRequest(['username' => 'user@example.com']);
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
@@ -124,7 +127,7 @@ final class RecoveryControllerTest extends TestCase
 
         $request = $this->buildRequest([
             'username' => 'user@example.com',
-            'code' => 'ABCD-EFGH',
+            'code'     => 'ABCD-EFGH',
         ]);
         $response = $this->subject->verifyAction($request);
 
@@ -143,7 +146,7 @@ final class RecoveryControllerTest extends TestCase
         // The user lookup returns null (no DB mock), triggering the 401.
         $request = $this->buildRequest([
             'username' => 'user@example.com',
-            'code' => 'ABCD-EFGH',
+            'code'     => 'ABCD-EFGH',
         ]);
 
         // Without DB mock, findFeUserUid returns null → 401
@@ -162,7 +165,7 @@ final class RecoveryControllerTest extends TestCase
         $cacheMock->expects(self::once())
             ->method('set')
             ->with(
-                self::callback(static fn(string $key): bool => \str_starts_with($key, 'passkey_login_')),
+                self::callback(static fn (string $key): bool => str_starts_with($key, 'passkey_login_')),
                 '42',
                 [],
                 120,
@@ -173,7 +176,7 @@ final class RecoveryControllerTest extends TestCase
 
         $request = $this->buildRequest([
             'username' => 'user@example.com',
-            'code' => 'ABCD-EFGH',
+            'code'     => 'ABCD-EFGH',
         ]);
         $response = $this->subject->verifyAction($request);
 
@@ -190,7 +193,7 @@ final class RecoveryControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid): ServerRequest
     {
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
         return (new ServerRequest('https://example.com/', 'POST'))
@@ -206,7 +209,7 @@ final class RecoveryControllerTest extends TestCase
 
     private function decodeBody(ResponseInterface $response): array
     {
-        return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }
 
     #[Test]

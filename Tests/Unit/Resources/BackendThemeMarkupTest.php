@@ -17,6 +17,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function file_get_contents;
+use function libxml_clear_errors;
+use function libxml_use_internal_errors;
+
 /**
  * Pins the backend markup that follows TYPO3's light and dark scheme on
  * 13.4 and 14.3: core classes and tokens only, an accessible name on every
@@ -31,9 +35,9 @@ final class BackendThemeMarkupTest extends TestCase
      * Record and plugin icons, keyed by icon identifier.
      */
     private const SPRITE_ICONS = [
-        'nr-passkeys-fe-credential' => 'credential.svg',
-        'nr-passkeys-fe-recovery-code' => 'recovery-code.svg',
-        'nr-passkeys-fe-plugin-login' => 'plugin-login.svg',
+        'nr-passkeys-fe-credential'        => 'credential.svg',
+        'nr-passkeys-fe-recovery-code'     => 'recovery-code.svg',
+        'nr-passkeys-fe-plugin-login'      => 'plugin-login.svg',
         'nr-passkeys-fe-plugin-management' => 'plugin-management.svg',
         'nr-passkeys-fe-plugin-enrollment' => 'plugin-enrollment.svg',
     ];
@@ -75,9 +79,9 @@ final class BackendThemeMarkupTest extends TestCase
         $value = $this->query('Dashboard.html', '//progress/following-sibling::span[@class="passkey-fe-bar-value"][@aria-hidden="true"]');
         self::assertCount(1, $value);
 
-        $css = $this->read('Resources/Public/Css/backend.css');
+        $css   = $this->read('Resources/Public/Css/backend.css');
         $track = 'background-color:\s*var\(--typo3-surface-container-high\);';
-        $fill = 'background-color:\s*var\(--typo3-component-primary-color\);';
+        $fill  = 'background-color:\s*var\(--typo3-component-primary-color\);';
         self::assertMatchesRegularExpression('/\.passkey-fe-bar\s*\{[^}]*' . $track . '/', $css);
         self::assertMatchesRegularExpression('/\.passkey-fe-bar::-webkit-progress-bar\s*\{[^}]*' . $track . '/', $css);
         self::assertMatchesRegularExpression('/\.passkey-fe-bar::-webkit-progress-value\s*\{[^}]*' . $fill . '/', $css);
@@ -179,7 +183,7 @@ final class BackendThemeMarkupTest extends TestCase
 
     private function read(string $path): string
     {
-        $content = \file_get_contents(self::ROOT . $path);
+        $content = file_get_contents(self::ROOT . $path);
         self::assertIsString($content);
 
         return $content;
@@ -190,9 +194,9 @@ final class BackendThemeMarkupTest extends TestCase
         $document = new DOMDocument();
         // Fluid's namespaced view helpers are not HTML; libxml keeps them as
         // unknown elements, which is all the queries need.
-        \libxml_use_internal_errors(true);
+        libxml_use_internal_errors(true);
         $document->loadHTML($this->read('Resources/Private/Templates/AdminModule/' . $template));
-        \libxml_clear_errors();
+        libxml_clear_errors();
 
         return new DOMXPath($document);
     }

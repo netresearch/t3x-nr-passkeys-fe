@@ -27,6 +27,10 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+use function date_default_timezone_get;
+use function date_default_timezone_set;
+use function time;
+
 #[CoversClass(FrontendEnforcementService::class)]
 final class FrontendEnforcementServiceTest extends TestCase
 {
@@ -50,12 +54,12 @@ final class FrontendEnforcementServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
-        $this->eventDispatcher = $this->createStub(EventDispatcherInterface::class);
-        $this->connectionPool = $this->createStub(ConnectionPool::class);
-        $this->site = $this->createStub(SiteInterface::class);
+        $this->recoveryCodeService  = $this->createStub(RecoveryCodeService::class);
+        $this->eventDispatcher      = $this->createStub(EventDispatcherInterface::class);
+        $this->connectionPool       = $this->createStub(ConnectionPool::class);
+        $this->site                 = $this->createStub(SiteInterface::class);
 
         // Default: event dispatcher just passes through
         $this->eventDispatcher->method('dispatch')
@@ -162,7 +166,7 @@ final class FrontendEnforcementServiceTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->recoveryCodeService->method('countRemaining')->willReturn(0);
 
-        $gracePeriodStart = \time() - 3600; // Started 1 hour ago
+        $gracePeriodStart = time() - 3600; // Started 1 hour ago
         $this->setupDbQueries(
             ['uid' => 1, 'usergroup' => '3', 'passkey_grace_period_start' => $gracePeriodStart],
             [['uid' => 3, 'passkey_enforcement' => 'enforced', 'passkey_grace_period_days' => 14]],
@@ -186,7 +190,7 @@ final class FrontendEnforcementServiceTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->recoveryCodeService->method('countRemaining')->willReturn(0);
 
-        $gracePeriodStart = \time() - 3600; // Started 1 hour ago
+        $gracePeriodStart = time() - 3600; // Started 1 hour ago
         $this->setupDbQueries(
             ['uid' => 1, 'usergroup' => '3', 'passkey_grace_period_start' => $gracePeriodStart],
             [['uid' => 3, 'passkey_enforcement' => 'required', 'passkey_grace_period_days' => 14]],
@@ -206,7 +210,7 @@ final class FrontendEnforcementServiceTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->recoveryCodeService->method('countRemaining')->willReturn(0);
 
-        $gracePeriodStart = \time() - (30 * 86400); // Started 30 days ago
+        $gracePeriodStart = time() - (30 * 86400); // Started 30 days ago
         $this->setupDbQueries(
             ['uid' => 1, 'usergroup' => '3', 'passkey_grace_period_start' => $gracePeriodStart],
             [['uid' => 3, 'passkey_enforcement' => 'required', 'passkey_grace_period_days' => 14]],
@@ -256,7 +260,7 @@ final class FrontendEnforcementServiceTest extends TestCase
         $eventDispatcher = $this->createMock(EventDispatcherInterface::class);
         $eventDispatcher->expects(self::once())
             ->method('dispatch')
-            ->with(self::callback(static fn(EnforcementLevelResolvedEvent $event): bool => $event->feUserUid === 42
+            ->with(self::callback(static fn (EnforcementLevelResolvedEvent $event): bool => $event->feUserUid === 42
                 && $event->getEffectiveLevel() === 'required'))
             ->willReturnArgument(0);
 
@@ -341,7 +345,7 @@ final class FrontendEnforcementServiceTest extends TestCase
             ->method('update')
             ->with(
                 'fe_users',
-                self::callback(static fn(array $data): bool => isset($data['passkey_grace_period_start'])
+                self::callback(static fn (array $data): bool => isset($data['passkey_grace_period_start'])
                     && $data['passkey_grace_period_start'] > 0),
                 ['uid' => 42, 'passkey_grace_period_start' => 0],
             )
@@ -390,11 +394,11 @@ final class FrontendEnforcementServiceTest extends TestCase
     {
         // Local calendar days across a daylight-saving change are 23 or 25
         // hours long; the deadline must not follow them.
-        $timezone = \date_default_timezone_get();
-        \date_default_timezone_set('Europe/Berlin');
+        $timezone = date_default_timezone_get();
+        date_default_timezone_set('Europe/Berlin');
         try {
-            $start = \time() - 3600;
-            $days = $this->daysUntilTheNextDstChange($start);
+            $start = time() - 3600;
+            $days  = $this->daysUntilTheNextDstChange($start);
 
             $this->siteConfigService->method('getEnforcementLevel')->willReturn('off');
             $this->credentialRepository->method('countByFeUser')->willReturn(0);
@@ -409,7 +413,7 @@ final class FrontendEnforcementServiceTest extends TestCase
             self::assertSame($start + $days * 86400, $status->graceDeadline?->getTimestamp());
             self::assertSame($days, $status->graceDaysRemaining((new DateTimeImmutable())->setTimestamp($start)));
         } finally {
-            \date_default_timezone_set($timezone);
+            date_default_timezone_set($timezone);
         }
     }
 
@@ -419,8 +423,8 @@ final class FrontendEnforcementServiceTest extends TestCase
      */
     private function daysUntilTheNextDstChange(int $start): int
     {
-        $offsetAt = static fn(int $timestamp): int => (new DateTimeImmutable())->setTimestamp($timestamp)->getOffset();
-        for ($days = 1; $days < 400; $days++) {
+        $offsetAt = static fn (int $timestamp): int => (new DateTimeImmutable())->setTimestamp($timestamp)->getOffset();
+        for ($days = 1; $days < 400; ++$days) {
             if ($offsetAt($start + $days * 86400) !== $offsetAt($start)) {
                 return $days;
             }
@@ -440,7 +444,7 @@ final class FrontendEnforcementServiceTest extends TestCase
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->recoveryCodeService->method('countRemaining')->willReturn(0);
 
-        $gracePeriodStart = \time() - 3600; // 1 hour ago
+        $gracePeriodStart = time() - 3600; // 1 hour ago
         $this->setupDbQueries(
             ['uid' => 1, 'usergroup' => '1,2', 'passkey_grace_period_start' => $gracePeriodStart],
             [
@@ -480,10 +484,10 @@ final class FrontendEnforcementServiceTest extends TestCase
 
             $this->connectionPool->method('getQueryBuilderForTable')
                 ->willReturnCallback(
-                    static fn(string $table): QueryBuilder => match ($table) {
-                        'fe_users' => $feUserQb,
+                    static fn (string $table): QueryBuilder => match ($table) {
+                        'fe_users'  => $feUserQb,
                         'fe_groups' => $groupQb,
-                        default => throw new RuntimeException('Unexpected table: ' . $table),
+                        default     => throw new RuntimeException('Unexpected table: ' . $table),
                     },
                 );
         } else {

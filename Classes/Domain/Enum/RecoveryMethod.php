@@ -14,7 +14,7 @@ namespace Netresearch\NrPasskeysFe\Domain\Enum;
  */
 enum RecoveryMethod: string
 {
-    case Password = 'password';
+    case Password     = 'password';
     case RecoveryCode = 'recovery_code';
-    case MagicLink = 'magic_link';
+    case MagicLink    = 'magic_link';
 }

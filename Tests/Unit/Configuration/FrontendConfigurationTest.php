@@ -60,13 +60,13 @@ final class FrontendConfigurationTest extends TestCase
     public function fromArrayWithAllOverridesReturnsCustomValues(): void
     {
         $config = FrontendConfiguration::fromArray([
-            'enableFePasskeys' => '0',
-            'defaultEnforcementLevel' => 'required',
-            'maxPasskeysPerUser' => '5',
-            'recoveryCodesEnabled' => '0',
-            'recoveryCodeCount' => '8',
-            'magicLinkEnabled' => '1',
-            'enrollmentBannerEnabled' => '0',
+            'enableFePasskeys'           => '0',
+            'defaultEnforcementLevel'    => 'required',
+            'maxPasskeysPerUser'         => '5',
+            'recoveryCodesEnabled'       => '0',
+            'recoveryCodeCount'          => '8',
+            'magicLinkEnabled'           => '1',
+            'enrollmentBannerEnabled'    => '0',
             'postLoginEnrollmentEnabled' => '0',
         ]);
 
@@ -84,10 +84,10 @@ final class FrontendConfigurationTest extends TestCase
     public function booleanStringZeroConvertsToFalse(): void
     {
         $config = FrontendConfiguration::fromArray([
-            'enableFePasskeys' => '0',
-            'recoveryCodesEnabled' => '0',
-            'magicLinkEnabled' => '0',
-            'enrollmentBannerEnabled' => '0',
+            'enableFePasskeys'           => '0',
+            'recoveryCodesEnabled'       => '0',
+            'magicLinkEnabled'           => '0',
+            'enrollmentBannerEnabled'    => '0',
             'postLoginEnrollmentEnabled' => '0',
         ]);
 
@@ -102,10 +102,10 @@ final class FrontendConfigurationTest extends TestCase
     public function booleanStringOneConvertsToTrue(): void
     {
         $config = FrontendConfiguration::fromArray([
-            'enableFePasskeys' => '1',
-            'recoveryCodesEnabled' => '1',
-            'magicLinkEnabled' => '1',
-            'enrollmentBannerEnabled' => '1',
+            'enableFePasskeys'           => '1',
+            'recoveryCodesEnabled'       => '1',
+            'magicLinkEnabled'           => '1',
+            'enrollmentBannerEnabled'    => '1',
             'postLoginEnrollmentEnabled' => '1',
         ]);
 
@@ -121,7 +121,7 @@ final class FrontendConfigurationTest extends TestCase
     {
         $config = FrontendConfiguration::fromArray([
             'maxPasskeysPerUser' => '25',
-            'recoveryCodeCount' => '16',
+            'recoveryCodeCount'  => '16',
         ]);
 
         self::assertSame(25, $config->getMaxPasskeysPerUser());
@@ -157,7 +157,7 @@ final class FrontendConfigurationTest extends TestCase
     {
         $config = FrontendConfiguration::fromArray([
             'maxPasskeysPerUser' => 20,
-            'recoveryCodeCount' => 6,
+            'recoveryCodeCount'  => 6,
         ]);
 
         self::assertSame(20, $config->getMaxPasskeysPerUser());
@@ -193,7 +193,7 @@ final class FrontendConfigurationTest extends TestCase
     {
         $extConfApi = $this->createStub(ExtensionConfiguration::class);
         $extConfApi->method('get')->willReturn([
-            'enableFePasskeys' => '0',
+            'enableFePasskeys'   => '0',
             'maxPasskeysPerUser' => '3',
         ]);
         GeneralUtility::addInstance(ExtensionConfiguration::class, $extConfApi);

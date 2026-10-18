@@ -15,6 +15,9 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+use function implode;
+use function time;
+
 /**
  * Integration tests for enforcement escalation with real database.
  *
@@ -97,7 +100,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->assignGroupToUser(1, [50]);
 
         // Set grace period start to now (1 day ago still within 14 days)
-        $gracePeriodStart = \time() - (86400); // 1 day ago
+        $gracePeriodStart = time() - 86400; // 1 day ago
         $this->setGracePeriodStart(1, $gracePeriodStart);
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
@@ -114,7 +117,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->assignGroupToUser(1, [51]);
 
         // Set grace period start to 30 days ago (beyond 14-day grace)
-        $gracePeriodStart = \time() - (86400 * 30);
+        $gracePeriodStart = time() - (86400 * 30);
         $this->setGracePeriodStart(1, $gracePeriodStart);
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
@@ -128,7 +131,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->createGroup(52, 'enforced', 14);
         $this->assignGroupToUser(1, [52]);
 
-        $this->setGracePeriodStart(1, \time() - 86400);
+        $this->setGracePeriodStart(1, time() - 86400);
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
 
@@ -173,7 +176,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $this->createGroup(81, 'required', 7);
         $this->assignGroupToUser(1, [80, 81]);
 
-        $this->setGracePeriodStart(1, \time() - (86400));
+        $this->setGracePeriodStart(1, time() - 86400);
 
         $status = $this->enforcementService->getStatus(1, 'site-a', $this->makeSiteWithLevel('off'));
 
@@ -250,13 +253,13 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
     {
         $connection = $this->getConnectionPool()->getConnectionForTable('fe_groups');
         $connection->insert('fe_groups', [
-            'uid' => $uid,
-            'pid' => 1,
-            'title' => 'Test Group ' . $uid,
-            'passkey_enforcement' => $enforcement,
+            'uid'                       => $uid,
+            'pid'                       => 1,
+            'title'                     => 'Test Group ' . $uid,
+            'passkey_enforcement'       => $enforcement,
             'passkey_grace_period_days' => $graceDays,
-            'hidden' => 0,
-            'deleted' => 0,
+            'hidden'                    => 0,
+            'deleted'                   => 0,
         ]);
     }
 
@@ -268,7 +271,7 @@ final class EnforcementEscalationTest extends AbstractPasskeyFunctionalTestCase
         $connection = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $connection->update(
             'fe_users',
-            ['usergroup' => \implode(',', $groupUids)],
+            ['usergroup' => implode(',', $groupUids)],
             ['uid' => $feUserUid],
         );
     }

@@ -17,6 +17,9 @@ use PHPUnit\Framework\Attributes\Test;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
+use function count;
+use function time;
+
 #[CoversClass(FrontendCredentialRepository::class)]
 final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTestCase
 {
@@ -241,14 +244,14 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
         );
 
         $this->repository->save($credential);
-        $uid = $credential->getUid();
-        $beforeRevoke = \time();
+        $uid          = $credential->getUid();
+        $beforeRevoke = time();
 
         $this->repository->revoke($uid, 99);
 
-        $afterRevoke = \time();
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysfe_credential');
-        $row = $connection->select(['revoked_at', 'revoked_by'], 'tx_nrpasskeysfe_credential', ['uid' => $uid])->fetchAssociative();
+        $afterRevoke = time();
+        $connection  = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysfe_credential');
+        $row         = $connection->select(['revoked_at', 'revoked_by'], 'tx_nrpasskeysfe_credential', ['uid' => $uid])->fetchAssociative();
 
         self::assertNotFalse($row);
         $revokedAt = (int) $row['revoked_at'];
@@ -414,13 +417,13 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
         );
 
         $this->repository->save($credential);
-        $uid = $credential->getUid();
-        $beforeUpdate = \time();
+        $uid          = $credential->getUid();
+        $beforeUpdate = time();
 
         $this->repository->updateLastUsed($uid);
 
-        $afterUpdate = \time();
-        $found = $this->repository->findByCredentialId('cred-last-used');
+        $afterUpdate = time();
+        $found       = $this->repository->findByCredentialId('cred-last-used');
 
         self::assertNotNull($found);
         self::assertGreaterThanOrEqual($beforeUpdate, $found->getLastUsedAt());
@@ -517,7 +520,7 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
         $all = $this->repository->findAllByFeUser(1);
 
         // User 1 has 2 active + 1 revoked + 1 on site-b = 4 total (no deleted in fixture)
-        self::assertGreaterThanOrEqual(3, \count($all));
+        self::assertGreaterThanOrEqual(3, count($all));
 
         $hasRevoked = false;
         foreach ($all as $credential) {

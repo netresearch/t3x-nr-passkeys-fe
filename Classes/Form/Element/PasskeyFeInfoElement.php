@@ -14,6 +14,15 @@ use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
 use TYPO3\CMS\Core\Utility\StringUtility;
 
+use function array_filter;
+use function count;
+use function date;
+use function htmlspecialchars;
+use function implode;
+use function is_array;
+use function is_numeric;
+use function is_string;
+
 /**
  * FormEngine element that renders a read-only list of a frontend user's
  * registered passkeys in the TYPO3 backend fe_users record editor.
@@ -57,31 +66,31 @@ final class PasskeyFeInfoElement extends AbstractFormElement
             return $resultArray;
         }
 
-        $databaseRow = \is_array($this->data['databaseRow'] ?? null)
+        $databaseRow = is_array($this->data['databaseRow'] ?? null)
             ? $this->data['databaseRow']
             : [];
         $rawUid = $databaseRow['uid'] ?? null;
-        $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $userId = is_numeric($rawUid) ? (int) $rawUid : 0;
         if ($userId === 0) {
             return $resultArray;
         }
 
         // Retrieve all credentials for this user (across all sites)
         $credentials = $this->findAllByFeUser($userId);
-        $activeCount = \count(\array_filter(
+        $activeCount = count(array_filter(
             $credentials,
-            static fn(FrontendCredential $credential): bool => !$credential->isRevoked(),
+            static fn (FrontendCredential $credential): bool => !$credential->isRevoked(),
         ));
 
         // Status badge
         if ($activeCount > 0) {
             $badgeText = $activeCount . ' ' . $this->translate('admin.fe_passkeys.enabled', 'passkey(s) registered');
-            $status = '<span class="badge badge-success badge-space-end mb-2">'
-                . \htmlspecialchars($badgeText)
+            $status    = '<span class="badge badge-success badge-space-end mb-2">'
+                . htmlspecialchars($badgeText)
                 . '</span>';
         } else {
             $status = '<span class="badge badge-danger badge-space-end">'
-                . \htmlspecialchars($this->translate('admin.fe_passkeys.none', 'No passkeys'))
+                . htmlspecialchars($this->translate('admin.fe_passkeys.none', 'No passkeys'))
                 . '</span>';
         }
 
@@ -90,43 +99,43 @@ final class PasskeyFeInfoElement extends AbstractFormElement
         if ($credentials !== []) {
             $childHtml[] = '<ul class="list-group">';
             foreach ($credentials as $credential) {
-                $credUid = $credential->getUid();
+                $credUid   = $credential->getUid();
                 $isRevoked = $credential->isRevoked();
 
                 $childHtml[] = '<li class="list-group-item" style="line-height: 2.1em;">';
-                $childHtml[] = '<strong>' . \htmlspecialchars($credential->getLabel() ?: 'Passkey #' . $credUid) . '</strong> ';
+                $childHtml[] = '<strong>' . htmlspecialchars($credential->getLabel() ?: 'Passkey #' . $credUid) . '</strong> ';
 
                 if ($isRevoked) {
                     $childHtml[] = '<span class="badge badge-danger">'
-                        . \htmlspecialchars($this->translate('admin.fe_passkeys.status.revoked', 'Revoked'))
+                        . htmlspecialchars($this->translate('admin.fe_passkeys.status.revoked', 'Revoked'))
                         . '</span>';
                 } else {
                     $childHtml[] = '<span class="badge badge-success">'
-                        . \htmlspecialchars($this->translate('admin.fe_passkeys.status.active', 'Active'))
+                        . htmlspecialchars($this->translate('admin.fe_passkeys.status.active', 'Active'))
                         . '</span>';
                 }
 
                 // Metadata
-                $createdAt = $credential->getCreatedAt();
-                $lastUsedAt = $credential->getLastUsedAt();
-                $aaguid = $credential->getAaguid();
+                $createdAt      = $credential->getCreatedAt();
+                $lastUsedAt     = $credential->getLastUsedAt();
+                $aaguid         = $credential->getAaguid();
                 $siteIdentifier = $credential->getSiteIdentifier();
 
-                $createdLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.created', 'Created'));
-                $lastUsedLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.lastUsed', 'Last used'));
-                $neverLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.never', 'Never'));
-                $siteLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.site', 'Site'));
-                $aaguidLabel = \htmlspecialchars($this->translate('admin.fe_passkeys.aaguid', 'AAGUID'));
+                $createdLabel  = htmlspecialchars($this->translate('admin.fe_passkeys.created', 'Created'));
+                $lastUsedLabel = htmlspecialchars($this->translate('admin.fe_passkeys.lastUsed', 'Last used'));
+                $neverLabel    = htmlspecialchars($this->translate('admin.fe_passkeys.never', 'Never'));
+                $siteLabel     = htmlspecialchars($this->translate('admin.fe_passkeys.site', 'Site'));
+                $aaguidLabel   = htmlspecialchars($this->translate('admin.fe_passkeys.aaguid', 'AAGUID'));
 
                 $childHtml[] = '<br><small class="text-variant">';
-                $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? \htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
-                $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? \htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
+                $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
+                $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
                 if ($siteIdentifier !== '') {
-                    $childHtml[] = ' &middot; ' . $siteLabel . ': ' . \htmlspecialchars($siteIdentifier);
+                    $childHtml[] = ' &middot; ' . $siteLabel . ': ' . htmlspecialchars($siteIdentifier);
                 }
 
                 if ($aaguid !== '') {
-                    $childHtml[] = ' &middot; ' . $aaguidLabel . ': <code>' . \htmlspecialchars($aaguid) . '</code>';
+                    $childHtml[] = ' &middot; ' . $aaguidLabel . ': <code>' . htmlspecialchars($aaguid) . '</code>';
                 }
 
                 $childHtml[] = '</small>';
@@ -139,18 +148,18 @@ final class PasskeyFeInfoElement extends AbstractFormElement
 
         $fieldId = 't3js-form-field-passkey-fe-id' . StringUtility::getUniqueId('-');
 
-        $html = [];
-        $html[] = '<div class="formengine-field-item t3js-formengine-field-item" id="' . \htmlspecialchars($fieldId) . '">';
+        $html   = [];
+        $html[] = '<div class="formengine-field-item t3js-formengine-field-item" id="' . htmlspecialchars($fieldId) . '">';
         $html[] = '<div class="form-control-wrap" style="max-width: ' . $this->formMaxWidth($this->defaultInputWidth) . 'px">';
         $html[] = '<div class="form-wizards-wrap">';
         $html[] = '<div class="form-wizards-item-element">';
-        $html[] = \implode(PHP_EOL, $childHtml);
+        $html[] = implode(PHP_EOL, $childHtml);
         $html[] = '</div>';
         $html[] = '</div>';
         $html[] = '</div>';
         $html[] = '</div>';
 
-        $resultArray['html'] = $this->wrapWithFieldsetAndLegend($status . \implode(PHP_EOL, $html));
+        $resultArray['html'] = $this->wrapWithFieldsetAndLegend($status . implode(PHP_EOL, $html));
 
         return $resultArray;
     }
@@ -170,19 +179,19 @@ final class PasskeyFeInfoElement extends AbstractFormElement
 
     private function formatTimestamp(int $timestamp): string
     {
-        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $rawDateFormat = \is_array($sysConf) ? ($sysConf['ddmmyy'] ?? 'Y-m-d') : 'Y-m-d';
-        $rawTimeFormat = \is_array($sysConf) ? ($sysConf['hhmm'] ?? 'H:i') : 'H:i';
-        $format = \is_string($rawDateFormat) ? $rawDateFormat : 'Y-m-d';
-        $timeFormat = \is_string($rawTimeFormat) ? $rawTimeFormat : 'H:i';
+        $typo3Conf     = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf       = is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $rawDateFormat = is_array($sysConf) ? ($sysConf['ddmmyy'] ?? 'Y-m-d') : 'Y-m-d';
+        $rawTimeFormat = is_array($sysConf) ? ($sysConf['hhmm'] ?? 'H:i') : 'H:i';
+        $format        = is_string($rawDateFormat) ? $rawDateFormat : 'Y-m-d';
+        $timeFormat    = is_string($rawTimeFormat) ? $rawTimeFormat : 'H:i';
 
-        return \date($format . ' ' . $timeFormat, $timestamp);
+        return date($format . ' ' . $timeFormat, $timestamp);
     }
 
     private function translate(string $key, string $fallback): string
     {
-        $lang = $this->getLanguageService();
+        $lang       = $this->getLanguageService();
         $translated = $lang->sL('LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:' . $key);
         if ($translated !== '') {
             return $translated;

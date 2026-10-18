@@ -26,6 +26,16 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+use function array_column;
+use function array_reverse;
+use function array_values;
+use function count;
+use function implode;
+use function random_bytes;
+use function random_int;
+use function str_repeat;
+use function time;
+
 #[CoversClass(FrontendEnforcementService::class)]
 #[CoversClass(FrontendEnforcementStatus::class)]
 final class EnforcementFuzzTest extends TestCase
@@ -39,10 +49,10 @@ final class EnforcementFuzzTest extends TestCase
      * [site level][group level] => effective level.
      */
     private const EXPECTED_EFFECTIVE = [
-        'off' => ['off' => 'off', 'encourage' => 'encourage', 'required' => 'required', 'enforced' => 'enforced'],
+        'off'       => ['off' => 'off', 'encourage' => 'encourage', 'required' => 'required', 'enforced' => 'enforced'],
         'encourage' => ['off' => 'encourage', 'encourage' => 'encourage', 'required' => 'required', 'enforced' => 'enforced'],
-        'required' => ['off' => 'required', 'encourage' => 'required', 'required' => 'required', 'enforced' => 'enforced'],
-        'enforced' => ['off' => 'enforced', 'encourage' => 'enforced', 'required' => 'enforced', 'enforced' => 'enforced'],
+        'required'  => ['off' => 'required', 'encourage' => 'required', 'required' => 'required', 'enforced' => 'enforced'],
+        'enforced'  => ['off' => 'enforced', 'encourage' => 'enforced', 'required' => 'enforced', 'enforced' => 'enforced'],
     ];
 
     // ---------------------------------------------------------------
@@ -85,10 +95,10 @@ final class EnforcementFuzzTest extends TestCase
         yield 'space padded' => [' enforced '];
         yield 'unicode' => ['еnforced'];  // Cyrillic 'е' looks like Latin 'e'
         yield 'null byte' => ["\x00enforced"];
-        yield 'binary random' => [\random_bytes(8)];
+        yield 'binary random' => [random_bytes(8)];
         yield 'sql injection' => ["'; DROP TABLE fe_groups; --"];
         yield 'json string' => ['{"level":"enforced"}'];
-        yield 'very long' => [\str_repeat('enforced', 1000)];
+        yield 'very long' => [str_repeat('enforced', 1000)];
     }
 
     #[Test]
@@ -106,23 +116,23 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function theStrictestOfSeveralRandomGroupsWinsInAnyOrder(): void
     {
-        for ($i = 0; $i < 50; $i++) {
+        for ($i = 0; $i < 50; ++$i) {
             $groups = [];
-            for ($g = \random_int(1, 4); $g > 0; $g--) {
-                $groups[] = self::VALID_LEVELS[\random_int(0, 3)];
+            for ($g = random_int(1, 4); $g > 0; --$g) {
+                $groups[] = self::VALID_LEVELS[random_int(0, 3)];
             }
 
-            $siteLevel = self::VALID_LEVELS[\random_int(0, 3)];
+            $siteLevel = self::VALID_LEVELS[random_int(0, 3)];
 
-            $forward = $this->statusFor($siteLevel, $groups);
-            $reversed = $this->statusFor($siteLevel, \array_reverse($groups));
+            $forward  = $this->statusFor($siteLevel, $groups);
+            $reversed = $this->statusFor($siteLevel, array_reverse($groups));
 
             $expected = $siteLevel;
             foreach ($groups as $groupLevel) {
                 $expected = self::EXPECTED_EFFECTIVE[$expected][$groupLevel];
             }
 
-            $message = 'site ' . $siteLevel . ', groups ' . \implode(',', $groups);
+            $message = 'site ' . $siteLevel . ', groups ' . implode(',', $groups);
             self::assertSame($expected, $forward->effectiveLevel, $message);
             self::assertSame($forward->effectiveLevel, $reversed->effectiveLevel, $message);
         }
@@ -141,24 +151,24 @@ final class EnforcementFuzzTest extends TestCase
         $siteConfiguration->method('getEnforcementLevel')->willReturn($siteLevel);
 
         $groups = [];
-        foreach (\array_values($groupLevels) as $index => $level) {
+        foreach (array_values($groupLevels) as $index => $level) {
             $groups[] = ['uid' => $index + 1, 'passkey_enforcement' => $level, 'passkey_grace_period_days' => $graceDays];
         }
 
         $userResult = $this->createStub(Result::class);
         $userResult->method('fetchAssociative')->willReturn([
-            'uid' => 1,
-            'usergroup' => \implode(',', \array_column($groups, 'uid')),
+            'uid'                        => 1,
+            'usergroup'                  => implode(',', array_column($groups, 'uid')),
             'passkey_grace_period_start' => $graceStart,
         ]);
         $groupResult = $this->createStub(Result::class);
         $groupResult->method('fetchAllAssociative')->willReturn($groups);
-        $userQueryBuilder = $this->createQueryBuilderStub($userResult);
+        $userQueryBuilder  = $this->createQueryBuilderStub($userResult);
         $groupQueryBuilder = $this->createQueryBuilderStub($groupResult);
 
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getQueryBuilderForTable')->willReturnCallback(
-            static fn(string $table): QueryBuilder => $table === 'fe_groups' ? $groupQueryBuilder : $userQueryBuilder,
+            static fn (string $table): QueryBuilder => $table === 'fe_groups' ? $groupQueryBuilder : $userQueryBuilder,
         );
 
         $eventDispatcher = $this->createStub(EventDispatcherInterface::class);
@@ -202,17 +212,17 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function statusDtoWithRandomPasskeyCountsStaysConsistent(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $passkeyCount = \random_int(0, 1_000);
-            $recoveryCodesRemaining = \random_int(0, 100);
-            $level = self::VALID_LEVELS[\random_int(0, \count(self::VALID_LEVELS) - 1)];
+        for ($i = 0; $i < 100; ++$i) {
+            $passkeyCount           = random_int(0, 1_000);
+            $recoveryCodesRemaining = random_int(0, 100);
+            $level                  = self::VALID_LEVELS[random_int(0, count(self::VALID_LEVELS) - 1)];
 
             $status = new FrontendEnforcementStatus(
                 effectiveLevel: $level,
                 siteLevel: $level,
                 groupLevel: 'off',
                 passkeyCount: $passkeyCount,
-                inGracePeriod: (bool) \random_int(0, 1),
+                inGracePeriod: (bool) random_int(0, 1),
                 graceDeadline: null,
                 recoveryCodesRemaining: $recoveryCodesRemaining,
             );
@@ -229,7 +239,7 @@ final class EnforcementFuzzTest extends TestCase
         // Business rule: 'enforced' is a hard requirement. The group carries
         // 14 grace days and the user started a grace period yesterday; the
         // service must still grant none.
-        $status = $this->statusFor('off', ['enforced'], graceDays: 14, graceStart: \time() - 86_400);
+        $status = $this->statusFor('off', ['enforced'], graceDays: 14, graceStart: time() - 86_400);
 
         self::assertSame('enforced', $status->effectiveLevel);
         self::assertFalse($status->inGracePeriod);
@@ -242,7 +252,7 @@ final class EnforcementFuzzTest extends TestCase
     {
         // Control for the case above: the same fixture at 'required' does
         // produce a grace period, so the enforced case cannot pass vacuously.
-        $status = $this->statusFor('off', ['required'], graceDays: 14, graceStart: \time() - 86_400);
+        $status = $this->statusFor('off', ['required'], graceDays: 14, graceStart: time() - 86_400);
 
         self::assertSame('required', $status->effectiveLevel);
         self::assertTrue($status->inGracePeriod);
