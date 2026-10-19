@@ -19,6 +19,15 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function array_key_exists;
+use function array_keys;
+use function array_values;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function str_starts_with;
+use function time;
+
 /**
  * Resolves the effective passkey enforcement status for a frontend user.
  *
@@ -34,10 +43,10 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 final class FrontendEnforcementService
 {
     private const SEVERITY_MAP = [
-        'off' => 0,
+        'off'       => 0,
         'encourage' => 1,
-        'required' => 2,
-        'enforced' => 3,
+        'required'  => 2,
+        'enforced'  => 3,
     ];
 
     private const SECONDS_PER_DAY = 86400;
@@ -62,30 +71,30 @@ final class FrontendEnforcementService
         SiteInterface $site,
     ): FrontendEnforcementStatus {
         $cacheKey = $feUserUid . '|' . $siteIdentifier;
-        if (\array_key_exists($cacheKey, $this->statusCache)) {
+        if (array_key_exists($cacheKey, $this->statusCache)) {
             return $this->statusCache[$cacheKey];
         }
 
-        $passkeyCount = $this->credentialRepository->countByFeUser($feUserUid);
+        $passkeyCount           = $this->credentialRepository->countByFeUser($feUserUid);
         $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
 
-        $siteLevel = $this->siteConfigurationService->getEnforcementLevel($site);
+        $siteLevel    = $this->siteConfigurationService->getEnforcementLevel($site);
         $siteSeverity = $this->levelSeverity($siteLevel);
 
         // Resolve group-level enforcement
-        $userRow = $this->fetchFeUser($feUserUid);
+        $userRow        = $this->fetchFeUser($feUserUid);
         $usergroupValue = $userRow['usergroup'] ?? '';
-        $groupUids = GeneralUtility::intExplode(
+        $groupUids      = GeneralUtility::intExplode(
             ',',
-            \is_string($usergroupValue) ? $usergroupValue : '',
+            is_string($usergroupValue) ? $usergroupValue : '',
             true,
         );
 
-        $groupLevel = 'off';
+        $groupLevel         = 'off';
         $effectiveGraceDays = 0;
 
         if ($groupUids !== []) {
-            $groups = $this->fetchGroups(\array_values($groupUids));
+            $groups                            = $this->fetchGroups(array_values($groupUids));
             [$groupLevel, $effectiveGraceDays] = $this->resolveStrictestGroup($groups);
         }
 
@@ -110,8 +119,8 @@ final class FrontendEnforcementService
         $effectiveLevel = $event->getEffectiveLevel();
 
         // Calculate grace period
-        $graceValue = $userRow['passkey_grace_period_start'] ?? 0;
-        $gracePeriodStart = \is_numeric($graceValue) ? (int) $graceValue : 0;
+        $graceValue       = $userRow['passkey_grace_period_start'] ?? 0;
+        $gracePeriodStart = is_numeric($graceValue) ? (int) $graceValue : 0;
 
         $inGracePeriod = false;
         $graceDeadline = null;
@@ -160,9 +169,9 @@ final class FrontendEnforcementService
     public function startGracePeriod(int $feUserUid): bool
     {
         $connection = $this->connectionPool->getConnectionForTable('fe_users');
-        $started = $connection->update(
+        $started    = $connection->update(
             'fe_users',
-            ['passkey_grace_period_start' => \time()],
+            ['passkey_grace_period_start' => time()],
             ['uid' => $feUserUid, 'passkey_grace_period_start' => 0],
         ) > 0;
 
@@ -191,8 +200,8 @@ final class FrontendEnforcementService
      */
     private function forgetStatusOf(int $feUserUid): void
     {
-        foreach (\array_keys($this->statusCache) as $key) {
-            if (\str_starts_with($key, $feUserUid . '|')) {
+        foreach (array_keys($this->statusCache) as $key) {
+            if (str_starts_with($key, $feUserUid . '|')) {
                 unset($this->statusCache[$key]);
             }
         }
@@ -204,7 +213,7 @@ final class FrontendEnforcementService
     private function fetchFeUser(int $feUserUid): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('uid', 'usergroup', 'passkey_grace_period_start')
             ->from('fe_users')
             ->where(
@@ -216,7 +225,7 @@ final class FrontendEnforcementService
             ->executeQuery()
             ->fetchAssociative();
 
-        return \is_array($row) ? $row : [];
+        return is_array($row) ? $row : [];
     }
 
     /**
@@ -250,21 +259,21 @@ final class FrontendEnforcementService
      */
     private function resolveStrictestGroup(array $groups): array
     {
-        $effectiveLevel = 'off';
+        $effectiveLevel     = 'off';
         $effectiveGraceDays = 0;
 
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
-            $level = \is_string($enforcementValue) ? $enforcementValue : 'off';
-            $levelSeverity = $this->levelSeverity($level);
+            $level            = is_string($enforcementValue) ? $enforcementValue : 'off';
+            $levelSeverity    = $this->levelSeverity($level);
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
-            $graceDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
+            $graceDays      = is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
 
             $currentSeverity = $this->levelSeverity($effectiveLevel);
 
             if ($levelSeverity > $currentSeverity) {
-                $effectiveLevel = $level;
+                $effectiveLevel     = $level;
                 $effectiveGraceDays = $graceDays;
             } elseif (
                 $levelSeverity === $currentSeverity

@@ -12,6 +12,10 @@ namespace Netresearch\NrPasskeysFe\Controller;
 use JsonException;
 use Psr\Http\Message\ServerRequestInterface;
 
+use function is_array;
+use function json_decode;
+use function str_contains;
+
 trait JsonBodyTrait
 {
     /**
@@ -20,13 +24,13 @@ trait JsonBodyTrait
     private function getJsonBody(ServerRequestInterface $request): array
     {
         $body = $request->getParsedBody();
-        if (\is_array($body)) {
+        if (is_array($body)) {
             /** @var array<string, mixed> $body */
             return $body;
         }
 
         $contentType = $request->getHeaderLine('Content-Type');
-        if ($contentType !== '' && !\str_contains($contentType, 'application/json')) {
+        if ($contentType !== '' && !str_contains($contentType, 'application/json')) {
             return [];
         }
 
@@ -36,12 +40,12 @@ trait JsonBodyTrait
         }
 
         try {
-            $decoded = \json_decode($content, true, 16, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($content, true, 16, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return [];
         }
 
-        if (!\is_array($decoded)) {
+        if (!is_array($decoded)) {
             return [];
         }
 

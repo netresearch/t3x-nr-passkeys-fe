@@ -38,6 +38,12 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function in_array;
+use function json_decode;
+use function random_bytes;
+use function random_int;
+use function str_repeat;
+
 #[CoversClass(EidDispatcher::class)]
 final class RequestPayloadFuzzTest extends TestCase
 {
@@ -87,8 +93,8 @@ final class RequestPayloadFuzzTest extends TestCase
         yield 'path traversal' => ['../../etc/passwd'];
         yield 'null byte' => ["\x00loginOptions"];
         yield 'unicode action' => ['loginÖptions'];
-        yield 'very long action' => [\str_repeat('loginOptions', 1000)];
-        yield 'binary bytes' => [\random_bytes(20)];
+        yield 'very long action' => [str_repeat('loginOptions', 1000)];
+        yield 'binary bytes' => [random_bytes(20)];
         yield 'xss attempt' => ['<script>alert(1)</script>'];
         yield 'newline injection' => ["loginOptions\nContent-Type: text/html"];
         yield 'admin action' => ['adminDelete'];
@@ -99,7 +105,7 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('fuzzedActionProvider')]
     public function unknownActionReturns404(string $action): void
     {
-        $request = $this->createRequestWithAction($action, '');
+        $request  = $this->createRequestWithAction($action, '');
         $response = $this->dispatcher->processRequest($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);
@@ -123,8 +129,8 @@ final class RequestPayloadFuzzTest extends TestCase
         yield 'number' => ['42'];
         yield 'string' => ['"just a string"'];
         yield 'boolean' => ['true'];
-        yield 'deeply nested' => [\str_repeat('{"a":', 50) . '1' . \str_repeat('}', 50)];
-        yield 'huge string value' => ['{"username":"' . \str_repeat('A', 50000) . '"}'];
+        yield 'deeply nested' => [str_repeat('{"a":', 50) . '1' . str_repeat('}', 50)];
+        yield 'huge string value' => ['{"username":"' . str_repeat('A', 50000) . '"}'];
         yield 'unicode username' => ['{"username":"ünïcödé_üser_🔑"}'];
         yield 'null username' => ['{"username":null}'];
         yield 'integer username' => ['{"username":42}'];
@@ -146,16 +152,16 @@ final class RequestPayloadFuzzTest extends TestCase
         // username (decoy options for an unknown account), never as an error.
         GeneralUtility::addInstance(LoginController::class, $this->realLoginController());
 
-        $request = $this->createRequestWithAction('loginOptions', $body);
+        $request  = $this->createRequestWithAction('loginOptions', $body);
         $response = $this->dispatcher->processRequest($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $data = \json_decode((string) $response->getBody(), true);
+        $data = json_decode((string) $response->getBody(), true);
         self::assertIsArray($data);
         self::assertSame('test-challenge-token', $data['challengeToken'] ?? null);
         self::assertIsArray($data['options'] ?? null);
         // Only a non-empty scalar username leads to the username-first branch.
-        $expected = \in_array($this->dataName(), self::BODIES_WITH_A_USERNAME, true) ? 'decoy' : 'discoverable';
+        $expected = in_array($this->dataName(), self::BODIES_WITH_A_USERNAME, true) ? 'decoy' : 'discoverable';
         self::assertSame($expected, $data['options']['challenge'] ?? null);
     }
 
@@ -168,11 +174,11 @@ final class RequestPayloadFuzzTest extends TestCase
         // any lookup.
         GeneralUtility::addInstance(RecoveryController::class, $this->realRecoveryController());
 
-        $request = $this->createRequestWithAction('recoveryVerify', $body);
+        $request  = $this->createRequestWithAction('recoveryVerify', $body);
         $response = $this->dispatcher->processRequest($request);
 
         self::assertSame(400, $response->getStatusCode());
-        self::assertSame(['error' => 'Missing required fields'], \json_decode((string) $response->getBody(), true));
+        self::assertSame(['error' => 'Missing required fields'], json_decode((string) $response->getBody(), true));
     }
 
     // ---------------------------------------------------------------
@@ -198,7 +204,7 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('protectedActionProvider')]
     public function unauthenticatedRequestToProtectedActionReturns401(string $action): void
     {
-        $request = $this->createRequestWithAction($action, '{}', authenticated: false);
+        $request  = $this->createRequestWithAction($action, '{}', authenticated: false);
         $response = $this->dispatcher->processRequest($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);
@@ -212,9 +218,9 @@ final class RequestPayloadFuzzTest extends TestCase
     #[Test]
     public function randomBytesAsActionNeverThrows(): void
     {
-        for ($i = 0; $i < 50; $i++) {
-            $randomAction = \random_bytes(\random_int(1, 64));
-            $request = $this->createRequestWithAction($randomAction, '');
+        for ($i = 0; $i < 50; ++$i) {
+            $randomAction = random_bytes(random_int(1, 64));
+            $request      = $this->createRequestWithAction($randomAction, '');
 
             try {
                 $response = $this->dispatcher->processRequest($request);
@@ -236,13 +242,13 @@ final class RequestPayloadFuzzTest extends TestCase
      */
     private function realLoginController(): LoginController
     {
-        $site = $this->createStub(SiteInterface::class);
+        $site              = $this->createStub(SiteInterface::class);
         $siteConfiguration = $this->createStub(SiteConfigurationService::class);
         $siteConfiguration->method('getCurrentSite')->willReturn($site);
         $siteConfiguration->method('getSiteIdentifier')->willReturn('main');
 
         $challengeService = $this->createStub(ChallengeService::class);
-        $challengeService->method('generateChallenge')->willReturn(\str_repeat("\x01", 32));
+        $challengeService->method('generateChallenge')->willReturn(str_repeat("\x01", 32));
         $challengeService->method('createChallengeToken')->willReturn('test-challenge-token');
 
         $webAuthn = $this->createStub(FrontendWebAuthnService::class);
@@ -283,7 +289,7 @@ final class RequestPayloadFuzzTest extends TestCase
      */
     private function registerUnauthenticatedFeUserMock(): void
     {
-        $feUserMock = $this->createStub(FrontendUserAuthentication::class);
+        $feUserMock       = $this->createStub(FrontendUserAuthentication::class);
         $feUserMock->user = null;
         $feUserMock->method('createUserAspect')->willReturn(new UserAspect());
         GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserMock);
@@ -299,7 +305,7 @@ final class RequestPayloadFuzzTest extends TestCase
 
         $feUser = null;
         if ($authenticated) {
-            $feUser = $this->createStub(FrontendUserAuthentication::class);
+            $feUser       = $this->createStub(FrontendUserAuthentication::class);
             $feUser->user = ['uid' => 1];
         } else {
             // Register mock for bootstrapFrontendUser() to pick up
@@ -324,6 +330,7 @@ final class RequestPayloadFuzzTest extends TestCase
         $request->method('withAttribute')->willReturnCallback(
             function (string $attr, mixed $value) use ($request, &$attributes): ServerRequestInterface {
                 $attributes[$attr] = $value;
+
                 return $request;
             },
         );

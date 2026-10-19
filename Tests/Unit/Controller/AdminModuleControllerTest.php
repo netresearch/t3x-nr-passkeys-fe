@@ -45,9 +45,9 @@ final class AdminModuleControllerTest extends TestCase
     {
         parent::setUp();
         $this->moduleTemplateFactory = $this->createStub(ModuleTemplateFactory::class);
-        $this->adoptionStatsService = $this->createStub(FrontendAdoptionStatsService::class);
-        $this->pageRenderer = $this->createStub(PageRenderer::class);
-        $this->uriBuilder = $this->createStub(UriBuilder::class);
+        $this->adoptionStatsService  = $this->createStub(FrontendAdoptionStatsService::class);
+        $this->pageRenderer          = $this->createStub(PageRenderer::class);
+        $this->uriBuilder            = $this->createStub(UriBuilder::class);
 
         $this->subject = new AdminModuleController(
             $this->moduleTemplateFactory,
@@ -77,7 +77,7 @@ final class AdminModuleControllerTest extends TestCase
         );
         $this->adoptionStatsService->method('getStats')->willReturn($stats);
 
-        $request = new ServerRequest('https://example.com/typo3/module', 'GET');
+        $request  = new ServerRequest('https://example.com/typo3/module', 'GET');
         $response = $this->subject->dashboardAction($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);
@@ -92,7 +92,7 @@ final class AdminModuleControllerTest extends TestCase
             new Uri('https://example.com/typo3/module'),
         );
 
-        $request = new ServerRequest('https://example.com/typo3/module/help', 'GET');
+        $request  = new ServerRequest('https://example.com/typo3/module/help', 'GET');
         $response = $this->subject->helpAction($request);
 
         self::assertInstanceOf(ResponseInterface::class, $response);

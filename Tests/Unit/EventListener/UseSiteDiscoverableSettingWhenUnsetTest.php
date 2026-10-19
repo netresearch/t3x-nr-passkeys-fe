@@ -68,7 +68,7 @@ final class UseSiteDiscoverableSettingWhenUnsetTest extends TestCase
     private function dispatch(array $framework, array $settings): array
     {
         $flexForm = ['settings' => $settings];
-        $event = new BeforeFlexFormConfigurationOverrideEvent($framework, $flexForm, $flexForm);
+        $event    = new BeforeFlexFormConfigurationOverrideEvent($framework, $flexForm, $flexForm);
 
         (new UseSiteDiscoverableSettingWhenUnset())($event);
 

@@ -14,6 +14,10 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function count;
+use function mb_strlen;
+use function str_repeat;
+
 #[CoversClass(FrontendCredential::class)]
 final class FrontendCredentialTest extends TestCase
 {
@@ -43,21 +47,21 @@ final class FrontendCredentialTest extends TestCase
     public function fromArrayCreatesCredentialWithAllFields(): void
     {
         $data = [
-            'uid' => 42,
-            'fe_user' => 7,
-            'credential_id' => 'cred-abc',
+            'uid'             => 42,
+            'fe_user'         => 7,
+            'credential_id'   => 'cred-abc',
             'public_key_cose' => 'cose-data',
-            'sign_count' => 5,
-            'user_handle' => 'handle-xyz',
-            'aaguid' => '00000000-0000-0000-0000-000000000000',
-            'transports' => '["usb","nfc"]',
-            'label' => 'My Passkey',
+            'sign_count'      => 5,
+            'user_handle'     => 'handle-xyz',
+            'aaguid'          => '00000000-0000-0000-0000-000000000000',
+            'transports'      => '["usb","nfc"]',
+            'label'           => 'My Passkey',
             'site_identifier' => 'main',
-            'storage_pid' => 1,
-            'created_at' => 1700000000,
-            'last_used_at' => 1700001000,
-            'revoked_at' => 0,
-            'revoked_by' => 0,
+            'storage_pid'     => 1,
+            'created_at'      => 1700000000,
+            'last_used_at'    => 1700001000,
+            'revoked_at'      => 0,
+            'revoked_by'      => 0,
         ];
 
         $credential = FrontendCredential::fromArray($data);
@@ -122,18 +126,18 @@ final class FrontendCredentialTest extends TestCase
     public function setLabelTrimsToMax128Chars(): void
     {
         $credential = new FrontendCredential();
-        $longLabel = \str_repeat('a', 200);
+        $longLabel  = str_repeat('a', 200);
         $credential->setLabel($longLabel);
 
-        self::assertSame(128, \mb_strlen($credential->getLabel()));
-        self::assertSame(\str_repeat('a', 128), $credential->getLabel());
+        self::assertSame(128, mb_strlen($credential->getLabel()));
+        self::assertSame(str_repeat('a', 128), $credential->getLabel());
     }
 
     #[Test]
     public function setLabelAcceptsLabelUpTo128Chars(): void
     {
         $credential = new FrontendCredential();
-        $label128 = \str_repeat('b', 128);
+        $label128   = str_repeat('b', 128);
         $credential->setLabel($label128);
 
         self::assertSame($label128, $credential->getLabel());
@@ -143,10 +147,10 @@ final class FrontendCredentialTest extends TestCase
     public function fromArrayTrimsLabelOver128Chars(): void
     {
         $credential = FrontendCredential::fromArray([
-            'label' => \str_repeat('x', 200),
+            'label' => str_repeat('x', 200),
         ]);
 
-        self::assertSame(128, \mb_strlen($credential->getLabel()));
+        self::assertSame(128, mb_strlen($credential->getLabel()));
     }
 
     #[Test]
@@ -183,7 +187,7 @@ final class FrontendCredentialTest extends TestCase
     public function toArrayContainsAllExpectedKeys(): void
     {
         $credential = new FrontendCredential();
-        $array = $credential->toArray();
+        $array      = $credential->toArray();
 
         $expectedKeys = [
             'uid', 'fe_user', 'credential_id', 'public_key_cose', 'sign_count',
@@ -195,7 +199,7 @@ final class FrontendCredentialTest extends TestCase
             self::assertArrayHasKey($key, $array, "Expected key '{$key}' missing from toArray()");
         }
 
-        self::assertCount(\count($expectedKeys), $array);
+        self::assertCount(count($expectedKeys), $array);
     }
 
     #[Test]

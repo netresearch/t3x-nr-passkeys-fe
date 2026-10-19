@@ -17,6 +17,8 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 
+use function array_slice;
+
 /**
  * DI smoke test: with both extensions loaded, the frontend provider is part
  * of the nr_passkeys_be.adoption_stats_provider tagged collection that the
@@ -84,6 +86,6 @@ final class FrontendPasskeyAdoptionStatsProviderCollectionTest extends AbstractP
         // nr-passkeys-be 1.0.1 fills the slots of the other audiences with
         // zeros ([0, 0, 2, 3]); 1.0.0 returned the pair alone. The pair is
         // the last two entries of the frontend dataset in both.
-        self::assertSame([2, 3], \array_slice($chartData['datasets'][1]['data'], -2));
+        self::assertSame([2, 3], array_slice($chartData['datasets'][1]['data'], -2));
     }
 }

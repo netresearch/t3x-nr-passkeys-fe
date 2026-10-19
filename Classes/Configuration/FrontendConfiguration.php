@@ -13,6 +13,11 @@ use Throwable;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function is_array;
+use function is_bool;
+use function is_numeric;
+use function is_string;
+
 /**
  * Frontend extension configuration value object.
  *
@@ -107,7 +112,7 @@ final readonly class FrontendConfiguration
                 ExtensionConfiguration::class,
             );
             $rawSettings = $extConfApi->get('nr_passkeys_fe');
-            if (!\is_array($rawSettings)) {
+            if (!is_array($rawSettings)) {
                 $rawSettings = [];
             }
 
@@ -126,11 +131,11 @@ final readonly class FrontendConfiguration
             return $default;
         }
 
-        if (\is_bool($value)) {
+        if (is_bool($value)) {
             return $value;
         }
 
-        if (\is_string($value)) {
+        if (is_string($value)) {
             return $value !== '0' && $value !== '';
         }
 
@@ -139,11 +144,11 @@ final readonly class FrontendConfiguration
 
     private static function intVal(mixed $value, int $default = 0): int
     {
-        return \is_numeric($value) ? (int) $value : $default;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     private static function stringVal(mixed $value, string $default = ''): string
     {
-        return \is_string($value) ? $value : $default;
+        return is_string($value) ? $value : $default;
     }
 }

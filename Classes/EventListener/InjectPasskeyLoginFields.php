@@ -12,6 +12,8 @@ namespace Netresearch\NrPasskeysFe\EventListener;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
+use function class_exists;
+
 /**
  * Hands the felogin template override the eID URL of its passkey tab.
  *
@@ -43,11 +45,11 @@ final readonly class InjectPasskeyLoginFields
     public function __invoke(object $event): void
     {
         // Guard: felogin may not be installed
-        if (!\class_exists(self::FELOGIN_EVENT_CLASS)) {
+        if (!class_exists(self::FELOGIN_EVENT_CLASS)) {
             return;
         }
 
-        if (!($event instanceof ModifyLoginFormViewEvent)) {
+        if (!$event instanceof ModifyLoginFormViewEvent) {
             return;
         }
 

@@ -12,6 +12,9 @@ namespace Netresearch\NrPasskeysFe\Service;
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function is_numeric;
+use function is_string;
+
 /**
  * Service for looking up frontend users (fe_users table).
  *
@@ -34,7 +37,7 @@ final readonly class FrontendUserLookupService
     public function findFeUserUidByUsername(string $username): ?int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('uid')
             ->from(self::TABLE)
             ->where(
@@ -54,7 +57,7 @@ final readonly class FrontendUserLookupService
 
         $rawUid = $row['uid'] ?? null;
 
-        return \is_numeric($rawUid) ? (int) $rawUid : null;
+        return is_numeric($rawUid) ? (int) $rawUid : null;
     }
 
     /**
@@ -68,7 +71,7 @@ final readonly class FrontendUserLookupService
     public function findFeUserByUid(int $uid): ?array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('uid', 'username')
             ->from(self::TABLE)
             ->where(
@@ -87,8 +90,8 @@ final readonly class FrontendUserLookupService
         }
 
         return [
-            'uid' => \is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : 0,
-            'username' => \is_string($row['username'] ?? null) ? $row['username'] : '',
+            'uid'      => is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : 0,
+            'username' => is_string($row['username'] ?? null) ? $row['username'] : '',
         ];
     }
 }

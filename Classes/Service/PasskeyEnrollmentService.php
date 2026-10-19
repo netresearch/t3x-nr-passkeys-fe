@@ -18,6 +18,8 @@ use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use Webauthn\PublicKeyCredentialCreationOptions;
 
+use function sprintf;
+
 /**
  * Orchestrates the passkey enrollment flow for frontend users.
  *
@@ -103,12 +105,12 @@ final readonly class PasskeyEnrollmentService
      */
     private function assertMaxPasskeysNotReached(int $feUserUid): void
     {
-        $maxPasskeys = $this->configuration->getMaxPasskeysPerUser();
+        $maxPasskeys  = $this->configuration->getMaxPasskeysPerUser();
         $currentCount = $this->credentialRepository->countByFeUser($feUserUid);
 
         if ($currentCount >= $maxPasskeys) {
             throw new RuntimeException(
-                \sprintf(
+                sprintf(
                     'Maximum number of passkeys (%d) reached for user %d',
                     $maxPasskeys,
                     $feUserUid,

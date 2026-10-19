@@ -13,6 +13,19 @@ use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use function count;
+use function is_numeric;
+use function is_string;
+use function password_hash;
+use function password_verify;
+use function random_int;
+use function str_replace;
+use function strlen;
+use function strtoupper;
+use function substr;
+use function time;
+use function trim;
+
 /**
  * Generates, stores, and verifies single-use recovery codes for fe_users.
  *
@@ -66,19 +79,19 @@ final readonly class RecoveryCodeService
         // Delete all existing codes for this user
         $this->deleteAllForUser($feUserUid);
 
-        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $connection     = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $now            = time();
         $plaintextCodes = [];
 
-        for ($i = 0; $i < $count; $i++) {
-            $rawCode = $this->generateRandomCode();
+        for ($i = 0; $i < $count; ++$i) {
+            $rawCode       = $this->generateRandomCode();
             $formattedCode = $this->formatCode($rawCode);
-            $hash = \password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
+            $hash          = password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
 
             $connection->insert(self::TABLE, [
-                'fe_user' => $feUserUid,
-                'code_hash' => $hash,
-                'used_at' => 0,
+                'fe_user'    => $feUserUid,
+                'code_hash'  => $hash,
+                'used_at'    => 0,
                 'created_at' => $now,
             ]);
 
@@ -101,19 +114,19 @@ final readonly class RecoveryCodeService
      */
     public function verify(int $feUserUid, string $code): bool
     {
-        $normalised = \strtoupper(\str_replace('-', '', \trim($code)));
+        $normalised = strtoupper(str_replace('-', '', trim($code)));
 
-        if (\strlen($normalised) !== self::CODE_LENGTH) {
+        if (strlen($normalised) !== self::CODE_LENGTH) {
             // Perform dummy bcrypt ops to prevent length-based timing leak
-            for ($i = 0; $i < self::MAX_CODES; $i++) {
-                \password_verify($normalised, self::DUMMY_HASH);
+            for ($i = 0; $i < self::MAX_CODES; ++$i) {
+                password_verify($normalised, self::DUMMY_HASH);
             }
 
             return false;
         }
 
         $queryBuilder = $this->getQueryBuilder();
-        $rows = $queryBuilder
+        $rows         = $queryBuilder
             ->select('uid', 'code_hash')
             ->from(self::TABLE)
             ->where(
@@ -126,22 +139,22 @@ final readonly class RecoveryCodeService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $matched = false;
+        $matched    = false;
         $matchedUid = 0;
-        $realCount = \count($rows);
+        $realCount  = count($rows);
 
         foreach ($rows as $row) {
-            $hash = \is_string($row['code_hash'] ?? null) ? $row['code_hash'] : '';
+            $hash = is_string($row['code_hash'] ?? null) ? $row['code_hash'] : '';
 
-            if (!$matched && \password_verify($normalised, $hash)) {
-                $matched = true;
+            if (!$matched && password_verify($normalised, $hash)) {
+                $matched    = true;
                 $matchedUid = (int) ($row['uid'] ?? 0);
             }
         }
 
         // Pad with dummy bcrypt ops so total is always MAX_CODES
-        for ($i = $realCount; $i < self::MAX_CODES; $i++) {
-            \password_verify($normalised, self::DUMMY_HASH);
+        for ($i = $realCount; $i < self::MAX_CODES; ++$i) {
+            password_verify($normalised, self::DUMMY_HASH);
         }
 
         if ($matched) {
@@ -173,7 +186,7 @@ final readonly class RecoveryCodeService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -181,11 +194,11 @@ final readonly class RecoveryCodeService
      */
     private function generateRandomCode(): string
     {
-        $alphabetLength = \strlen(self::ALPHABET);
-        $code = '';
+        $alphabetLength = strlen(self::ALPHABET);
+        $code           = '';
 
-        for ($i = 0; $i < self::CODE_LENGTH; $i++) {
-            $code .= self::ALPHABET[\random_int(0, $alphabetLength - 1)];
+        for ($i = 0; $i < self::CODE_LENGTH; ++$i) {
+            $code .= self::ALPHABET[random_int(0, $alphabetLength - 1)];
         }
 
         return $code;
@@ -196,7 +209,7 @@ final readonly class RecoveryCodeService
      */
     private function formatCode(string $raw): string
     {
-        return \substr($raw, 0, 4) . '-' . \substr($raw, 4, 4);
+        return substr($raw, 0, 4) . '-' . substr($raw, 4, 4);
     }
 
     private function deleteAllForUser(int $feUserUid): void
@@ -210,7 +223,7 @@ final readonly class RecoveryCodeService
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $connection->update(
             self::TABLE,
-            ['used_at' => \time()],
+            ['used_at' => time()],
             ['uid' => $uid],
         );
     }

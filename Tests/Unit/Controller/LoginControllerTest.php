@@ -36,6 +36,12 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function hrtime;
+use function json_decode;
+use function json_encode;
+use function random_bytes;
+use function str_repeat;
+
 #[CoversClass(LoginController::class)]
 final class LoginControllerTest extends TestCase
 {
@@ -59,22 +65,22 @@ final class LoginControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->webAuthnService = $this->createStub(FrontendWebAuthnService::class);
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->webAuthnService      = $this->createStub(FrontendWebAuthnService::class);
+        $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
-        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
-        $this->challengeService = $this->createStub(ChallengeService::class);
-        $this->site = $this->createStub(SiteInterface::class);
+        $this->userLookupService    = $this->createStub(FrontendUserLookupService::class);
+        $this->rateLimiterService   = $this->createStub(RateLimiterService::class);
+        $this->challengeService     = $this->createStub(ChallengeService::class);
+        $this->site                 = $this->createStub(SiteInterface::class);
 
         $this->siteConfigService->method('getCurrentSite')->willReturn($this->site);
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
 
-        $this->challengeService->method('generateChallenge')->willReturn(\random_bytes(32));
+        $this->challengeService->method('generateChallenge')->willReturn(random_bytes(32));
         $this->challengeService->method('createChallengeToken')->willReturn('test-challenge-token');
 
         // Register a cache stub for the login token
-        $cacheStub = $this->createStub(FrontendInterface::class);
+        $cacheStub        = $this->createStub(FrontendInterface::class);
         $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($cacheStub);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
@@ -107,7 +113,7 @@ final class LoginControllerTest extends TestCase
         $this->rateLimiterService->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
-        $request = $this->buildJsonRequest('POST', []);
+        $request  = $this->buildJsonRequest('POST', []);
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(429, $response->getStatusCode());
@@ -123,11 +129,11 @@ final class LoginControllerTest extends TestCase
     {
         $optionsData = ['challenge' => 'abc123', 'rpId' => 'example.com'];
         $this->webAuthnService->method('createDiscoverableAssertionOptions')->willReturn([
-            'options' => null,
-            'optionsJson' => \json_encode($optionsData),
+            'options'     => null,
+            'optionsJson' => json_encode($optionsData),
         ]);
 
-        $request = $this->buildJsonRequest('POST', []);
+        $request  = $this->buildJsonRequest('POST', []);
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(200, $response->getStatusCode());
@@ -157,11 +163,11 @@ final class LoginControllerTest extends TestCase
             ->method('createDecoyAssertionOptions')
             ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
 
-        $request = $this->buildJsonRequest('POST', ['username' => 'unknown@example.com']);
+        $request  = $this->buildJsonRequest('POST', ['username' => 'unknown@example.com']);
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertArrayHasKey('options', $body);
         self::assertArrayHasKey('challengeToken', $body);
     }
@@ -177,11 +183,11 @@ final class LoginControllerTest extends TestCase
             ->method('createDecoyAssertionOptions')
             ->willReturn(['options' => null, 'optionsJson' => '{"challenge":"decoy"}']);
 
-        $request = $this->buildJsonRequest('POST', ['username' => 'user@example.com']);
+        $request  = $this->buildJsonRequest('POST', ['username' => 'user@example.com']);
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $body = json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertArrayHasKey('options', $body);
         self::assertArrayHasKey('challengeToken', $body);
     }
@@ -196,11 +202,11 @@ final class LoginControllerTest extends TestCase
 
         $optionsData = ['challenge' => 'abc123', 'rpId' => 'example.com', 'allowCredentials' => []];
         $this->webAuthnService->method('createAssertionOptions')->willReturn([
-            'options' => null,
-            'optionsJson' => \json_encode($optionsData),
+            'options'     => null,
+            'optionsJson' => json_encode($optionsData),
         ]);
 
-        $request = $this->buildJsonRequest('POST', ['username' => 'user@example.com']);
+        $request  = $this->buildJsonRequest('POST', ['username' => 'user@example.com']);
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(200, $response->getStatusCode());
@@ -216,7 +222,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns400WhenFieldsMissing(): void
     {
-        $request = $this->buildJsonRequest('POST', []);
+        $request  = $this->buildJsonRequest('POST', []);
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
@@ -225,7 +231,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns400WhenOnlyAssertionPresent(): void
     {
-        $request = $this->buildJsonRequest('POST', ['assertion' => ['id' => 'abc']]);
+        $request  = $this->buildJsonRequest('POST', ['assertion' => ['id' => 'abc']]);
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
@@ -238,7 +244,7 @@ final class LoginControllerTest extends TestCase
             ->willThrowException(new RuntimeException('Rate limit exceeded'));
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -253,7 +259,7 @@ final class LoginControllerTest extends TestCase
             ->willThrowException(new RuntimeException('Invalid token'));
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'bad-token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -264,12 +270,12 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionReturns401WhenAssertionVerificationFails(): void
     {
-        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->challengeService->method('verifyChallengeToken')->willReturn(str_repeat('a', 32));
         $this->webAuthnService->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Verification failed'));
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'valid-token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -280,12 +286,12 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionAddsUnknownCredentialReasonWhenCredentialUnknown(): void
     {
-        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->challengeService->method('verifyChallengeToken')->willReturn(str_repeat('a', 32));
         $this->webAuthnService->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Unknown credential', FrontendWebAuthnService::CODE_UNKNOWN_CREDENTIAL));
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'valid-token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -298,12 +304,12 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionOmitsReasonForGenericVerificationFailure(): void
     {
-        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->challengeService->method('verifyChallengeToken')->willReturn(str_repeat('a', 32));
         $this->webAuthnService->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Signature invalid', 1700200099));
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'valid-token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -319,14 +325,14 @@ final class LoginControllerTest extends TestCase
         $credentialMock = $this->createStub(FrontendCredential::class);
         $credentialMock->method('getUid')->willReturn(7);
 
-        $this->challengeService->method('verifyChallengeToken')->willReturn(\str_repeat('a', 32));
+        $this->challengeService->method('verifyChallengeToken')->willReturn(str_repeat('a', 32));
         $this->webAuthnService->method('verifyAssertionResponse')->willReturn([
-            'feUserUid' => 42,
+            'feUserUid'  => 42,
             'credential' => $credentialMock,
         ]);
 
         $request = $this->buildJsonRequest('POST', [
-            'assertion' => ['id' => 'abc', 'response' => []],
+            'assertion'      => ['id' => 'abc', 'response' => []],
             'challengeToken' => 'valid-token',
         ]);
         $response = $this->subject->verifyAction($request);
@@ -394,7 +400,7 @@ final class LoginControllerTest extends TestCase
         $this->setupDbUserFound(42);
         $this->credentialRepository->method('findByFeUser')->willReturn([$this->createStub(FrontendCredential::class)]);
         $this->webAuthnService->method('createAssertionOptions')->willReturn([
-            'options' => null,
+            'options'     => null,
             'optionsJson' => '{"challenge":"abc123"}',
         ]);
 
@@ -405,10 +411,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->buildJsonRequest('POST', ['username' => $username]);
 
-        $start = \hrtime(true);
+        $start = hrtime(true);
         $this->subject->optionsAction($request);
 
-        return (\hrtime(true) - $start) / 1_000_000;
+        return (hrtime(true) - $start) / 1_000_000;
     }
 
     private function setupDbUserFound(int $uid): void
@@ -431,7 +437,7 @@ final class LoginControllerTest extends TestCase
 
     private function decodeBody(ResponseInterface $response): array
     {
-        return \json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        return json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
     }
 
     // ---------------------------------------------------------------
@@ -502,9 +508,9 @@ final class LoginControllerTest extends TestCase
     {
         // A request that did not pass the middleware: the address is computed
         // from the server params with the SYS configuration, as core does.
-        $addresses = $this->recordRateLimitedAddresses();
-        $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP'] = '10.0.0.1';
+        $addresses                                                         = $this->recordRateLimitedAddresses();
+        $backup                                                            = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP']               = '10.0.0.1';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyHeaderMultiValue'] = 'first';
 
         try {
@@ -527,7 +533,7 @@ final class LoginControllerTest extends TestCase
     {
         // No reverseProxyIP configured: X-Forwarded-For is whatever the client
         // sent, so the limiter must charge the connecting address.
-        $addresses = $this->recordRateLimitedAddresses();
+        $addresses    = $this->recordRateLimitedAddresses();
         $serverParams = ['REMOTE_ADDR' => '198.51.100.7', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4'];
 
         $request = $this->requestFrom($serverParams)
@@ -541,8 +547,8 @@ final class LoginControllerTest extends TestCase
     public function withoutTheAttributeAForwardedForHeaderFromAnUntrustedClientIsIgnored(): void
     {
         // The fallback path, again without a trusted proxy.
-        $addresses = $this->recordRateLimitedAddresses();
-        $backup = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
+        $addresses                         = $this->recordRateLimitedAddresses();
+        $backup                            = $GLOBALS['TYPO3_CONF_VARS']['SYS'] ?? null;
         $GLOBALS['TYPO3_CONF_VARS']['SYS'] = [];
 
         try {

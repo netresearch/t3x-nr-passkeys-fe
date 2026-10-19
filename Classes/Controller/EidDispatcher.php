@@ -18,6 +18,11 @@ use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function in_array;
+use function is_array;
+use function is_numeric;
+use function is_string;
+
 /**
  * eID dispatcher for the nr_passkeys_fe JSON API.
  *
@@ -38,17 +43,17 @@ final class EidDispatcher
      * @var array<string, array{0: class-string, 1: string}>
      */
     private const ACTION_MAP = [
-        'loginOptions'          => [LoginController::class, 'optionsAction'],
-        'loginVerify'           => [LoginController::class, 'verifyAction'],
-        'registrationOptions'   => [ManagementController::class, 'registrationOptionsAction'],
-        'registrationVerify'    => [ManagementController::class, 'registrationVerifyAction'],
-        'manageList'            => [ManagementController::class, 'listAction'],
-        'manageRename'          => [ManagementController::class, 'renameAction'],
-        'manageRemove'          => [ManagementController::class, 'removeAction'],
-        'recoveryGenerate'      => [RecoveryController::class, 'generateAction'],
-        'recoveryVerify'        => [RecoveryController::class, 'verifyAction'],
-        'enrollmentStatus'      => [EnrollmentController::class, 'statusAction'],
-        'enrollmentSkip'        => [EnrollmentController::class, 'skipAction'],
+        'loginOptions'        => [LoginController::class, 'optionsAction'],
+        'loginVerify'         => [LoginController::class, 'verifyAction'],
+        'registrationOptions' => [ManagementController::class, 'registrationOptionsAction'],
+        'registrationVerify'  => [ManagementController::class, 'registrationVerifyAction'],
+        'manageList'          => [ManagementController::class, 'listAction'],
+        'manageRename'        => [ManagementController::class, 'renameAction'],
+        'manageRemove'        => [ManagementController::class, 'removeAction'],
+        'recoveryGenerate'    => [RecoveryController::class, 'generateAction'],
+        'recoveryVerify'      => [RecoveryController::class, 'verifyAction'],
+        'enrollmentStatus'    => [EnrollmentController::class, 'statusAction'],
+        'enrollmentSkip'      => [EnrollmentController::class, 'skipAction'],
     ];
 
     /**
@@ -62,14 +67,14 @@ final class EidDispatcher
     {
         $action = $request->getQueryParams()['action'] ?? '';
 
-        if (!\is_string($action) || !isset(self::ACTION_MAP[$action])) {
+        if (!is_string($action) || !isset(self::ACTION_MAP[$action])) {
             return new JsonResponse(['error' => 'Unknown action'], 404);
         }
 
         [$controllerClass, $method] = self::ACTION_MAP[$action];
 
         // Public actions (login, recovery verify) do not require an FE session
-        if (\in_array($action, self::PUBLIC_ACTIONS, true)) {
+        if (in_array($action, self::PUBLIC_ACTIONS, true)) {
             // loginVerify and recoveryVerify need a FE session to write session flags
             if ($action === 'loginVerify' || $action === 'recoveryVerify') {
                 $request = $this->bootstrapFrontendUser($request);
@@ -101,8 +106,8 @@ final class EidDispatcher
             return new JsonResponse(['error' => 'Authentication required'], 401);
         }
 
-        $userRow = $feUser->user;
-        $feUserUid = \is_array($userRow) && \is_numeric($userRow['uid'] ?? null)
+        $userRow   = $feUser->user;
+        $feUserUid = is_array($userRow) && is_numeric($userRow['uid'] ?? null)
             ? (int) $userRow['uid']
             : 0;
 

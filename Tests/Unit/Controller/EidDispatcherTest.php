@@ -28,6 +28,9 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function in_array;
+use function json_decode;
+
 #[CoversClass(EidDispatcher::class)]
 final class EidDispatcherTest extends TestCase
 {
@@ -94,11 +97,11 @@ final class EidDispatcherTest extends TestCase
     public function publicActionWithoutFeUserPassesThrough(string $action): void
     {
         $expectedResponse = new JsonResponse(['status' => 'ok']);
-        $controllerStub = $this->createPublicActionControllerStub($action, $expectedResponse);
+        $controllerStub   = $this->createPublicActionControllerStub($action, $expectedResponse);
         $this->registerControllerStub($action, $controllerStub);
 
         // Register a stub FrontendUserAuthentication for bootstrapFrontendUser()
-        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = null;
         $feUserStub->method('createUserAspect')->willReturn(new UserAspect());
         GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserStub);
@@ -137,7 +140,7 @@ final class EidDispatcherTest extends TestCase
     {
         // Register a mock FrontendUserAuthentication that has no logged-in user.
         // bootstrapFrontendUser() will pick this up via GeneralUtility::makeInstance().
-        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock       = $this->createMock(FrontendUserAuthentication::class);
         $feUserMock->user = null;
         $feUserMock->expects(self::once())->method('start');
         $feUserMock->expects(self::once())->method('fetchGroupData');
@@ -157,7 +160,7 @@ final class EidDispatcherTest extends TestCase
     #[DataProvider('protectedActionsProvider')]
     public function protectedActionWithZeroUidFeUserReturns401(string $action): void
     {
-        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 0];
 
         // Already has frontend.user → bootstrapFrontendUser() skips
@@ -174,10 +177,10 @@ final class EidDispatcherTest extends TestCase
     public function protectedActionWithAuthenticatedFeUserDispatches(string $action): void
     {
         $expectedResponse = new JsonResponse(['status' => 'dispatched']);
-        $controllerStub = $this->createProtectedActionControllerStub($action, $expectedResponse);
+        $controllerStub   = $this->createProtectedActionControllerStub($action, $expectedResponse);
         $this->registerControllerStub($action, $controllerStub);
 
-        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 42];
 
         // Already has frontend.user → bootstrapFrontendUser() skips
@@ -201,12 +204,12 @@ final class EidDispatcherTest extends TestCase
         GeneralUtility::addInstance(LoginController::class, $loginStub);
 
         // Register a stub FrontendUserAuthentication for bootstrapFrontendUser()
-        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = null;
         $feUserStub->method('createUserAspect')->willReturn(new UserAspect());
         GeneralUtility::addInstance(FrontendUserAuthentication::class, $feUserStub);
 
-        $request = $this->buildRequest(['action' => 'loginOptions']);
+        $request  = $this->buildRequest(['action' => 'loginOptions']);
         $response = $this->subject->processRequest($request);
 
         self::assertSame(500, $response->getStatusCode());
@@ -220,7 +223,7 @@ final class EidDispatcherTest extends TestCase
         $managementStub->method('listAction')->willThrowException(new RuntimeException('Boom'));
         GeneralUtility::addInstance(ManagementController::class, $managementStub);
 
-        $feUserStub = $this->createStub(FrontendUserAuthentication::class);
+        $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 42];
 
         $request = $this->buildRequest(['action' => 'manageList'])
@@ -240,13 +243,13 @@ final class EidDispatcherTest extends TestCase
     public function protectedActionBootstrapsFrontendUserWhenNotOnRequest(): void
     {
         $expectedResponse = new JsonResponse(['status' => 'dispatched']);
-        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub   = $this->createStub(ManagementController::class);
         $managementStub->method('listAction')->willReturn($expectedResponse);
         GeneralUtility::addInstance(ManagementController::class, $managementStub);
 
         // Register a mock FE user that has a valid session (uid=42)
         // Uses createMock (not stub) because we assert expectations on start/fetchGroupData
-        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock       = $this->createMock(FrontendUserAuthentication::class);
         $feUserMock->user = ['uid' => 42];
         $feUserMock->expects(self::once())->method('start');
         $feUserMock->expects(self::once())->method('fetchGroupData');
@@ -265,13 +268,13 @@ final class EidDispatcherTest extends TestCase
     public function bootstrapSkipsWhenFrontendUserAlreadyPresent(): void
     {
         $expectedResponse = new JsonResponse(['status' => 'dispatched']);
-        $managementStub = $this->createStub(ManagementController::class);
+        $managementStub   = $this->createStub(ManagementController::class);
         $managementStub->method('listAction')->willReturn($expectedResponse);
         GeneralUtility::addInstance(ManagementController::class, $managementStub);
 
         // Pre-set frontend.user on request (e.g. if TYPO3 fixes middleware order)
         // Uses createMock because we assert expectations on start/fetchGroupData
-        $feUserMock = $this->createMock(FrontendUserAuthentication::class);
+        $feUserMock       = $this->createMock(FrontendUserAuthentication::class);
         $feUserMock->user = ['uid' => 42];
         // start() and fetchGroupData() should NOT be called
         $feUserMock->expects(self::never())->method('start');
@@ -314,10 +317,10 @@ final class EidDispatcherTest extends TestCase
     private function createPublicActionControllerStub(string $action, ResponseInterface $response): object
     {
         return match ($action) {
-            'loginOptions' => $this->createLoginStub('optionsAction', $response),
-            'loginVerify' => $this->createLoginStub('verifyAction', $response),
+            'loginOptions'   => $this->createLoginStub('optionsAction', $response),
+            'loginVerify'    => $this->createLoginStub('verifyAction', $response),
             'recoveryVerify' => $this->createRecoveryStub('verifyAction', $response),
-            default => throw new InvalidArgumentException("Unknown public action: $action"),
+            default          => throw new InvalidArgumentException("Unknown public action: $action"),
         };
     }
 
@@ -328,14 +331,14 @@ final class EidDispatcherTest extends TestCase
     {
         return match ($action) {
             'registrationOptions' => $this->createManagementStub('registrationOptionsAction', $response),
-            'registrationVerify' => $this->createManagementStub('registrationVerifyAction', $response),
-            'manageList' => $this->createManagementStub('listAction', $response),
-            'manageRename' => $this->createManagementStub('renameAction', $response),
-            'manageRemove' => $this->createManagementStub('removeAction', $response),
-            'recoveryGenerate' => $this->createRecoveryStub('generateAction', $response),
-            'enrollmentStatus' => $this->createEnrollmentStub('statusAction', $response),
-            'enrollmentSkip' => $this->createEnrollmentStub('skipAction', $response),
-            default => throw new InvalidArgumentException("Unknown protected action: $action"),
+            'registrationVerify'  => $this->createManagementStub('registrationVerifyAction', $response),
+            'manageList'          => $this->createManagementStub('listAction', $response),
+            'manageRename'        => $this->createManagementStub('renameAction', $response),
+            'manageRemove'        => $this->createManagementStub('removeAction', $response),
+            'recoveryGenerate'    => $this->createRecoveryStub('generateAction', $response),
+            'enrollmentStatus'    => $this->createEnrollmentStub('statusAction', $response),
+            'enrollmentSkip'      => $this->createEnrollmentStub('skipAction', $response),
+            default               => throw new InvalidArgumentException("Unknown protected action: $action"),
         };
     }
 
@@ -343,6 +346,7 @@ final class EidDispatcherTest extends TestCase
     {
         $stub = $this->createStub(LoginController::class);
         $stub->method($method)->willReturn($response);
+
         return $stub;
     }
 
@@ -350,6 +354,7 @@ final class EidDispatcherTest extends TestCase
     {
         $stub = $this->createStub(ManagementController::class);
         $stub->method($method)->willReturn($response);
+
         return $stub;
     }
 
@@ -357,6 +362,7 @@ final class EidDispatcherTest extends TestCase
     {
         $stub = $this->createStub(RecoveryController::class);
         $stub->method($method)->willReturn($response);
+
         return $stub;
     }
 
@@ -364,6 +370,7 @@ final class EidDispatcherTest extends TestCase
     {
         $stub = $this->createStub(EnrollmentController::class);
         $stub->method($method)->willReturn($response);
+
         return $stub;
     }
 
@@ -373,11 +380,11 @@ final class EidDispatcherTest extends TestCase
     private function registerControllerStub(string $action, object $stub): void
     {
         $controllerClass = match (true) {
-            \in_array($action, ['loginOptions', 'loginVerify'], true) => LoginController::class,
-            \in_array($action, ['registrationOptions', 'registrationVerify', 'manageList', 'manageRename', 'manageRemove'], true) => ManagementController::class,
-            \in_array($action, ['recoveryGenerate', 'recoveryVerify'], true) => RecoveryController::class,
-            \in_array($action, ['enrollmentStatus', 'enrollmentSkip'], true) => EnrollmentController::class,
-            default => throw new InvalidArgumentException("Cannot determine controller for action: $action"),
+            in_array($action, ['loginOptions', 'loginVerify'], true)                                                             => LoginController::class,
+            in_array($action, ['registrationOptions', 'registrationVerify', 'manageList', 'manageRename', 'manageRemove'], true) => ManagementController::class,
+            in_array($action, ['recoveryGenerate', 'recoveryVerify'], true)                                                      => RecoveryController::class,
+            in_array($action, ['enrollmentStatus', 'enrollmentSkip'], true)                                                      => EnrollmentController::class,
+            default                                                                                                              => throw new InvalidArgumentException("Cannot determine controller for action: $action"),
         };
 
         GeneralUtility::addInstance($controllerClass, $stub);
@@ -388,8 +395,8 @@ final class EidDispatcherTest extends TestCase
      */
     private function assertJsonBodyEquals(array $expected, ResponseInterface $response): void
     {
-        $body = (string) $response->getBody();
-        $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        $body    = (string) $response->getBody();
+        $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         self::assertSame($expected, $decoded);
     }
 }

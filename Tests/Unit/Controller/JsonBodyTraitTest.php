@@ -17,6 +17,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Http\ServerRequest;
 
+use function fopen;
+
 /**
  * Concrete class using the trait for testing purposes.
  */
@@ -59,7 +61,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function decodesJsonFromBodyContent(): void
     {
-        $body = new Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(fopen('php://temp', 'r+'));
         $body->write('{"key":"value"}');
         $body->rewind();
 
@@ -74,7 +76,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayForInvalidJson(): void
     {
-        $body = new Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(fopen('php://temp', 'r+'));
         $body->write('{invalid json');
         $body->rewind();
 
@@ -99,7 +101,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayForNonJsonContentType(): void
     {
-        $body = new Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(fopen('php://temp', 'r+'));
         $body->write('{"key":"value"}');
         $body->rewind();
 
@@ -114,7 +116,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsEmptyArrayWhenJsonDecodesToNonArray(): void
     {
-        $body = new Stream(\fopen('php://temp', 'r+'));
+        $body = new Stream(fopen('php://temp', 'r+'));
         $body->write('"just a string"');
         $body->rewind();
 

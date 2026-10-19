@@ -13,6 +13,11 @@ use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 
+use function is_int;
+use function is_string;
+use function parse_url;
+use function trim;
+
 /**
  * Reads WebAuthn configuration from TYPO3 site settings.
  *
@@ -32,17 +37,17 @@ final readonly class SiteConfigurationService
     public function getRpId(SiteInterface $site): string
     {
         $settings = $site->getSettings();
-        $rpId = $settings->get('nr_passkeys_fe.rpId', '');
+        $rpId     = $settings->get('nr_passkeys_fe.rpId', '');
 
-        if (\is_string($rpId) && $rpId !== '') {
+        if (is_string($rpId) && $rpId !== '') {
             return $rpId;
         }
 
         // Fall back to the hostname of the site base URL
         $base = (string) $site->getBase();
-        $host = \parse_url($base, PHP_URL_HOST);
+        $host = parse_url($base, PHP_URL_HOST);
 
-        return \is_string($host) ? $host : '';
+        return is_string($host) ? $host : '';
     }
 
     /**
@@ -55,26 +60,26 @@ final readonly class SiteConfigurationService
     public function getOrigin(SiteInterface $site): string
     {
         $settings = $site->getSettings();
-        $origin = $settings->get('nr_passkeys_fe.origin', '');
+        $origin   = $settings->get('nr_passkeys_fe.origin', '');
 
-        if (\is_string($origin) && $origin !== '') {
+        if (is_string($origin) && $origin !== '') {
             return $origin;
         }
 
         // Build origin from site base URL
-        $base = (string) $site->getBase();
-        $scheme = \parse_url($base, PHP_URL_SCHEME);
-        $host = \parse_url($base, PHP_URL_HOST);
-        $port = \parse_url($base, PHP_URL_PORT);
+        $base   = (string) $site->getBase();
+        $scheme = parse_url($base, PHP_URL_SCHEME);
+        $host   = parse_url($base, PHP_URL_HOST);
+        $port   = parse_url($base, PHP_URL_PORT);
 
-        if (!\is_string($scheme) || !\is_string($host)) {
+        if (!is_string($scheme) || !is_string($host)) {
             return '';
         }
 
         $result = $scheme . '://' . $host;
 
         // Include non-standard ports
-        if (\is_int($port) && !$this->isStandardPort($scheme, $port)) {
+        if (is_int($port) && !$this->isStandardPort($scheme, $port)) {
             $result .= ':' . $port;
         }
 
@@ -90,9 +95,9 @@ final readonly class SiteConfigurationService
     public function getEnforcementLevel(SiteInterface $site): string
     {
         $settings = $site->getSettings();
-        $level = $settings->get('nr_passkeys_fe.enforcementLevel', 'off');
+        $level    = $settings->get('nr_passkeys_fe.enforcementLevel', 'off');
 
-        return \is_string($level) ? $level : 'off';
+        return is_string($level) ? $level : 'off';
     }
 
     /**
@@ -134,9 +139,9 @@ final readonly class SiteConfigurationService
     public function getEnrollmentPageUrl(SiteInterface $site): string
     {
         $settings = $site->getSettings();
-        $url = $settings->get('nr_passkeys_fe.enrollmentPageUrl', '');
+        $url      = $settings->get('nr_passkeys_fe.enrollmentPageUrl', '');
 
-        return \is_string($url) ? \trim($url) : '';
+        return is_string($url) ? trim($url) : '';
     }
 
     private function isStandardPort(string $scheme, int $port): bool

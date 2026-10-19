@@ -16,6 +16,9 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 
+use function explode;
+use function preg_quote;
+
 /**
  * Record and plugin icons must reach the backend as <svg><use>, which
  * inherits currentColor, so their glyph follows the backend colour scheme.
@@ -39,13 +42,13 @@ final class BackendIconRegistrationTest extends AbstractPasskeyFunctionalTestCas
     public function recordIconsRenderAsSpriteUse(string $table, string $sprite): void
     {
         $iconFactory = $this->get(IconFactory::class);
-        $markup = $iconFactory->getIconForRecord($table, ['uid' => 1], IconSize::SMALL)->render();
+        $markup      = $iconFactory->getIconForRecord($table, ['uid' => 1], IconSize::SMALL)->render();
 
         self::assertStringContainsString('<use xlink:href="', $markup);
-        [$file, $fragment] = \explode('#', $sprite, 2);
+        [$file, $fragment] = explode('#', $sprite, 2);
         // Core appends a cache-busting query between the file and the fragment.
         self::assertMatchesRegularExpression(
-            '~Resources/Public/Icons/' . \preg_quote($file, '~') . '(\?\d+)?#' . \preg_quote($fragment, '~') . '"~',
+            '~Resources/Public/Icons/' . preg_quote($file, '~') . '(\?\d+)?#' . preg_quote($fragment, '~') . '"~',
             $markup,
         );
         self::assertStringNotContainsString('<img', $markup);
@@ -66,7 +69,7 @@ final class BackendIconRegistrationTest extends AbstractPasskeyFunctionalTestCas
     public function pluginIconsRenderAsSpriteUse(string $identifier): void
     {
         $iconFactory = $this->get(IconFactory::class);
-        $markup = $iconFactory->getIcon($identifier, IconSize::SMALL)->render();
+        $markup      = $iconFactory->getIcon($identifier, IconSize::SMALL)->render();
 
         self::assertStringContainsString('#' . $identifier . '"', $markup);
         self::assertStringContainsString('<use xlink:href="', $markup);

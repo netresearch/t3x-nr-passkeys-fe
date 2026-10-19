@@ -38,7 +38,7 @@ final class ManagementPluginControllerTest extends TestCase
     {
         parent::setUp();
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
+        $this->recoveryCodeService  = $this->createStub(RecoveryCodeService::class);
     }
 
     #[Test]
@@ -66,10 +66,11 @@ final class ManagementPluginControllerTest extends TestCase
         $subject = $this->buildController();
 
         $assignedVars = [];
-        $view = $this->createStub(ViewInterface::class);
+        $view         = $this->createStub(ViewInterface::class);
         $view->method('assignMultiple')->willReturnCallback(
             static function (array $vars) use (&$assignedVars, $view): ViewInterface {
                 $assignedVars = $vars;
+
                 return $view;
             },
         );
@@ -96,6 +97,7 @@ final class ManagementPluginControllerTest extends TestCase
         );
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
+
         return $subject;
     }
 
@@ -111,6 +113,7 @@ final class ManagementPluginControllerTest extends TestCase
             'extbase',
             new ExtbaseRequestParameters(ManagementPluginController::class),
         );
+
         return new Request($serverRequest);
     }
 

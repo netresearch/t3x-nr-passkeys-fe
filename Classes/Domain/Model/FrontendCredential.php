@@ -9,6 +9,15 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Domain\Model;
 
+use function array_filter;
+use function array_values;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function mb_substr;
+
 /**
  * Passkey credential registered by a TYPO3 frontend user.
  *
@@ -120,12 +129,12 @@ final class FrontendCredential
      */
     public function getTransportsArray(): array
     {
-        $decoded = \json_decode($this->transports, true);
-        if (!\is_array($decoded)) {
+        $decoded = json_decode($this->transports, true);
+        if (!is_array($decoded)) {
             return [];
         }
 
-        return \array_values(\array_filter($decoded, \is_string(...)));
+        return array_values(array_filter($decoded, is_string(...)));
     }
 
     /**
@@ -133,7 +142,7 @@ final class FrontendCredential
      */
     public function setTransportsArray(array $transports): void
     {
-        $this->transports = \json_encode(\array_values($transports), JSON_THROW_ON_ERROR);
+        $this->transports = json_encode(array_values($transports), JSON_THROW_ON_ERROR);
     }
 
     public function getLabel(): string
@@ -146,7 +155,7 @@ final class FrontendCredential
      */
     public function setLabel(string $label): void
     {
-        $this->label = \mb_substr($label, 0, 128);
+        $this->label = mb_substr($label, 0, 128);
     }
 
     public function getSiteIdentifier(): string
@@ -220,21 +229,21 @@ final class FrontendCredential
     public function toArray(): array
     {
         return [
-            'uid' => $this->uid,
-            'fe_user' => $this->feUser,
-            'credential_id' => $this->credentialId,
+            'uid'             => $this->uid,
+            'fe_user'         => $this->feUser,
+            'credential_id'   => $this->credentialId,
             'public_key_cose' => $this->publicKeyCose,
-            'sign_count' => $this->signCount,
-            'user_handle' => $this->userHandle,
-            'aaguid' => $this->aaguid,
-            'transports' => $this->transports,
-            'label' => $this->label,
+            'sign_count'      => $this->signCount,
+            'user_handle'     => $this->userHandle,
+            'aaguid'          => $this->aaguid,
+            'transports'      => $this->transports,
+            'label'           => $this->label,
             'site_identifier' => $this->siteIdentifier,
-            'storage_pid' => $this->storagePid,
-            'created_at' => $this->createdAt,
-            'last_used_at' => $this->lastUsedAt,
-            'revoked_at' => $this->revokedAt,
-            'revoked_by' => $this->revokedBy,
+            'storage_pid'     => $this->storagePid,
+            'created_at'      => $this->createdAt,
+            'last_used_at'    => $this->lastUsedAt,
+            'revoked_at'      => $this->revokedAt,
+            'revoked_by'      => $this->revokedBy,
         ];
     }
 
@@ -267,11 +276,11 @@ final class FrontendCredential
 
     private static function intVal(mixed $value, int $default = 0): int
     {
-        return \is_numeric($value) ? (int) $value : $default;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     private static function stringVal(mixed $value, string $default = ''): string
     {
-        return \is_string($value) ? $value : $default;
+        return is_string($value) ? $value : $default;
     }
 }

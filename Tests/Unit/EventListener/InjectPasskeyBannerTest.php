@@ -32,6 +32,8 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 use TYPO3\CMS\Frontend\Event\AfterCacheableContentIsGeneratedEvent;
 
+use function method_exists;
+
 #[CoversClass(InjectPasskeyBanner::class)]
 final class InjectPasskeyBannerTest extends TestCase
 {
@@ -51,9 +53,9 @@ final class InjectPasskeyBannerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
+        $this->enforcementService   = $this->createStub(FrontendEnforcementService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->siteConfigService = $this->createStub(SiteConfigurationService::class);
+        $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
 
         $this->subject = new InjectPasskeyBanner(
             $this->enforcementService,
@@ -62,7 +64,7 @@ final class InjectPasskeyBannerTest extends TestCase
             new FrontendConfiguration(enrollmentBannerEnabled: true),
         );
 
-        $this->eventHasContentAccessors = \method_exists(
+        $this->eventHasContentAccessors = method_exists(
             AfterCacheableContentIsGeneratedEvent::class,
             'getContent',
         );
@@ -111,7 +113,7 @@ final class InjectPasskeyBannerTest extends TestCase
     #[Test]
     public function skipsWhenEnforcementLevelIsOff(): void
     {
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => 42];
 
         $site = $this->createStub(SiteInterface::class);
@@ -204,7 +206,7 @@ final class InjectPasskeyBannerTest extends TestCase
         GeneralUtility::purgeInstances();
 
         // Build a functional in-memory cache for v13's CacheManager->getCache('runtime').
-        $cacheStore = [];
+        $cacheStore   = [];
         $runtimeCache = $this->createStub(FrontendInterface::class);
         $runtimeCache->method('get')->willReturnCallback(
             static function (string $key) use (&$cacheStore): mixed {
@@ -221,16 +223,16 @@ final class InjectPasskeyBannerTest extends TestCase
         $cacheManager->method('getCache')->willReturn($runtimeCache);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
 
-        $locales = new Locales();
+        $locales             = new Locales();
         $localizationFactory = $this->createStub(LocalizationFactory::class);
         $localizationFactory->method('getParsedData')->willReturn(['default' => []]);
         $langFactory = new LanguageServiceFactory($locales, $localizationFactory, $runtimeCache);
         // Register multiple instances since translate() is called multiple times
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 10; ++$i) {
             GeneralUtility::addInstance(LanguageServiceFactory::class, $langFactory);
         }
 
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => 42];
 
         $site = $this->createStub(SiteInterface::class);
@@ -249,7 +251,7 @@ final class InjectPasskeyBannerTest extends TestCase
     #[Test]
     public function skipsWhenUserAlreadyHasPasskeys(): void
     {
-        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => 42];
 
         $request = new ServerRequest('https://example.com/', 'GET');
@@ -284,8 +286,8 @@ final class InjectPasskeyBannerTest extends TestCase
         // v13: constructor requires TypoScriptFrontendController as 2nd argument.
         // Use a stub to avoid TSFE constructor side-effects ($EXEC_TIME, PageRepository).
         // The class only exists in v13, so we reference it by FQCN string.
-        $tsfeClass = 'TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController';
-        $controller = $this->createStub($tsfeClass);
+        $tsfeClass           = 'TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController';
+        $controller          = $this->createStub($tsfeClass);
         $controller->content = $content;
 
         return new AfterCacheableContentIsGeneratedEvent($request, $controller, 'test-cache-id', true);

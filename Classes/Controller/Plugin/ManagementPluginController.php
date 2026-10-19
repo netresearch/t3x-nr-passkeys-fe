@@ -16,6 +16,9 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function is_numeric;
+use function rtrim;
+
 /**
  * Extbase controller for the PasskeyManagement frontend plugin.
  * Assigns template variables including credential list and recovery code count,
@@ -31,31 +34,31 @@ final class ManagementPluginController extends ActionController
     public function indexAction(): ResponseInterface
     {
         /** @var SiteInterface|null $site */
-        $site = $this->request->getAttribute('site');
+        $site           = $this->request->getAttribute('site');
         $siteIdentifier = $site?->getIdentifier() ?? '';
-        $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
-        $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
+        $baseUrl        = rtrim((string) ($site?->getBase() ?? ''), '/');
+        $eidUrl         = $baseUrl . '/?eID=nr_passkeys_fe';
 
         // Fetch credential list and recovery code count for the authenticated FE user
-        $feUserUid = $this->getFeUserUid();
-        $credentials = [];
+        $feUserUid              = $this->getFeUserUid();
+        $credentials            = [];
         $recoveryCodesRemaining = 0;
 
         if ($feUserUid > 0) {
-            $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
+            $credentials            = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
             $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
         }
 
         $this->view->assignMultiple([
-            'eidUrl' => $eidUrl,
-            'siteIdentifier' => $siteIdentifier,
-            'listUrl' => $eidUrl . '&action=manageList',
-            'registerOptionsUrl' => $eidUrl . '&action=registrationOptions',
-            'registerVerifyUrl' => $eidUrl . '&action=registrationVerify',
-            'renameUrl' => $eidUrl . '&action=manageRename',
-            'removeUrl' => $eidUrl . '&action=manageRemove',
-            'recoveryGenerateUrl' => $eidUrl . '&action=recoveryGenerate',
-            'credentials' => $credentials,
+            'eidUrl'                 => $eidUrl,
+            'siteIdentifier'         => $siteIdentifier,
+            'listUrl'                => $eidUrl . '&action=manageList',
+            'registerOptionsUrl'     => $eidUrl . '&action=registrationOptions',
+            'registerVerifyUrl'      => $eidUrl . '&action=registrationVerify',
+            'renameUrl'              => $eidUrl . '&action=manageRename',
+            'removeUrl'              => $eidUrl . '&action=manageRemove',
+            'recoveryGenerateUrl'    => $eidUrl . '&action=recoveryGenerate',
+            'credentials'            => $credentials,
             'recoveryCodesRemaining' => $recoveryCodesRemaining,
         ]);
 
@@ -73,6 +76,7 @@ final class ManagementPluginController extends ActionController
         }
 
         $userRow = $feUser->user;
-        return \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+
+        return is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
     }
 }

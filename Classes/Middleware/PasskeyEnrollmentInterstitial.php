@@ -22,6 +22,11 @@ use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function parse_url;
+
 /**
  * Intercepts frontend requests to enforce passkey enrollment.
  *
@@ -60,12 +65,12 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         }
 
         $userRow = $feUser->user;
-        if (!\is_array($userRow)) {
+        if (!is_array($userRow)) {
             return $handler->handle($request);
         }
 
-        $rawUid = $userRow['uid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawUid    = $userRow['uid'] ?? null;
+        $feUserUid = is_numeric($rawUid) ? (int) $rawUid : 0;
         if ($feUserUid === 0) {
             return $handler->handle($request);
         }
@@ -119,9 +124,9 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         }
 
         // Avoid redirect loops: if we're already on the enrollment page, pass through
-        $requestPath = $request->getUri()->getPath();
-        $enrollmentPath = \parse_url($enrollmentUrl, PHP_URL_PATH);
-        $onEnrollmentPage = \is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath;
+        $requestPath      = $request->getUri()->getPath();
+        $enrollmentPath   = parse_url($enrollmentUrl, PHP_URL_PATH);
+        $onEnrollmentPage = is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath;
 
         // Required within the grace period may be skipped for the session;
         // an expired grace period and Enforced may not. The skip signal
@@ -161,7 +166,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     {
         $sessionData = $feUser->getKey('ses', self::SESSION_KEY);
 
-        return \is_array($sessionData) && ($sessionData['enrollment_skipped'] ?? false) === true;
+        return is_array($sessionData) && ($sessionData['enrollment_skipped'] ?? false) === true;
     }
 
     private function resolveFrontendUser(ServerRequestInterface $request): ?FrontendUserAuthentication
@@ -173,7 +178,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Check that user is actually logged in
         $userRow = $frontendUser->user;
-        if (!\is_array($userRow) || empty($userRow['uid'])) {
+        if (!is_array($userRow) || empty($userRow['uid'])) {
             return null;
         }
 
@@ -183,6 +188,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
     private function isOurEidRequest(ServerRequestInterface $request): bool
     {
         $queryParams = $request->getQueryParams();
+
         return ($queryParams['eID'] ?? null) === self::EID;
     }
 

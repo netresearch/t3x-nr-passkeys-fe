@@ -17,6 +17,11 @@ use TYPO3\CMS\Core\Exception\Page\RootLineException;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\RootlineUtility;
 
+use function implode;
+use function is_array;
+use function is_numeric;
+use function reset;
+
 /**
  * Decides which page, if any, a page chosen in a plugin setting may be
  * linked as.
@@ -80,7 +85,7 @@ final readonly class LinkablePageResolver
             new UserAspect(null, $afterLogin ? self::GROUPS_AFTER_LOGIN : self::GROUPS_BEFORE_LOGIN),
         );
         $pageRepository = GeneralUtility::makeInstance(PageRepository::class, $context);
-        $page = $this->standardPage($pageUid, $pageRepository);
+        $page           = $this->standardPage($pageUid, $pageRepository);
 
         return $page !== null && $this->isVisible($page, $context) ? $this->intOf($page['uid'] ?? null) : null;
     }
@@ -97,7 +102,7 @@ final readonly class LinkablePageResolver
     {
         // A loop ends as a shortcut after the last hop and is refused below.
         $page = $pageRepository->getPage($pageUid);
-        for ($hop = 0; $this->doktypeOf($page) === PageRepository::DOKTYPE_SHORTCUT && $hop < self::MAX_SHORTCUT_HOPS; $hop++) {
+        for ($hop = 0; $this->doktypeOf($page) === PageRepository::DOKTYPE_SHORTCUT && $hop < self::MAX_SHORTCUT_HOPS; ++$hop) {
             $page = $this->shortcutTarget($page, $pageRepository);
         }
 
@@ -115,15 +120,15 @@ final readonly class LinkablePageResolver
      */
     private function shortcutTarget(array $shortcut, PageRepository $pageRepository): array
     {
-        $mode = $this->intOf($shortcut['shortcut_mode'] ?? null);
+        $mode   = $this->intOf($shortcut['shortcut_mode'] ?? null);
         $target = $this->intOf($shortcut['shortcut'] ?? null);
-        $uid = $this->intOf($shortcut['uid'] ?? null);
+        $uid    = $this->intOf($shortcut['uid'] ?? null);
 
         return match ($mode) {
-            self::SHORTCUT_MODE_RANDOM_SUBPAGE => [],
+            self::SHORTCUT_MODE_RANDOM_SUBPAGE          => [],
             PageRepository::SHORTCUT_MODE_FIRST_SUBPAGE => $this->firstSubpage($target > 0 ? $target : $uid, $pageRepository),
-            PageRepository::SHORTCUT_MODE_PARENT_PAGE => $this->parentPage($target > 0 ? $target : $uid, $pageRepository),
-            default => $target > 0 ? $pageRepository->getPage($target) : [],
+            PageRepository::SHORTCUT_MODE_PARENT_PAGE   => $this->parentPage($target > 0 ? $target : $uid, $pageRepository),
+            default                                     => $target > 0 ? $pageRepository->getPage($target) : [],
         };
     }
 
@@ -142,11 +147,11 @@ final readonly class LinkablePageResolver
             $pageUid,
             '*',
             'sorting',
-            'AND pages.doktype NOT IN (' . \implode(', ', $excludedDoktypes) . ')',
+            'AND pages.doktype NOT IN (' . implode(', ', $excludedDoktypes) . ')',
         );
-        $first = \reset($subpages);
+        $first = reset($subpages);
 
-        return \is_array($first) ? $first : [];
+        return is_array($first) ? $first : [];
     }
 
     /**
@@ -154,7 +159,7 @@ final readonly class LinkablePageResolver
      */
     private function parentPage(int $pageUid, PageRepository $pageRepository): array
     {
-        $page = $pageRepository->getPage($pageUid);
+        $page      = $pageRepository->getPage($pageUid);
         $parentUid = $this->intOf($page['pid'] ?? null);
 
         return $parentUid > 0 ? $pageRepository->getPage($parentUid) : [];
@@ -178,7 +183,7 @@ final readonly class LinkablePageResolver
         }
 
         foreach ($rootline as $rootlinePage) {
-            if (!\is_array($rootlinePage) || !$this->accessVoter->accessGrantedForPageInRootLine($rootlinePage, $context)) {
+            if (!is_array($rootlinePage) || !$this->accessVoter->accessGrantedForPageInRootLine($rootlinePage, $context)) {
                 return false;
             }
         }
@@ -196,6 +201,6 @@ final readonly class LinkablePageResolver
 
     private function intOf(mixed $value): int
     {
-        return \is_numeric($value) ? (int) $value : 0;
+        return is_numeric($value) ? (int) $value : 0;
     }
 }

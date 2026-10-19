@@ -17,6 +17,10 @@ use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function is_array;
+use function is_numeric;
+use function rtrim;
+
 /**
  * Extbase controller for the PasskeyEnrollment frontend plugin.
  * Assigns template variables then renders Fluid; enrollment logic runs via eID/JS.
@@ -30,14 +34,14 @@ final class EnrollmentPluginController extends ActionController
     public function indexAction(): ResponseInterface
     {
         /** @var SiteInterface|null $site */
-        $site = $this->request->getAttribute('site');
-        $baseUrl = \rtrim((string) ($site?->getBase() ?? ''), '/');
-        $eidUrl = $baseUrl . '/?eID=nr_passkeys_fe';
+        $site    = $this->request->getAttribute('site');
+        $baseUrl = rtrim((string) ($site?->getBase() ?? ''), '/');
+        $eidUrl  = $baseUrl . '/?eID=nr_passkeys_fe';
 
         // The same status the post-login interstitial and the banner act on;
         // the interstitial has started a due grace period before this page
         // is rendered. A user who holds a passkey has nothing left to do here.
-        $status = $this->resolveStatus($site);
+        $status             = $this->resolveStatus($site);
         $enrollmentRequired = false;
         $graceDaysRemaining = 0;
         if ($status instanceof FrontendEnforcementStatus && $status->passkeyCount === 0) {
@@ -49,11 +53,11 @@ final class EnrollmentPluginController extends ActionController
         }
 
         $this->view->assignMultiple([
-            'eidUrl' => $eidUrl,
-            'siteIdentifier' => $site?->getIdentifier() ?? '',
-            'registerOptionsUrl' => $eidUrl . '&action=registrationOptions',
-            'registerVerifyUrl' => $eidUrl . '&action=registrationVerify',
-            'enrollmentRequired' => $enrollmentRequired,
+            'eidUrl'                   => $eidUrl,
+            'siteIdentifier'           => $site?->getIdentifier() ?? '',
+            'registerOptionsUrl'       => $eidUrl . '&action=registrationOptions',
+            'registerVerifyUrl'        => $eidUrl . '&action=registrationVerify',
+            'enrollmentRequired'       => $enrollmentRequired,
             'gracePeriodDaysRemaining' => $graceDaysRemaining,
         ]);
 
@@ -75,9 +79,9 @@ final class EnrollmentPluginController extends ActionController
      */
     private function frontendUserUid(): int
     {
-        $feUser = $this->request->getAttribute('frontend.user');
+        $feUser  = $this->request->getAttribute('frontend.user');
         $userRow = $feUser instanceof FrontendUserAuthentication ? $feUser->user : null;
 
-        return \is_array($userRow) && \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        return is_array($userRow) && is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
     }
 }

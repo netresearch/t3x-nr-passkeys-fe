@@ -88,7 +88,7 @@ final class LinkablePageResolverTest extends AbstractPasskeyFunctionalTestCase
         // The resolver judges for a visitor of its own; the request's user
         // aspect must not be replaced by that visitor.
         $context = $this->get(Context::class);
-        $aspect = new UserAspect(null, [0, -1]);
+        $aspect  = new UserAspect(null, [0, -1]);
         $context->setAspect('frontend.user', $aspect);
 
         $this->get(LinkablePageResolver::class)->resolve(11, true);

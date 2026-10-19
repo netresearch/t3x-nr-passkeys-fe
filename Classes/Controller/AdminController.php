@@ -24,6 +24,15 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\MathUtility;
 
+use function array_map;
+use function count;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_numeric;
+use function is_string;
+use function trim;
+
 /**
  * Admin API controller for FE passkey management operations.
  *
@@ -57,31 +66,31 @@ final readonly class AdminController
         }
 
         $queryParams = $request->getQueryParams();
-        $rawUid = $queryParams['feUserUid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawUid      = $queryParams['feUserUid'] ?? null;
+        $feUserUid   = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($feUserUid === 0) {
             return new JsonResponse(['error' => 'Missing feUserUid parameter'], 400);
         }
 
         $credentials = $this->credentialRepository->findAllByFeUser($feUserUid);
-        $list = \array_map(
-            static fn(FrontendCredential $cred): array => [
-                'uid' => $cred->getUid(),
-                'label' => $cred->getLabel(),
+        $list        = array_map(
+            static fn (FrontendCredential $cred): array => [
+                'uid'            => $cred->getUid(),
+                'label'          => $cred->getLabel(),
                 'siteIdentifier' => $cred->getSiteIdentifier(),
-                'createdAt' => $cred->getCreatedAt(),
-                'lastUsedAt' => $cred->getLastUsedAt(),
-                'revokedAt' => $cred->getRevokedAt(),
-                'isRevoked' => $cred->isRevoked(),
+                'createdAt'      => $cred->getCreatedAt(),
+                'lastUsedAt'     => $cred->getLastUsedAt(),
+                'revokedAt'      => $cred->getRevokedAt(),
+                'isRevoked'      => $cred->isRevoked(),
             ],
             $credentials,
         );
 
         return new JsonResponse([
-            'feUserUid' => $feUserUid,
+            'feUserUid'   => $feUserUid,
             'credentials' => $list,
-            'count' => \count($list),
+            'count'       => count($list),
         ]);
     }
 
@@ -98,11 +107,11 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['feUserUid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-        $rawCredUid = $body['credentialUid'] ?? null;
-        $credentialUid = \is_numeric($rawCredUid) ? (int) $rawCredUid : 0;
+        $body          = $this->getJsonBody($request);
+        $rawUid        = $body['feUserUid'] ?? null;
+        $feUserUid     = is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawCredUid    = $body['credentialUid'] ?? null;
+        $credentialUid = is_numeric($rawCredUid) ? (int) $rawCredUid : 0;
 
         if ($feUserUid === 0 || $credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -117,8 +126,8 @@ final readonly class AdminController
         $this->credentialRepository->revoke($credentialUid, $adminUid);
 
         $this->logger->info('Admin revoked FE passkey', [
-            'admin_uid' => $adminUid,
-            'fe_user_uid' => $feUserUid,
+            'admin_uid'      => $adminUid,
+            'fe_user_uid'    => $feUserUid,
             'credential_uid' => $credentialUid,
         ]);
 
@@ -138,9 +147,9 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['feUserUid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $body      = $this->getJsonBody($request);
+        $rawUid    = $body['feUserUid'] ?? null;
+        $feUserUid = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($feUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -149,8 +158,8 @@ final readonly class AdminController
         $revokedCount = $this->credentialRepository->revokeAllByFeUser($feUserUid, $adminUid);
 
         $this->logger->info('Admin revoked all FE passkeys', [
-            'admin_uid' => $adminUid,
-            'fe_user_uid' => $feUserUid,
+            'admin_uid'     => $adminUid,
+            'fe_user_uid'   => $feUserUid,
             'revoked_count' => $revokedCount,
         ]);
 
@@ -170,11 +179,11 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['feUserUid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $body        = $this->getJsonBody($request);
+        $rawUid      = $body['feUserUid'] ?? null;
+        $feUserUid   = is_numeric($rawUid) ? (int) $rawUid : 0;
         $rawUsername = $body['username'] ?? null;
-        $username = \is_string($rawUsername) ? \trim($rawUsername) : '';
+        $username    = is_string($rawUsername) ? trim($rawUsername) : '';
 
         if ($feUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -191,9 +200,9 @@ final readonly class AdminController
         $this->rateLimiterService->resetLockout($username);
 
         $this->logger->info('Admin unlocked FE user account', [
-            'admin_uid' => $adminUid,
+            'admin_uid'   => $adminUid,
             'fe_user_uid' => $feUserUid,
-            'username' => $username,
+            'username'    => $username,
         ]);
 
         return new JsonResponse(['status' => 'ok']);
@@ -213,9 +222,9 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['feUserUid'] ?? null;
-        $feUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $body      = $this->getJsonBody($request);
+        $rawUid    = $body['feUserUid'] ?? null;
+        $feUserUid = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($feUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -229,7 +238,7 @@ final readonly class AdminController
         $this->enforcementService->resetGracePeriod($feUserUid);
 
         $this->logger->info('Admin reset FE passkey grace period', [
-            'admin_uid' => $adminUid,
+            'admin_uid'   => $adminUid,
             'fe_user_uid' => $feUserUid,
         ]);
 
@@ -252,15 +261,15 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
+        $body        = $this->getJsonBody($request);
         $rawGroupUid = $body['groupUid'] ?? null;
         // Only a plain integer: is_numeric() would let "1.5", "1e2" and " 1"
         // through as group 1, 100 and 1, and canBeInterpretedAsInteger()
         // accepts the JSON values true and 1.0 as 1.
-        $groupUid = !\is_bool($rawGroupUid) && !\is_float($rawGroupUid)
+        $groupUid = !is_bool($rawGroupUid) && !is_float($rawGroupUid)
             && MathUtility::canBeInterpretedAsInteger($rawGroupUid) ? (int) $rawGroupUid : 0;
         $rawLevel = $body['enforcement'] ?? null;
-        $level = \is_string($rawLevel) ? $rawLevel : '';
+        $level    = is_string($rawLevel) ? $rawLevel : '';
 
         if ($groupUid <= 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -292,19 +301,19 @@ final readonly class AdminController
             $stored = $this->groupEnforcementService->setLevel($groupUid, $level);
         } catch (RuntimeException $exception) {
             $this->logger->error('Updating the FE group enforcement failed', [
-                'admin_uid' => $adminUid,
+                'admin_uid'    => $adminUid,
                 'fe_group_uid' => $groupUid,
-                'enforcement' => $level,
-                'reason' => $exception->getMessage(),
+                'enforcement'  => $level,
+                'reason'       => $exception->getMessage(),
             ]);
 
             return new JsonResponse(['error' => 'The enforcement level could not be saved'], 500);
         }
 
         $this->logger->info('Admin changed FE group enforcement', [
-            'admin_uid' => $adminUid,
+            'admin_uid'    => $adminUid,
             'fe_group_uid' => $groupUid,
-            'enforcement' => $stored,
+            'enforcement'  => $stored,
         ]);
 
         return new JsonResponse(['status' => 'ok', 'groupUid' => $groupUid, 'enforcement' => $stored]);
@@ -342,7 +351,7 @@ final readonly class AdminController
         }
 
         $userData = $backendUser->user;
-        if (!\is_array($userData)) {
+        if (!is_array($userData)) {
             return null;
         }
 
@@ -351,7 +360,7 @@ final readonly class AdminController
         }
 
         $rawUid = $userData['uid'] ?? null;
-        if (!\is_numeric($rawUid)) {
+        if (!is_numeric($rawUid)) {
             return null;
         }
 

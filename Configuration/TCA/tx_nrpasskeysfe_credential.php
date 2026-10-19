@@ -1,104 +1,104 @@
 <?php
 
 /*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
- * SPDX-FileCopyrightText: Netresearch DTT GmbH
  */
 
 declare(strict_types=1);
 
 return [
     'ctrl' => [
-        'title' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential',
-        'label' => 'label',
-        'tstamp' => 'tstamp',
-        'crdate' => 'crdate',
-        'delete' => 'deleted',
-        'default_sortby' => 'created_at DESC',
+        'title'            => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential',
+        'label'            => 'label',
+        'tstamp'           => 'tstamp',
+        'crdate'           => 'crdate',
+        'delete'           => 'deleted',
+        'default_sortby'   => 'created_at DESC',
         'typeicon_classes' => [
             'default' => 'nr-passkeys-fe-credential',
         ],
         'hideTable' => true,
         'rootLevel' => -1,
-        'security' => [
+        'security'  => [
             'ignorePageTypeRestriction' => true,
         ],
     ],
     'columns' => [
         'fe_user' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.fe_user',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.fe_user',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectSingle',
+                'type'          => 'select',
+                'renderType'    => 'selectSingle',
                 'foreign_table' => 'fe_users',
-                'readOnly' => true,
+                'readOnly'      => true,
             ],
         ],
         'credential_id' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.credential_id',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.credential_id',
             'config' => [
-                'type' => 'input',
+                'type'     => 'input',
                 'readOnly' => true,
             ],
         ],
         'label' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.label',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.label',
             'config' => [
-                'type' => 'input',
-                'size' => 30,
-                'max' => 128,
+                'type'     => 'input',
+                'size'     => 30,
+                'max'      => 128,
                 'readOnly' => true,
             ],
         ],
         'aaguid' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.aaguid',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.aaguid',
             'config' => [
-                'type' => 'input',
+                'type'     => 'input',
                 'readOnly' => true,
             ],
         ],
         'site_identifier' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.site_identifier',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.site_identifier',
             'config' => [
-                'type' => 'input',
+                'type'     => 'input',
                 'readOnly' => true,
             ],
         ],
         'storage_pid' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.storage_pid',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.storage_pid',
             'config' => [
-                'type' => 'number',
+                'type'     => 'number',
                 'readOnly' => true,
             ],
         ],
         'created_at' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.created_at',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.created_at',
             'config' => [
-                'type' => 'datetime',
+                'type'     => 'datetime',
                 'readOnly' => true,
             ],
         ],
         'last_used_at' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.last_used_at',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.last_used_at',
             'config' => [
-                'type' => 'datetime',
+                'type'     => 'datetime',
                 'readOnly' => true,
             ],
         ],
         'revoked_at' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.revoked_at',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.revoked_at',
             'config' => [
-                'type' => 'datetime',
+                'type'     => 'datetime',
                 'readOnly' => true,
             ],
         ],
         'revoked_by' => [
-            'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.revoked_by',
+            'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:tx_nrpasskeysfe_credential.revoked_by',
             'config' => [
-                'type' => 'select',
-                'renderType' => 'selectSingle',
+                'type'          => 'select',
+                'renderType'    => 'selectSingle',
                 'foreign_table' => 'fe_users',
-                'readOnly' => true,
+                'readOnly'      => true,
             ],
         ],
     ],

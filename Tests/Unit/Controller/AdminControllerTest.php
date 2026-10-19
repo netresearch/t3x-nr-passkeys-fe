@@ -26,6 +26,10 @@ use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\ServerRequest;
 
+use function array_filter;
+use function json_decode;
+use function time;
+
 #[CoversClass(AdminController::class)]
 final class AdminControllerTest extends TestCase
 {
@@ -45,11 +49,11 @@ final class AdminControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
-        $this->userLookupService = $this->createStub(FrontendUserLookupService::class);
-        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->credentialRepository    = $this->createStub(FrontendCredentialRepository::class);
+        $this->userLookupService       = $this->createStub(FrontendUserLookupService::class);
+        $this->rateLimiterService      = $this->createStub(RateLimiterService::class);
         $this->groupEnforcementService = $this->createStub(FrontendGroupEnforcementService::class);
-        $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
+        $this->enforcementService      = $this->createStub(FrontendEnforcementService::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
@@ -84,7 +88,7 @@ final class AdminControllerTest extends TestCase
 
     private function setAdminBackendUser(int $uid = 1): void
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser       = $this->createStub(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => 'admin', 'realName' => 'Admin'];
         $backendUser->method('isAdmin')->willReturn(true);
         $backendUser->method('workspaceAllowsLiveEditingInTable')->willReturn(true);
@@ -110,10 +114,10 @@ final class AdminControllerTest extends TestCase
             credentialId: 'cred-id-' . $uid,
             label: 'Test Key ' . $uid,
             siteIdentifier: 'main',
-            createdAt: \time() - 3600,
+            createdAt: time() - 3600,
         );
         if ($revoked) {
-            $cred->setRevokedAt(\time() - 60);
+            $cred->setRevokedAt(time() - 60);
             $cred->setRevokedBy(1);
         }
 
@@ -128,7 +132,7 @@ final class AdminControllerTest extends TestCase
     public function listActionReturns403WhenNotAuthenticated(): void
     {
         $this->unsetBackendUser();
-        $request = new ServerRequest('/nr-passkeys-fe/admin/list', 'GET');
+        $request  = new ServerRequest('/nr-passkeys-fe/admin/list', 'GET');
         $response = $this->subject->listAction($request);
         self::assertSame(403, $response->getStatusCode());
     }
@@ -171,7 +175,7 @@ final class AdminControllerTest extends TestCase
     public function listActionReturns400WhenFeUserUidMissing(): void
     {
         $this->setAdminBackendUser();
-        $request = new ServerRequest('/nr-passkeys-fe/admin/list', 'GET');
+        $request  = new ServerRequest('/nr-passkeys-fe/admin/list', 'GET');
         $response = $this->subject->listAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -195,7 +199,7 @@ final class AdminControllerTest extends TestCase
         $response = $this->subject->listAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true);
+        $body = json_decode((string) $response->getBody(), true);
         self::assertSame(42, $body['feUserUid']);
         self::assertCount(2, $body['credentials']);
         self::assertSame(2, $body['count']);
@@ -218,10 +222,10 @@ final class AdminControllerTest extends TestCase
             ->withQueryParams(['feUserUid' => '42']);
 
         $response = $this->subject->listAction($request);
-        $body = \json_decode((string) $response->getBody(), true);
+        $body     = json_decode((string) $response->getBody(), true);
 
         self::assertSame(2, $body['count']);
-        $revokedItems = \array_filter($body['credentials'], static fn(array $c): bool => $c['isRevoked'] === true);
+        $revokedItems = array_filter($body['credentials'], static fn (array $c): bool => $c['isRevoked'] === true);
         self::assertCount(1, $revokedItems);
     }
 
@@ -259,7 +263,7 @@ final class AdminControllerTest extends TestCase
         $this->setAdminBackendUser(uid: 1);
 
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $subject = $this->createSubjectWith(credentialRepository: $credentialRepository);
+        $subject              = $this->createSubjectWith(credentialRepository: $credentialRepository);
 
         $credential = $this->buildCredential(10, 42);
         $credentialRepository
@@ -277,7 +281,7 @@ final class AdminControllerTest extends TestCase
         $response = $subject->removeAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true);
+        $body = json_decode((string) $response->getBody(), true);
         self::assertSame('ok', $body['status']);
     }
 
@@ -301,7 +305,7 @@ final class AdminControllerTest extends TestCase
         $this->setAdminBackendUser(uid: 1);
 
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
-        $subject = $this->createSubjectWith(credentialRepository: $credentialRepository);
+        $subject              = $this->createSubjectWith(credentialRepository: $credentialRepository);
 
         $credentialRepository
             ->expects($this->once())
@@ -314,7 +318,7 @@ final class AdminControllerTest extends TestCase
         $response = $subject->revokeAllAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true);
+        $body = json_decode((string) $response->getBody(), true);
         self::assertSame('ok', $body['status']);
         self::assertSame(1, $body['revokedCount']);
     }
@@ -328,7 +332,7 @@ final class AdminControllerTest extends TestCase
         $request = (new ServerRequest('/nr-passkeys-fe/admin/revoke-all', 'POST'))
             ->withParsedBody(['feUserUid' => 42]);
         $response = $this->subject->revokeAllAction($request);
-        $body = \json_decode((string) $response->getBody(), true);
+        $body     = json_decode((string) $response->getBody(), true);
 
         self::assertSame('ok', $body['status']);
         self::assertSame(0, $body['revokedCount']);
@@ -369,8 +373,8 @@ final class AdminControllerTest extends TestCase
         $this->setAdminBackendUser();
 
         $rateLimiterService = $this->createMock(RateLimiterService::class);
-        $userLookupService = $this->createStub(FrontendUserLookupService::class);
-        $subject = $this->createSubjectWith(
+        $userLookupService  = $this->createStub(FrontendUserLookupService::class);
+        $subject            = $this->createSubjectWith(
             userLookupService: $userLookupService,
             rateLimiterService: $rateLimiterService,
         );
@@ -389,7 +393,7 @@ final class AdminControllerTest extends TestCase
         $response = $subject->unlockAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        $body = \json_decode((string) $response->getBody(), true);
+        $body = json_decode((string) $response->getBody(), true);
         self::assertSame('ok', $body['status']);
     }
 
@@ -423,7 +427,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function updateEnforcementActionReturns403ForANonAdminAndWritesNothing(): void
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser       = $this->createStub(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 5, 'username' => 'editor'];
         $backendUser->method('isAdmin')->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -486,7 +490,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function updateEnforcementActionRefusesAWorkspaceWithoutLiveEditingAndWritesNothing(): void
     {
-        $backendUser = $this->createStub(BackendUserAuthentication::class);
+        $backendUser       = $this->createStub(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'username' => 'admin'];
         $backendUser->method('isAdmin')->willReturn(true);
         $backendUser->method('workspaceAllowsLiveEditingInTable')->willReturn(false);
@@ -514,7 +518,7 @@ final class AdminControllerTest extends TestCase
             ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 1, 'enforcement' => 'mandatory']));
 
         self::assertSame(400, $response->getStatusCode());
-        self::assertSame(['error' => 'Invalid enforcement level'], \json_decode((string) $response->getBody(), true));
+        self::assertSame(['error' => 'Invalid enforcement level'], json_decode((string) $response->getBody(), true));
     }
 
     #[Test]
@@ -555,7 +559,7 @@ final class AdminControllerTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(
             ['status' => 'ok', 'groupUid' => 3, 'enforcement' => 'required'],
-            \json_decode((string) $response->getBody(), true),
+            json_decode((string) $response->getBody(), true),
         );
     }
 
@@ -571,7 +575,7 @@ final class AdminControllerTest extends TestCase
             ->updateEnforcementAction($this->enforcementRequest(['groupUid' => 3, 'enforcement' => 'required']));
 
         self::assertSame(500, $response->getStatusCode());
-        self::assertArrayHasKey('error', (array) \json_decode((string) $response->getBody(), true));
+        self::assertArrayHasKey('error', (array) json_decode((string) $response->getBody(), true));
     }
 
     // ---------------------------------------------------------------
@@ -630,6 +634,6 @@ final class AdminControllerTest extends TestCase
         $response = $this->createSubjectWith(enforcementService: $enforcementService)->resetGracePeriodAction($request);
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame(['status' => 'ok'], \json_decode((string) $response->getBody(), true));
+        self::assertSame(['status' => 'ok'], json_decode((string) $response->getBody(), true));
     }
 }

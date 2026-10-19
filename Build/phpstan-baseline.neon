@@ -79,44 +79,14 @@ parameters:
 			path: ../Classes/EventListener/InjectPasskeyBanner.php
 
 		-
-			message: '#^Cannot call method assign\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
-
-		-
-			message: '#^Cannot call method getAttribute\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: ../Classes/EventListener/InjectPasskeyLoginFields.php
-
-		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 3
 			path: ../Classes/Service/FrontendAdoptionStatsService.php
 
 		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendAdoptionStatsService\:\:getPerGroupStats\(\) should return array\<string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\> but returns non\-empty\-array\<int\|numeric\-string, array\{groupName\: string, userCount\: int, withPasskeys\: int, enforcement\: string\}\>\.$#'
-			identifier: return.type
-			count: 1
-			path: ../Classes/Service/FrontendAdoptionStatsService.php
-
-		-
 			message: '#^Offset ''ES256''\|''ES384''\|''ES512''\|''RS256'' on array\{ES256\: \-7, ES384\: \-35, ES512\: \-36, RS256\: \-257\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
-			count: 1
-			path: ../Classes/Service/FrontendWebAuthnService.php
-
-		-
-			message: '#^Property Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:\$configuration is never read, only written\.$#'
-			identifier: property.onlyWritten
-			count: 1
-			path: ../Classes/Service/FrontendWebAuthnService.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between \-257\|\-36\|\-35\|\-7 and null will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: ../Classes/Service/FrontendWebAuthnService.php
 
@@ -133,170 +103,21 @@ parameters:
 			path: ../Classes/Service/SiteConfigurationService.php
 
 		-
-			message: '#^Constructor of self is invoked with named argument for parameter \$recoveryCodeCount\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor of self is invoked with named argument for parameter \$recoveryCodesEnabled\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Language construct isset\(\) should not be used\.$#'
-			identifier: ergebnis.noIsset
-			path: ../Classes/Service/FrontendAdoptionStatsService.php
-			count: 3
-			reportUnmatched: false
-		-
-			message: '#^Language construct isset\(\) should not be used\.$#'
-			identifier: ergebnis.noIsset
-			path: ../Classes/Service/FrontendUserLookupService.php
-			count: 1
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Controller\\AdminController\:\:requireAdminUid\(\) has a nullable return type declaration\.$#'
-			identifier: ergebnis.noNullableReturnTypeDeclaration
-			count: 1
-			path: ../Classes/Controller/AdminController.php
-			reportUnmatched: false
-		-
 			message: '#^Variable method call on Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\.$#'
 			identifier: method.dynamicName
 			count: 2
 			path: ../Classes/Controller/EidDispatcher.php
 			reportUnmatched: false
 
-		# CI-only: ergebnis/phpstan-rules violations not reproduced locally
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$magicLinkEnabled with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enrollmentBannerEnabled with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$enableFePasskeys with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$defaultEnforcementLevel with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:resolveSite\(\) has a nullable return type declaration\.$#'
-			identifier: ergebnis.noNullableReturnTypeDeclaration
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService\:\:getPasskeyPayload\(\) has a nullable return type declaration\.$#'
-			identifier: ergebnis.noNullableReturnTypeDeclaration
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$site\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$challenge\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-		-
-			message: '#^Method Netresearch\\NrPasskeysFe\\Service\\FrontendWebAuthnService\:\:verifyAssertionResponse\(\) is invoked with named argument for parameter \$assertionJson\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-		-
-			message: '#^Class "Netresearch\\NrPasskeysFe\\Authentication\\PasskeyFrontendAuthenticationService" is not allowed to extend "TYPO3\\CMS\\Core\\Authentication\\AbstractAuthenticationService"\.$#'
-			identifier: ergebnis.noExtends
-			count: 1
-			path: ../Classes/Authentication/PasskeyFrontendAuthenticationService.php
-			reportUnmatched: false
-
-		# CI ergebnis uses "Constructor of self" not the FQCN
-		-
-			message: '#^Constructor of self is invoked with named argument for parameter \$postLoginEnrollmentEnabled\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor of self is invoked with named argument for parameter \$maxPasskeysPerUser\.$#'
-			identifier: ergebnis.noNamedArgument
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodesEnabled with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$recoveryCodeCount with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$postLoginEnrollmentEnabled with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-		-
-			message: '#^Constructor in Netresearch\\NrPasskeysFe\\Configuration\\FrontendConfiguration has parameter \$maxPasskeysPerUser with default value\.$#'
-			identifier: ergebnis.noConstructorParameterWithDefaultValue
-			count: 1
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			reportUnmatched: false
-
-		# Catch-all for CI ergebnis named argument violations on FrontendConfiguration
-		-
-			message: '#^Constructor of self is invoked with named argument#'
-			path: ../Classes/Configuration/FrontendConfiguration.php
-			count: 8
-			reportUnmatched: false
 		# Deprecated menu methods in TYPO3 v14
 		-
 			message: '#^Call to deprecated method makeMenuItem\(\)#'
 			path: ../Classes/Controller/AdminModuleController.php
-			count: 5
+			count: 2
 			reportUnmatched: false
+
 		-
 			message: '#^Call to deprecated method makeMenu\(\)#'
 			path: ../Classes/Controller/AdminModuleController.php
-			count: 3
-			reportUnmatched: false
-
-		# CI isset violations with specific paths
-		-
-			message: '#^Language construct isset\(\) should not be used\.$#'
-			identifier: ergebnis.noIsset
-			count: 2
-			path: ../Classes/Service/FrontendEnforcementService.php
-			reportUnmatched: false
-		-
-			message: '#^Language construct isset\(\) should not be used\.$#'
-			identifier: ergebnis.noIsset
 			count: 1
-			path: ../Classes/Controller/AdminModuleController.php
 			reportUnmatched: false

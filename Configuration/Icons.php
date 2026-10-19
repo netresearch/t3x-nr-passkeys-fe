@@ -27,26 +27,26 @@ $moduleIcon = (new Typo3Version())->getMajorVersion() >= 14
 return [
     'nr-passkeys-fe-module' => [
         'provider' => SvgIconProvider::class,
-        'source' => $moduleIcon,
+        'source'   => $moduleIcon,
     ],
     'nr-passkeys-fe-plugin-login' => [
         'provider' => SvgSpriteIconProvider::class,
-        'sprite' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-login.svg#nr-passkeys-fe-plugin-login',
+        'sprite'   => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-login.svg#nr-passkeys-fe-plugin-login',
     ],
     'nr-passkeys-fe-plugin-management' => [
         'provider' => SvgSpriteIconProvider::class,
-        'sprite' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-management.svg#nr-passkeys-fe-plugin-management',
+        'sprite'   => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-management.svg#nr-passkeys-fe-plugin-management',
     ],
     'nr-passkeys-fe-plugin-enrollment' => [
         'provider' => SvgSpriteIconProvider::class,
-        'sprite' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-enrollment.svg#nr-passkeys-fe-plugin-enrollment',
+        'sprite'   => 'EXT:nr_passkeys_fe/Resources/Public/Icons/plugin-enrollment.svg#nr-passkeys-fe-plugin-enrollment',
     ],
     'nr-passkeys-fe-credential' => [
         'provider' => SvgSpriteIconProvider::class,
-        'sprite' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/credential.svg#nr-passkeys-fe-credential',
+        'sprite'   => 'EXT:nr_passkeys_fe/Resources/Public/Icons/credential.svg#nr-passkeys-fe-credential',
     ],
     'nr-passkeys-fe-recovery-code' => [
         'provider' => SvgSpriteIconProvider::class,
-        'sprite' => 'EXT:nr_passkeys_fe/Resources/Public/Icons/recovery-code.svg#nr-passkeys-fe-recovery-code',
+        'sprite'   => 'EXT:nr_passkeys_fe/Resources/Public/Icons/recovery-code.svg#nr-passkeys-fe-recovery-code',
     ],
 ];

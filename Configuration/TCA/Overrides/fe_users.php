@@ -9,25 +9,25 @@ declare(strict_types=1);
 
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-\defined('TYPO3') || die();
+\defined('TYPO3') || exit;
 
 $tempColumns = [
     'passkeys' => [
-        'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkeys.label',
+        'label'       => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkeys.label',
         'description' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkeys.description',
-        'config' => [
-            'type' => 'none',
+        'config'      => [
+            'type'       => 'none',
             'renderType' => 'passkeyFeInfo',
         ],
     ],
     'passkey_grace_period_start' => [
-        'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkey_grace_period_start',
+        'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkey_grace_period_start',
         'config' => [
             'type' => 'passthrough',
         ],
     ],
     'passkey_nudge_until' => [
-        'label' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkey_nudge_until',
+        'label'  => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:fe_users.passkey_nudge_until',
         'config' => [
             'type' => 'passthrough',
         ],

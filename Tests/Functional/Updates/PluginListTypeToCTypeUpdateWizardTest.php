@@ -112,7 +112,7 @@ final class PluginListTypeToCTypeUpdateWizardTest extends AbstractPasskeyFunctio
         $rows = [];
         foreach ($result->fetchAllAssociative() as $row) {
             $rows[(int) $row['uid']] = [
-                'CType' => (string) $row['CType'],
+                'CType'     => (string) $row['CType'],
                 'list_type' => (string) $row['list_type'],
             ];
         }
@@ -127,7 +127,7 @@ final class PluginListTypeToCTypeUpdateWizardTest extends AbstractPasskeyFunctio
     private function ensureListTypeColumnExists(): void
     {
         $connection = $this->getConnectionPool()->getConnectionForTable('tt_content');
-        $columns = $connection->createSchemaManager()->listTableColumns('tt_content');
+        $columns    = $connection->createSchemaManager()->listTableColumns('tt_content');
 
         if (!isset($columns['list_type'])) {
             $connection->executeStatement(

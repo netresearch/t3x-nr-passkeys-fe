@@ -41,6 +41,17 @@ use Webauthn\PublicKeyCredentialRpEntity;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\TrustPath\EmptyTrustPath;
 
+use function array_map;
+use function count;
+use function hash_hkdf;
+use function hash_hmac;
+use function is_array;
+use function is_string;
+use function json_encode;
+use function ord;
+use function strlen;
+use function substr;
+
 /**
  * WebAuthn ceremony handler for frontend (fe_users).
  *
@@ -89,7 +100,7 @@ final class FrontendWebAuthnService
         string $challenge,
         SiteInterface $site,
     ): array {
-        $rpId = $this->siteConfigurationService->getRpId($site);
+        $rpId           = $this->siteConfigurationService->getRpId($site);
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
         $rp = PublicKeyCredentialRpEntity::create(
@@ -106,8 +117,8 @@ final class FrontendWebAuthnService
         );
 
         $existingCredentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
-        $excludeCredentials = \array_map(
-            static fn(FrontendCredential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
+        $excludeCredentials  = array_map(
+            static fn (FrontendCredential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $cred->getCredentialId(),
                 transports: $cred->getTransportsArray(),
@@ -132,7 +143,7 @@ final class FrontendWebAuthnService
         );
 
         return [
-            'options' => $options,
+            'options'     => $options,
             'optionsJson' => $this->serializeCreationOptions($options),
         ];
     }
@@ -148,11 +159,11 @@ final class FrontendWebAuthnService
         int $feUserUid,
         SiteInterface $site,
     ): FrontendCredential {
-        $rpId = $this->siteConfigurationService->getRpId($site);
+        $rpId           = $this->siteConfigurationService->getRpId($site);
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
-        $userHandle = $this->createUserHandle($feUserUid);
+        $userHandle     = $this->createUserHandle($feUserUid);
 
-        $rp = PublicKeyCredentialRpEntity::create(name: $rpId, id: $rpId);
+        $rp   = PublicKeyCredentialRpEntity::create(name: $rpId, id: $rpId);
         $user = PublicKeyCredentialUserEntity::create(
             name: '',
             id: $userHandle,
@@ -182,9 +193,9 @@ final class FrontendWebAuthnService
             throw new RuntimeException('Expected attestation response', 1700200021);
         }
 
-        $factory = $this->createCeremonyFactory($site);
+        $factory         = $this->createCeremonyFactory($site);
         $ceremonyManager = $factory->creationCeremony();
-        $validator = AuthenticatorAttestationResponseValidator::create($ceremonyManager);
+        $validator       = AuthenticatorAttestationResponseValidator::create($ceremonyManager);
 
         try {
             $source = $validator->check(
@@ -195,8 +206,8 @@ final class FrontendWebAuthnService
         } catch (Throwable $e) {
             $this->logger->error('Frontend passkey registration verification failed', [
                 'fe_user_uid' => $feUserUid,
-                'site' => $siteIdentifier,
-                'error' => $e->getMessage(),
+                'site'        => $siteIdentifier,
+                'error'       => $e->getMessage(),
             ]);
             throw new RuntimeException(
                 'Registration verification failed: ' . $e->getMessage(),
@@ -207,7 +218,7 @@ final class FrontendWebAuthnService
 
         $this->logger->info('Frontend passkey registered successfully', [
             'fe_user_uid' => $feUserUid,
-            'site' => $siteIdentifier,
+            'site'        => $siteIdentifier,
         ]);
 
         return $this->sourceToCredential($source, $feUserUid, $siteIdentifier);
@@ -223,12 +234,12 @@ final class FrontendWebAuthnService
         string $challenge,
         SiteInterface $site,
     ): array {
-        $rpId = $this->siteConfigurationService->getRpId($site);
+        $rpId           = $this->siteConfigurationService->getRpId($site);
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
-        $credentials = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
-        $allowCredentials = \array_map(
-            static fn(FrontendCredential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
+        $credentials      = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
+        $allowCredentials = array_map(
+            static fn (FrontendCredential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $cred->getCredentialId(),
                 transports: $cred->getTransportsArray(),
@@ -245,7 +256,7 @@ final class FrontendWebAuthnService
         );
 
         return [
-            'options' => $options,
+            'options'     => $options,
             'optionsJson' => $this->serializeRequestOptions($options),
         ];
     }
@@ -270,7 +281,7 @@ final class FrontendWebAuthnService
         );
 
         return [
-            'options' => $options,
+            'options'     => $options,
             'optionsJson' => $this->serializeRequestOptions($options),
         ];
     }
@@ -287,7 +298,7 @@ final class FrontendWebAuthnService
         string $challenge,
         SiteInterface $site,
     ): array {
-        $rpId = $this->siteConfigurationService->getRpId($site);
+        $rpId           = $this->siteConfigurationService->getRpId($site);
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
         $publicKeyCredential = $this->getSerializer()->deserialize(
@@ -307,7 +318,7 @@ final class FrontendWebAuthnService
 
         // Find the credential by its ID
         $credentialId = $publicKeyCredential->rawId;
-        $credential = $this->credentialRepository->findByCredentialId($credentialId);
+        $credential   = $this->credentialRepository->findByCredentialId($credentialId);
 
         if (!$credential instanceof FrontendCredential) {
             $this->logger->warning('FE assertion with unknown credential ID', [
@@ -328,9 +339,9 @@ final class FrontendWebAuthnService
             userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
         );
 
-        $factory = $this->createCeremonyFactory($site);
+        $factory         = $this->createCeremonyFactory($site);
         $ceremonyManager = $factory->requestCeremony();
-        $validator = AuthenticatorAssertionResponseValidator::create($ceremonyManager);
+        $validator       = AuthenticatorAssertionResponseValidator::create($ceremonyManager);
 
         try {
             $updatedSource = $validator->check(
@@ -343,8 +354,8 @@ final class FrontendWebAuthnService
         } catch (Throwable $e) {
             $this->logger->error('Frontend passkey assertion verification failed', [
                 'fe_user_uid' => $credential->getFeUser(),
-                'site' => $siteIdentifier,
-                'error' => $e->getMessage(),
+                'site'        => $siteIdentifier,
+                'error'       => $e->getMessage(),
             ]);
             throw new RuntimeException(
                 'Assertion verification failed: ' . $e->getMessage(),
@@ -356,13 +367,13 @@ final class FrontendWebAuthnService
         $this->credentialRepository->updateAfterAssertion($credential->getUid(), $updatedSource->counter);
 
         $this->logger->info('Frontend passkey login successful', [
-            'fe_user_uid' => $credential->getFeUser(),
+            'fe_user_uid'    => $credential->getFeUser(),
             'credential_uid' => $credential->getUid(),
-            'site' => $siteIdentifier,
+            'site'           => $siteIdentifier,
         ]);
 
         return [
-            'feUserUid' => $credential->getFeUser(),
+            'feUserUid'  => $credential->getFeUser(),
             'credential' => $credential,
         ];
     }
@@ -417,8 +428,8 @@ final class FrontendWebAuthnService
     {
         if (!$this->serializer instanceof SerializerInterface) {
             $attestationManager = $this->createAttestationStatementSupportManager();
-            $factory = new WebauthnSerializerFactory($attestationManager);
-            $this->serializer = $factory->create();
+            $factory            = new WebauthnSerializerFactory($attestationManager);
+            $this->serializer   = $factory->create();
         }
 
         return $this->serializer;
@@ -464,7 +475,7 @@ final class FrontendWebAuthnService
     {
         $params = [];
         foreach (self::ALLOWED_ALGORITHMS as $algo) {
-            $algoId = self::ALGORITHM_MAP[$algo] ?? null;
+            $algoId   = self::ALGORITHM_MAP[$algo] ?? null;
             $params[] = PublicKeyCredentialParameters::createPk($algoId);
         }
 
@@ -473,21 +484,21 @@ final class FrontendWebAuthnService
 
     private function createUserHandle(int $feUserUid): string
     {
-        $key = $this->getEncryptionKey();
-        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_fe_user_handle');
+        $key        = $this->getEncryptionKey();
+        $derivedKey = hash_hkdf('sha256', $key, 32, 'nr_passkeys_fe_user_handle');
 
-        return \hash_hmac('sha256', (string) $feUserUid, $derivedKey, true);
+        return hash_hmac('sha256', (string) $feUserUid, $derivedKey, true);
     }
 
     private function getEncryptionKey(): string
     {
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
+        $sysConf   = is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $key       = is_array($sysConf) && is_string($sysConf['encryptionKey'] ?? null)
             ? $sysConf['encryptionKey']
             : '';
 
-        if (\strlen($key) < 32) {
+        if (strlen($key) < 32) {
             throw new RuntimeException(
                 'TYPO3 encryptionKey is missing or too short (min 32 chars). '
                 . 'Configure it in Settings > Configure Installation-Wide Options.',
@@ -529,7 +540,7 @@ final class FrontendWebAuthnService
             signCount: $source->counter,
             userHandle: $source->userHandle,
             aaguid: $source->aaguid->toString(),
-            transports: \json_encode($source->transports, JSON_THROW_ON_ERROR),
+            transports: json_encode($source->transports, JSON_THROW_ON_ERROR),
             siteIdentifier: $siteIdentifier,
         );
     }
@@ -575,7 +586,7 @@ final class FrontendWebAuthnService
         );
 
         return [
-            'options' => $options,
+            'options'     => $options,
             'optionsJson' => $this->serializeRequestOptions($options),
         ];
     }
@@ -585,9 +596,9 @@ final class FrontendWebAuthnService
      */
     private function buildDecoyDescriptors(string $username): array
     {
-        $derivedKey = \hash_hkdf('sha256', $this->configurationService->getEncryptionKey(), 32, 'nr_passkeys_fe_decoy');
-        $seed = \hash_hmac('sha256', $username . '|count', $derivedKey, true);
-        $count = 1 + \ord($seed[0]) % 3;
+        $derivedKey  = hash_hkdf('sha256', $this->configurationService->getEncryptionKey(), 32, 'nr_passkeys_fe_decoy');
+        $seed        = hash_hmac('sha256', $username . '|count', $derivedKey, true);
+        $count       = 1 + ord($seed[0]) % 3;
         $descriptors = [];
 
         for ($index = 0; $index < $count; ++$index) {
@@ -597,9 +608,9 @@ final class FrontendWebAuthnService
             // from one HMAC — publishing the material whose first bytes chose
             // the shape — makes every decoy verifiable from its own bytes, and
             // a response that fails that check is then certainly a real one.
-            $selectors = \hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
-            $length = self::DECOY_ID_LENGTHS[\ord($selectors[0]) % \count(self::DECOY_ID_LENGTHS)];
-            $transports = self::DECOY_TRANSPORT_SETS[\ord($selectors[1]) % \count(self::DECOY_TRANSPORT_SETS)];
+            $selectors  = hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
+            $length     = self::DECOY_ID_LENGTHS[ord($selectors[0]) % count(self::DECOY_ID_LENGTHS)];
+            $transports = self::DECOY_TRANSPORT_SETS[ord($selectors[1]) % count(self::DECOY_TRANSPORT_SETS)];
 
             $descriptors[] = PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
@@ -619,14 +630,14 @@ final class FrontendWebAuthnService
      */
     private function deriveDecoyId(string $derivedKey, string $label, int $length): string
     {
-        $id = '';
+        $id    = '';
         $block = 0;
 
-        while (\strlen($id) < $length) {
-            $id .= \hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
+        while (strlen($id) < $length) {
+            $id .= hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
             ++$block;
         }
 
-        return \substr($id, 0, $length);
+        return substr($id, 0, $length);
     }
 }

@@ -16,6 +16,8 @@ use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\ServerRequest;
 
+use function is_numeric;
+
 /**
  * "Reset grace period" against a real fe_users row: the start goes back to
  * 0, so the interstitial starts a new grace period on the next request.
@@ -73,6 +75,6 @@ final class AdminControllerTest extends AbstractPasskeyFunctionalTestCase
             ->select(['passkey_grace_period_start'], 'fe_users', ['uid' => $feUserUid])
             ->fetchOne();
 
-        return \is_numeric($value) ? (int) $value : -1;
+        return is_numeric($value) ? (int) $value : -1;
     }
 }

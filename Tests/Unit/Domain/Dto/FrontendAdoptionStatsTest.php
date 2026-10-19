@@ -22,10 +22,10 @@ final class FrontendAdoptionStatsTest extends TestCase
     {
         $perGroupStats = [
             '42' => [
-                'groupName' => 'Editors',
-                'userCount' => 10,
+                'groupName'    => 'Editors',
+                'userCount'    => 10,
                 'withPasskeys' => 6,
-                'enforcement' => 'encourage',
+                'enforcement'  => 'encourage',
             ],
         ];
 
@@ -63,16 +63,16 @@ final class FrontendAdoptionStatsTest extends TestCase
     {
         $perGroupStats = [
             '1' => [
-                'groupName' => 'Administrators',
-                'userCount' => 5,
+                'groupName'    => 'Administrators',
+                'userCount'    => 5,
                 'withPasskeys' => 5,
-                'enforcement' => 'enforced',
+                'enforcement'  => 'enforced',
             ],
             '2' => [
-                'groupName' => 'Members',
-                'userCount' => 200,
+                'groupName'    => 'Members',
+                'userCount'    => 200,
                 'withPasskeys' => 80,
-                'enforcement' => 'encourage',
+                'enforcement'  => 'encourage',
             ],
         ];
 

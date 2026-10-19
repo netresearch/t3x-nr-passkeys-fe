@@ -12,6 +12,8 @@ namespace Netresearch\NrPasskeysFe\Controller;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 
+use function is_array;
+
 /**
  * The client address of a request, from the request itself.
  *
@@ -32,10 +34,10 @@ trait RemoteAddressTrait
         $normalizedParams = $request->getAttribute('normalizedParams');
         if (!$normalizedParams instanceof NormalizedParams) {
             $configurationVariables = $GLOBALS['TYPO3_CONF_VARS'] ?? [];
-            $systemConfiguration = \is_array($configurationVariables) ? ($configurationVariables['SYS'] ?? []) : [];
-            $normalizedParams = new NormalizedParams(
+            $systemConfiguration    = is_array($configurationVariables) ? ($configurationVariables['SYS'] ?? []) : [];
+            $normalizedParams       = new NormalizedParams(
                 $request->getServerParams(),
-                \is_array($systemConfiguration) ? $systemConfiguration : [],
+                is_array($systemConfiguration) ? $systemConfiguration : [],
                 '',
                 '',
             );

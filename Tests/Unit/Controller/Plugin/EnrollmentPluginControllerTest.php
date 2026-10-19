@@ -53,10 +53,11 @@ final class EnrollmentPluginControllerTest extends TestCase
         $subject = $this->buildController();
 
         $assignedVars = [];
-        $view = $this->createStub(ViewInterface::class);
+        $view         = $this->createStub(ViewInterface::class);
         $view->method('assignMultiple')->willReturnCallback(
             static function (array $vars) use (&$assignedVars, $view): ViewInterface {
                 $assignedVars = $vars;
+
                 return $view;
             },
         );
@@ -83,6 +84,7 @@ final class EnrollmentPluginControllerTest extends TestCase
         $subject = new EnrollmentPluginController($this->enforcementServiceWithoutState());
         $subject->injectResponseFactory(new ResponseFactory());
         $subject->injectStreamFactory(new StreamFactory());
+
         return $subject;
     }
 
@@ -107,6 +109,7 @@ final class EnrollmentPluginControllerTest extends TestCase
             'extbase',
             new ExtbaseRequestParameters(EnrollmentPluginController::class),
         );
+
         return new Request($serverRequest);
     }
 

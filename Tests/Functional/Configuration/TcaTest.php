@@ -12,6 +12,11 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Configuration;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+use function array_column;
+use function array_keys;
+use function array_map;
+use function array_values;
+
 /**
  * Functional tests for TCA configuration registered by nr_passkeys_fe.
  *
@@ -47,7 +52,7 @@ final class TcaTest extends AbstractPasskeyFunctionalTestCase
     {
         $items = $GLOBALS['TCA']['fe_groups']['columns']['passkey_enforcement']['config']['items'] ?? [];
 
-        $values = \array_column($items, 'value');
+        $values = array_column($items, 'value');
         self::assertContains('off', $values, 'passkey_enforcement must have "off" item');
         self::assertContains('encourage', $values, 'passkey_enforcement must have "encourage" item');
         self::assertContains('required', $values, 'passkey_enforcement must have "required" item');
@@ -147,7 +152,7 @@ final class TcaTest extends AbstractPasskeyFunctionalTestCase
     #[Test]
     public function credentialTableHasRequiredColumns(): void
     {
-        $columns = \array_keys($GLOBALS['TCA']['tx_nrpasskeysfe_credential']['columns'] ?? []);
+        $columns = array_keys($GLOBALS['TCA']['tx_nrpasskeysfe_credential']['columns'] ?? []);
 
         foreach (['fe_user', 'credential_id', 'label', 'site_identifier', 'storage_pid'] as $required) {
             self::assertContains($required, $columns, "tx_nrpasskeysfe_credential must have column '{$required}'");
@@ -172,6 +177,6 @@ final class TcaTest extends AbstractPasskeyFunctionalTestCase
     {
         $items = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'] ?? [];
 
-        return \array_values(\array_map(strval(...), \array_column($items, 'value')));
+        return array_values(array_map(strval(...), array_column($items, 'value')));
     }
 }

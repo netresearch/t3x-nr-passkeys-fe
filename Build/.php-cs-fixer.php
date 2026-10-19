@@ -1,34 +1,24 @@
 <?php
 
 /*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
- * SPDX-FileCopyrightText: Netresearch DTT GmbH
  */
 
 declare(strict_types=1);
 
-$finder = (new PhpCsFixer\Finder())
-    ->in(__DIR__ . '/../Classes')
-    ->in(__DIR__ . '/../Tests')
-    ->in(__DIR__ . '/../Configuration');
+$createConfig = require __DIR__ . '/../.Build/vendor/netresearch/typo3-ci-workflows/config/php-cs-fixer/config.php';
 
-return (new PhpCsFixer\Config())
-    ->setRiskyAllowed(true)
-    ->setRules([
-        '@PER-CS3.0' => true,
-        '@PER-CS3.0:risky' => true,
-        'array_syntax' => ['syntax' => 'short'],
-        'declare_strict_types' => true,
-        'global_namespace_import' => [
-            'import_classes' => true,
-            'import_constants' => false,
-            'import_functions' => false,
-        ],
-        'native_function_invocation' => ['include' => ['@all']],
-        'no_unused_imports' => true,
-        'ordered_imports' => ['imports_order' => ['class', 'function', 'const'], 'sort_algorithm' => 'alpha'],
-        'single_line_throw' => false,
-        'strict_param' => true,
-        'trailing_comma_in_multiline' => ['elements' => ['arrays', 'arguments', 'parameters']],
-    ])
-    ->setFinder($finder);
+// Shared org code style (@PER-CS3x0 + @Symfony and the shared rules) over the
+// repository root, with the header that 119 of the 125 PHP files carry. The
+// extra rules are the repository's own that are stricter than the shared set.
+return $createConfig(
+    "Copyright (c) 2025-2026 Netresearch DTT GmbH\nSPDX-License-Identifier: GPL-2.0-or-later",
+    __DIR__ . '/..',
+    [
+        // The shared set has no risky PER-CS rules:
+        // no_trailing_whitespace_in_string, no_unreachable_default_argument_value.
+        '@PER-CS3x0:risky' => true,
+        'strict_param'     => true,
+    ],
+);

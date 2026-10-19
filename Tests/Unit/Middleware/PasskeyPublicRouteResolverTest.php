@@ -40,8 +40,8 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public static function publicActionsProvider(): array
     {
         return [
-            'loginOptions' => ['loginOptions'],
-            'loginVerify' => ['loginVerify'],
+            'loginOptions'   => ['loginOptions'],
+            'loginVerify'    => ['loginVerify'],
             'recoveryVerify' => ['recoveryVerify'],
         ];
     }
@@ -51,7 +51,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function publicActionSetsPublicRouteAttribute(string $action): void
     {
         $capturedRequest = null;
-        $handler = $this->createHandlerCapturingRequest($capturedRequest);
+        $handler         = $this->createHandlerCapturingRequest($capturedRequest);
 
         $request = $this->buildGetRequest('https://example.com/', ['eID' => 'nr_passkeys_fe', 'action' => $action]);
 
@@ -67,10 +67,10 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public static function privateActionsProvider(): array
     {
         return [
-            'enrollOptions' => ['enrollOptions'],
-            'enrollVerify' => ['enrollVerify'],
+            'enrollOptions'    => ['enrollOptions'],
+            'enrollVerify'     => ['enrollVerify'],
             'revokeCredential' => ['revokeCredential'],
-            'listCredentials' => ['listCredentials'],
+            'listCredentials'  => ['listCredentials'],
         ];
     }
 
@@ -79,7 +79,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function privateActionDoesNotSetPublicRouteAttribute(string $action): void
     {
         $capturedRequest = null;
-        $handler = $this->createHandlerCapturingRequest($capturedRequest);
+        $handler         = $this->createHandlerCapturingRequest($capturedRequest);
 
         $request = $this->buildGetRequest('https://example.com/', ['eID' => 'nr_passkeys_fe', 'action' => $action]);
 
@@ -93,7 +93,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function differentEidDoesNotSetPublicRouteAttribute(): void
     {
         $capturedRequest = null;
-        $handler = $this->createHandlerCapturingRequest($capturedRequest);
+        $handler         = $this->createHandlerCapturingRequest($capturedRequest);
 
         $request = $this->buildGetRequest('https://example.com/', ['eID' => 'other_extension', 'action' => 'loginOptions']);
 
@@ -107,7 +107,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function noEidDoesNotSetPublicRouteAttribute(): void
     {
         $capturedRequest = null;
-        $handler = $this->createHandlerCapturingRequest($capturedRequest);
+        $handler         = $this->createHandlerCapturingRequest($capturedRequest);
 
         $request = $this->buildGetRequest('https://example.com/some-page', []);
 
@@ -121,12 +121,13 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function requestAlwaysPassesToNextHandler(): void
     {
         $handlerCalled = false;
-        $handler = $this->createMock(RequestHandlerInterface::class);
-        $response = $this->createStub(ResponseInterface::class);
+        $handler       = $this->createMock(RequestHandlerInterface::class);
+        $response      = $this->createStub(ResponseInterface::class);
         $handler->expects(self::once())
             ->method('handle')
             ->willReturnCallback(function () use (&$handlerCalled, $response): ResponseInterface {
                 $handlerCalled = true;
+
                 return $response;
             });
 
@@ -142,7 +143,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     public function noActionParameterDoesNotSetPublicRouteAttribute(): void
     {
         $capturedRequest = null;
-        $handler = $this->createHandlerCapturingRequest($capturedRequest);
+        $handler         = $this->createHandlerCapturingRequest($capturedRequest);
 
         $request = $this->buildGetRequest('https://example.com/', ['eID' => 'nr_passkeys_fe']);
 
@@ -164,6 +165,7 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     private function buildGetRequest(string $uri, array $queryParams): ServerRequest
     {
         $request = new ServerRequest($uri, 'GET');
+
         return $request->withQueryParams($queryParams);
     }
 
@@ -173,13 +175,15 @@ final class PasskeyPublicRouteResolverTest extends TestCase
     private function createHandlerCapturingRequest(?ServerRequestInterface &$capturedRequest): RequestHandlerInterface
     {
         $response = $this->createStub(ResponseInterface::class);
-        $handler = $this->createStub(RequestHandlerInterface::class);
+        $handler  = $this->createStub(RequestHandlerInterface::class);
         $handler->method('handle')->willReturnCallback(
             function (ServerRequestInterface $req) use (&$capturedRequest, $response): ResponseInterface {
                 $capturedRequest = $req;
+
                 return $response;
             },
         );
+
         return $handler;
     }
 }

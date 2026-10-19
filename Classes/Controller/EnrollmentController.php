@@ -19,6 +19,11 @@ use Throwable;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
+use function assert;
+use function hash_equals;
+use function is_numeric;
+use function is_string;
+
 /**
  * Handles the post-login enrollment interstitial for frontend users.
  *
@@ -46,16 +51,17 @@ final readonly class EnrollmentController
     public function statusAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
-            $site = $this->siteConfigurationService->getCurrentSite($request);
+            $site           = $this->siteConfigurationService->getCurrentSite($request);
             $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
         } catch (Throwable $e) {
             $this->logger->error('Enrollment status: no site context', ['error' => $e->getMessage()]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -64,8 +70,9 @@ final readonly class EnrollmentController
         } catch (Throwable $e) {
             $this->logger->error('Enrollment status: failed to resolve enforcement', [
                 'fe_user_uid' => $feUserUid,
-                'error' => $e->getMessage(),
+                'error'       => $e->getMessage(),
             ]);
+
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -74,12 +81,12 @@ final readonly class EnrollmentController
             : null;
 
         return new JsonResponse([
-            'effectiveLevel' => $status->effectiveLevel,
-            'siteLevel' => $status->siteLevel,
-            'groupLevel' => $status->groupLevel,
-            'passkeyCount' => $status->passkeyCount,
-            'inGracePeriod' => $status->inGracePeriod,
-            'graceDeadline' => $graceDeadlineTs,
+            'effectiveLevel'         => $status->effectiveLevel,
+            'siteLevel'              => $status->siteLevel,
+            'groupLevel'             => $status->groupLevel,
+            'passkeyCount'           => $status->passkeyCount,
+            'inGracePeriod'          => $status->inGracePeriod,
+            'graceDeadline'          => $graceDeadlineTs,
             'recoveryCodesRemaining' => $status->recoveryCodesRemaining,
         ]);
     }
@@ -98,13 +105,13 @@ final readonly class EnrollmentController
     public function skipAction(ServerRequestInterface $request): ResponseInterface
     {
         $feUser = $request->getAttribute('frontend.user');
-        \assert($feUser instanceof FrontendUserAuthentication);
+        assert($feUser instanceof FrontendUserAuthentication);
         /** @var array<string, mixed> $userRow */
-        $userRow = $feUser->user;
-        $feUserUid = \is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
+        $userRow   = $feUser->user;
+        $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
-        $body = $this->getJsonBody($request);
-        $nonce = isset($body['nonce']) && \is_string($body['nonce']) ? $body['nonce'] : '';
+        $body  = $this->getJsonBody($request);
+        $nonce = isset($body['nonce']) && is_string($body['nonce']) ? $body['nonce'] : '';
 
         if ($nonce === '') {
             return new JsonResponse(['error' => 'Missing nonce'], 400);
@@ -112,10 +119,11 @@ final readonly class EnrollmentController
 
         // Validate the nonce against what the middleware stored in the session
         $expectedNonce = $this->getSessionNonce($request);
-        if ($expectedNonce === '' || !\hash_equals($expectedNonce, $nonce)) {
+        if ($expectedNonce === '' || !hash_equals($expectedNonce, $nonce)) {
             $this->logger->warning('Enrollment skip: invalid nonce', [
                 'fe_user_uid' => $feUserUid,
             ]);
+
             return new JsonResponse(['error' => 'Invalid nonce'], 403);
         }
 
@@ -141,7 +149,7 @@ final readonly class EnrollmentController
         if ($feUserAuth instanceof FrontendUserAuthentication) {
             $value = $feUserAuth->getKey('ses', 'nr_passkeys_fe_enrollment_nonce');
 
-            return \is_string($value) ? $value : '';
+            return is_string($value) ? $value : '';
         }
 
         $this->logger->warning('Enrollment: frontend.user not available for nonce retrieval');

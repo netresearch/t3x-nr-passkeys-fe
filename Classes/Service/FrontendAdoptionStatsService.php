@@ -12,6 +12,10 @@ namespace Netresearch\NrPasskeysFe\Service;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendAdoptionStats;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function is_numeric;
+use function is_string;
+use function round;
+
 /**
  * Computes passkey adoption statistics for frontend users.
  *
@@ -29,11 +33,11 @@ final readonly class FrontendAdoptionStatsService
      */
     public function getStats(string $siteIdentifier = ''): FrontendAdoptionStats
     {
-        $totalUsers = $this->countTotalFeUsers($siteIdentifier);
+        $totalUsers        = $this->countTotalFeUsers($siteIdentifier);
         $usersWithPasskeys = $this->countUsersWithPasskeys($siteIdentifier);
 
         $adoptionPercentage = $totalUsers > 0
-            ? \round(($usersWithPasskeys / $totalUsers) * 100, 1)
+            ? round(($usersWithPasskeys / $totalUsers) * 100, 1)
             : 0.0;
 
         $perGroupStats = $this->getPerGroupStats($siteIdentifier);
@@ -63,7 +67,7 @@ final readonly class FrontendAdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -92,7 +96,7 @@ final readonly class FrontendAdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -113,7 +117,7 @@ final readonly class FrontendAdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -146,7 +150,7 @@ final readonly class FrontendAdoptionStatsService
 
             $result = $queryBuilder->executeQuery()->fetchOne();
 
-            return \is_numeric($result) ? (int) $result : 0;
+            return is_numeric($result) ? (int) $result : 0;
         }
 
         $result = $queryBuilder
@@ -155,7 +159,7 @@ final readonly class FrontendAdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -183,7 +187,7 @@ final readonly class FrontendAdoptionStatsService
 
         $result = $queryBuilder->executeQuery()->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -198,7 +202,7 @@ final readonly class FrontendAdoptionStatsService
     {
         // Fetch all active fe_groups
         $groupQb = $this->connectionPool->getQueryBuilderForTable('fe_groups');
-        $groups = $groupQb
+        $groups  = $groupQb
             ->select('uid', 'title', 'passkey_enforcement')
             ->from('fe_groups')
             ->executeQuery()
@@ -211,15 +215,15 @@ final readonly class FrontendAdoptionStatsService
         // Build group metadata map
         $stats = [];
         foreach ($groups as $group) {
-            $groupUid = (string) (int) ($group['uid'] ?? 0);
-            $groupTitle = \is_string($group['title'] ?? null) ? $group['title'] : '';
-            $enforcement = \is_string($group['passkey_enforcement'] ?? null) ? $group['passkey_enforcement'] : 'off';
+            $groupUid    = (string) (int) ($group['uid'] ?? 0);
+            $groupTitle  = is_string($group['title'] ?? null) ? $group['title'] : '';
+            $enforcement = is_string($group['passkey_enforcement'] ?? null) ? $group['passkey_enforcement'] : 'off';
 
             $stats[$groupUid] = [
-                'groupName' => $groupTitle,
-                'userCount' => 0,
+                'groupName'    => $groupTitle,
+                'userCount'    => 0,
                 'withPasskeys' => 0,
-                'enforcement' => $enforcement,
+                'enforcement'  => $enforcement,
             ];
         }
 
@@ -252,6 +256,7 @@ final readonly class FrontendAdoptionStatsService
      * here because this is an admin dashboard endpoint, not a hot path.
      *
      * @param list<array<string, mixed>> $groups
+     *
      * @return array<int, int> Map of group UID to user count
      */
     private function countUsersPerGroup(array $groups): array
@@ -265,7 +270,7 @@ final readonly class FrontendAdoptionStatsService
             }
 
             $queryBuilder = $this->connectionPool->getQueryBuilderForTable('fe_users');
-            $count = $queryBuilder
+            $count        = $queryBuilder
                 ->count('uid')
                 ->from('fe_users')
                 ->where(
@@ -279,7 +284,7 @@ final readonly class FrontendAdoptionStatsService
                 ->executeQuery()
                 ->fetchOne();
 
-            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
+            $result[$groupUid] = is_numeric($count) ? (int) $count : 0;
         }
 
         return $result;
@@ -292,6 +297,7 @@ final readonly class FrontendAdoptionStatsService
      * compatibility. See {@see countUsersPerGroup()} for rationale on N+1 pattern.
      *
      * @param list<array<string, mixed>> $groups
+     *
      * @return array<int, int> Map of group UID to count of users with passkeys
      */
     private function countUsersWithPasskeysPerGroup(array $groups, string $siteIdentifier): array
@@ -335,8 +341,8 @@ final readonly class FrontendAdoptionStatsService
                 );
             }
 
-            $count = $queryBuilder->executeQuery()->fetchOne();
-            $result[$groupUid] = \is_numeric($count) ? (int) $count : 0;
+            $count             = $queryBuilder->executeQuery()->fetchOne();
+            $result[$groupUid] = is_numeric($count) ? (int) $count : 0;
         }
 
         return $result;

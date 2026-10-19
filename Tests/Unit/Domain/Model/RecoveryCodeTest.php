@@ -33,10 +33,10 @@ final class RecoveryCodeTest extends TestCase
     public function fromArrayCreatesCodeWithAllFields(): void
     {
         $data = [
-            'uid' => 10,
-            'fe_user' => 5,
-            'code_hash' => '$argon2id$hash',
-            'used_at' => 0,
+            'uid'        => 10,
+            'fe_user'    => 5,
+            'code_hash'  => '$argon2id$hash',
+            'used_at'    => 0,
             'created_at' => 1700000000,
         ];
 
@@ -94,7 +94,7 @@ final class RecoveryCodeTest extends TestCase
     #[Test]
     public function toArrayContainsAllExpectedKeys(): void
     {
-        $code = new RecoveryCode();
+        $code  = new RecoveryCode();
         $array = $code->toArray();
 
         self::assertArrayHasKey('uid', $array);

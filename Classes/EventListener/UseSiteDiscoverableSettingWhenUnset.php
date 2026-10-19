@@ -12,6 +12,8 @@ namespace Netresearch\NrPasskeysFe\EventListener;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Extbase\Event\Configuration\BeforeFlexFormConfigurationOverrideEvent;
 
+use function is_array;
+
 /**
  * Lets the login plugin follow the discoverableEnabled constant unless the
  * content element chose a value of its own.
@@ -38,7 +40,7 @@ final readonly class UseSiteDiscoverableSettingWhenUnset
 
         $flexForm = $event->getFlexFormConfiguration();
         $settings = $flexForm['settings'] ?? null;
-        if (!\is_array($settings) || ($settings['discoverableEnabled'] ?? null) !== '') {
+        if (!is_array($settings) || ($settings['discoverableEnabled'] ?? null) !== '') {
             return;
         }
 

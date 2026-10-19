@@ -11,11 +11,11 @@ use Netresearch\NrPasskeysFe\Controller\AdminModuleController;
 
 return [
     'nr_passkeys_fe' => [
-        'parent' => 'site',
-        'access' => 'admin',
+        'parent'         => 'site',
+        'access'         => 'admin',
         'iconIdentifier' => 'nr-passkeys-fe-module',
-        'labels' => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_mod.xlf',
-        'routes' => [
+        'labels'         => 'LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_mod.xlf',
+        'routes'         => [
             '_default' => [
                 'target' => AdminModuleController::class . '::dashboardAction',
             ],

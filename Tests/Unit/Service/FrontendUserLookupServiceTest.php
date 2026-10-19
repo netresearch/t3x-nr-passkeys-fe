@@ -30,7 +30,7 @@ final class FrontendUserLookupServiceTest extends TestCase
     {
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
-        $this->subject = new FrontendUserLookupService($this->connectionPool);
+        $this->subject        = new FrontendUserLookupService($this->connectionPool);
     }
 
     // ---------------------------------------------------------------

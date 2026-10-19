@@ -118,7 +118,7 @@ final class FrontendEnforcementStatusTest extends TestCase
     #[DataProvider('secondsToTheDeadline')]
     public function graceDaysRemainingCountsStartedPeriodsOf24Hours(int $secondsLeft, int $expected): void
     {
-        $now = new DateTimeImmutable('2026-10-24 10:00', new DateTimeZone('Europe/Berlin'));
+        $now    = new DateTimeImmutable('2026-10-24 10:00', new DateTimeZone('Europe/Berlin'));
         $status = $this->statusInGrace($now->setTimestamp($now->getTimestamp() + $secondsLeft));
 
         self::assertSame($expected, $status->graceDaysRemaining($now));

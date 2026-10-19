@@ -32,7 +32,7 @@ use TYPO3\CMS\Install\Updates\AbstractListTypeToCTypeUpdate;
  * removal in v15. They stay here until v13 support is dropped, because the
  * v14 names do not exist on v13.
  *
- * @internal Not part of the @api surface; may change without notice.
+ * @internal not part of the @api surface; may change without notice
  */
 #[UpgradeWizard('nrPasskeysFe_pluginListTypeToCType')]
 final class PluginListTypeToCTypeUpdateWizard extends AbstractListTypeToCTypeUpdate
@@ -57,7 +57,7 @@ final class PluginListTypeToCTypeUpdateWizard extends AbstractListTypeToCTypeUpd
     protected function getListTypeToCTypeMapping(): array
     {
         return [
-            'nrpasskeysfe_passkeylogin' => 'nrpasskeysfe_passkeylogin',
+            'nrpasskeysfe_passkeylogin'      => 'nrpasskeysfe_passkeylogin',
             'nrpasskeysfe_passkeymanagement' => 'nrpasskeysfe_passkeymanagement',
             'nrpasskeysfe_passkeyenrollment' => 'nrpasskeysfe_passkeyenrollment',
         ];
