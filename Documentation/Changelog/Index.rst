@@ -9,6 +9,34 @@
 Changelog
 =========
 
+Version 2.0.1
+=============
+
+*Passkey icon fix and metadata*
+
+Bugfixes
+--------
+
+- **The passkey icon on the login forms is drawn in full.** The inline
+  copies of the Material Symbols "passkey" glyph in the felogin template
+  and the standalone login plugin started the key-badge subpath at the
+  wrong position, so the badge was drawn outside the view box and clipped.
+  The path data is now the upstream one.
+
+Other
+-----
+
+- **One extension title everywhere.** The ``composer.json`` description
+  now reads ``<title> - <description>`` with the title and description of
+  ``ext_emconf.php``, which removes the "Composer Manifest" warning in the
+  TYPO3 14.3 Reports module and gives TER, Packagist and docs.typo3.org the
+  same name.
+
+- **Smaller release archives.** Development and agent files
+  (``AGENTS.md`` files below the root, ``package-lock.json``,
+  ``playwright.config.ts``, ``.bestpractices.json``) are no longer part of
+  the release archive.
+
 Version 2.0.0
 =============
 
