@@ -31,6 +31,7 @@ ceremonies, challenge service, rate limiter). See ADR-001. Version: see `ext_emc
 
 ## Global Rules
 - Conventional Commits: `type(scope): subject`
+- **Changelog:** there is no `CHANGELOG.md`; changes are recorded in [`Documentation/Changelog/Index.rst`](Documentation/Changelog/Index.rst), newest first (`Version X.Y.Z` as a title underlined with `=`, a one-line italic summary, then `Bugfixes`, `Other` and similar subsections underlined with `-`). The release PR `chore(release): vX.Y.Z` writes the version's section; feature and fix PRs leave the page alone.
 - `declare(strict_types=1)` in all PHP files
 - Shared code style of `netresearch/typo3-ci-workflows` (@PER-CS3x0 + @Symfony) via php-cs-fixer, `Build/.php-cs-fixer.php`
 - PHPStan level 10 (do not lower)
