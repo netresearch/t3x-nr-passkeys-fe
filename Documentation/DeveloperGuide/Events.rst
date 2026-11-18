@@ -94,7 +94,10 @@ Dispatched after a passkey is successfully enrolled.
         ) {}
     }
 
-Use cases: confirmation emails, audit logs, enforcement re-evaluation.
+The extension sends the account owner an enrollment notification for this event.
+Integrators with an existing confirmation-mail listener can remove their duplicate
+notification or replace the built-in listener. Further uses include audit logs
+and enforcement re-evaluation.
 
 PasskeyRemovedEvent
 --------------------
