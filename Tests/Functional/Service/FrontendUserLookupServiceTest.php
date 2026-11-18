@@ -13,12 +13,35 @@ use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Configuration\SiteConfiguration;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
+use TYPO3\CMS\Core\Site\SiteFinder;
 
 #[CoversClass(FrontendUserLookupService::class)]
 final class FrontendUserLookupServiceTest extends AbstractPasskeyFunctionalTestCase
 {
+    #[Test]
+    public function anEmptyFolderListUsesOnlyTheHomeSite(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
+        $db = $this->getConnectionPool()->getConnectionForTable('pages');
+        $db->insert('pages', ['uid' => 1, 'pid' => 0, 'title' => 'Home', 'is_siteroot' => 1, 'doktype' => 1, 'slug' => '/']);
+        $directory = Environment::getConfigPath() . '/sites/home';
+        if (!is_dir($directory)) {
+            mkdir($directory, 0o777, true);
+        }
+
+        copy(__DIR__ . '/Fixtures/home-site.yaml', $directory . '/config.yaml');
+        file_put_contents($directory . '/settings.yaml', "nr_passkeys_fe.userStoragePids: []\n");
+        $this->get(SiteConfiguration::class)->siteConfigurationChanged();
+        $site   = $this->get(SiteFinder::class)->getSiteByIdentifier('home');
+        $lookup = $this->get(FrontendUserLookupService::class);
+        self::assertSame(1, $lookup->ownerStoragePid(1, $site));
+        self::assertNull($lookup->ownerStoragePid(3, $site));
+    }
+
     #[Test]
     public function onlyOneActiveAccountInAnAllowedFolderCanBeSelected(): void
     {

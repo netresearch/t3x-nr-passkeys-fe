@@ -73,6 +73,10 @@ final readonly class RecoveryController
                 return new JsonResponse(['error' => 'A configured site is required'], 403);
             }
 
+            if ($this->userLookupService->ownerStoragePid($feUserUid, $site) === null) {
+                return new JsonResponse(['error' => 'Account unavailable for this site'], 403);
+            }
+
             $codes = $this->recoveryCodeService->generate($feUserUid, site: $site);
         } catch (Throwable $e) {
             $this->logger->error('FE recovery code generation failed', [

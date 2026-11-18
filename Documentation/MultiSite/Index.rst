@@ -117,10 +117,18 @@ Frontend account folders
 By default, a frontend account's current storage page must belong to the
 request's TYPO3 site. For shared user folders configure the comma-separated
 site setting nr_passkeys_fe.userStoragePids with the permitted page IDs.
-Set this for each participating site before rollout. Credential use also
+An omitted value, an empty string, or an empty list uses the site's own
+page tree. To share a folder, list its page ID on each participating site.
+Credential use also
 requires its original registration site. Existing credentials without a
 stored folder are checked against their owner's current folder and the
 recorded site on each login.
+
+On an enforced site, an enrolled account needs a session established on
+that site with a passkey or a permitted recovery code. Signing in with a
+password allows initial enrollment. After registering the first passkey,
+sign in with it to continue. Existing sessions without a site-bound proof
+require a fresh login when the site enforces passkeys.
 
 Recovery codes and rollout
 --------------------------

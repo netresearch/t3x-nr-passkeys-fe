@@ -101,6 +101,19 @@ final class RecoveryControllerTest extends TestCase
     }
 
     #[Test]
+    public function generateActionChecksTheCurrentOwnerFolderBeforeReplacingCodes(): void
+    {
+        $lookup = $this->createStub(FrontendUserLookupService::class);
+        $lookup->method('ownerStoragePid')->willReturn(null);
+        $codes = $this->createMock(RecoveryCodeService::class);
+        $codes->expects(self::never())->method('generate');
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+        $controller = new RecoveryController($codes, $this->rateLimiterService, $lookup, $dispatcher, new NullLogger());
+        self::assertSame(403, $controller->generateAction($this->buildRequestWithUser(42))->getStatusCode());
+    }
+
+    #[Test]
     public function generateActionReturns500OnException(): void
     {
         $this->recoveryCodeService->method('generate')

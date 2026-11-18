@@ -89,7 +89,7 @@ final readonly class FrontendUserLookupService
         }
 
         $folders = SiteConfigurationService::setting($site, 'userStoragePids');
-        if ($folders !== null && $folders !== '') {
+        if ($folders !== null && $folders !== '' && $folders !== []) {
             $values = is_string($folders) ? explode(',', $folders) : $folders;
             if (!is_array($values)) {
                 return false;
