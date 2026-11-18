@@ -478,6 +478,7 @@
         return true;
       }
 
+      U.hideStatus(statusEl);
       U.showError(ctx.errorEl, U.t('js.login.error.missingForm', 'Sign-in could not be completed. Reload the login page and try again.'));
       return false;
     }

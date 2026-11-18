@@ -137,6 +137,24 @@ describe('conditional UI ceremony (frontend)', () => {
         expect(optionsCalls.length).toBeGreaterThanOrEqual(2);
     });
 
+    it('clears the verifying status when autofill cannot submit the login ticket', async () => {
+        const get = installWebAuthnStub(() => new Promise(() => {}));
+        get.mockResolvedValueOnce(fakeAssertion());
+        vi.stubGlobal('fetch', vi.fn(async (url) => ({
+            ok: true,
+            status: 200,
+            json: async () => String(url).includes('loginOptions')
+                ? optionsPayload()
+                : { status: 'ok', loginToken: 'ticket' },
+        })));
+
+        await loadModule();
+        await settle(60);
+
+        expect(document.querySelector('.nr-passkeys-fe-login__error').textContent).toContain('Sign-in could not be completed');
+        expect(document.querySelector('.nr-passkeys-fe-login__status').style.display).toBe('none');
+    });
+
     it('refreshes the challenge before it expires while the field is unfocused', async () => {
         vi.useFakeTimers();
         const get = installWebAuthnStub(() => new Promise(() => {}));
