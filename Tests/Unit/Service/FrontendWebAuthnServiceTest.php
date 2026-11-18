@@ -13,9 +13,11 @@ use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -24,6 +26,7 @@ use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\AttestationStatement\AttestationObject;
 use Webauthn\AttestationStatement\AttestationStatement;
 use Webauthn\AuthenticatorAttestationResponse;
@@ -370,6 +373,40 @@ final class FrontendWebAuthnServiceTest extends TestCase
                 'userHandle'        => null,
             ],
         ], JSON_THROW_ON_ERROR);
+    }
+
+    /** @return array<string, array{string, int, int, int, string}> */
+    public static function unusableCredentials(): array
+    {
+        return [
+            'different site'      => ['other', 12, 0, 1700200036, 'Credential outside the current site'],
+            'revoked key'         => ['main', 12, 1, 1700200033, 'Credential has been revoked'],
+            'owner moved folders' => ['main', 18, 0, 1700200036, 'Credential outside the configured user pool'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unusableCredentials')]
+    public function existingCredentialsMustStillBelongToTheCurrentSiteAndOwnerFolder(string $site, int $folder, int $revoked, int $code, string $message): void
+    {
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $this->credentialRepository->method('findByCredentialId')->willReturn(new FrontendCredential(
+            feUser: 42,
+            credentialId: 'stored-key',
+            siteIdentifier: $site,
+            storagePid: $folder,
+            revokedAt: $revoked,
+        ));
+        if ($site === 'main' && $revoked === 0) {
+            $owners = $this->createStub(FrontendUserLookupService::class);
+            $owners->method('ownerStoragePid')->willReturn(12);
+            GeneralUtility::addInstance(FrontendUserLookupService::class, $owners);
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode($code);
+        $this->expectExceptionMessage($message);
+        $this->subject->verifyAssertionResponse($this->buildAssertionJson('stored-key'), 'challenge', $this->site);
     }
 
     #[Test]
