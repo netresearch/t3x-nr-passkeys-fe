@@ -49,6 +49,20 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
     // ---------------------------------------------------------------
 
     #[Test]
+    public function protectedRemovalChecksTheOwnerAndKeepsOneActivePasskeyInTheSite(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        self::assertFalse($this->repository->removeOwned(4, 1, true, 'site-a'));
+        self::assertSame(2, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned(1, 1, true, 'site-a'));
+        self::assertFalse($this->repository->removeOwned(2, 1, true, 'site-a'));
+        self::assertSame(1, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned(2, 1, false, 'site-a'));
+        self::assertSame(0, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertSame(1, $this->repository->countByFeUser(2, 'site-a'));
+    }
+
+    #[Test]
     public function findByCredentialIdReturnsCredentialWhenFound(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
