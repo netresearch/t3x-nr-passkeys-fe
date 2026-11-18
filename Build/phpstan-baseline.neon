@@ -91,11 +91,6 @@ parameters:
 			count: 1
 			path: ../Classes/Service/RecoveryCodeService.php
 
-		-
-			message: '#^Cannot call method get\(\) on mixed\.$#'
-			identifier: method.nonObject
-			count: 4
-			path: ../Classes/Service/SiteConfigurationService.php
 
 		-
 			message: '#^Variable method call on Netresearch\\NrPasskeysFe\\Controller\\EnrollmentController\|Netresearch\\NrPasskeysFe\\Controller\\LoginController\|Netresearch\\NrPasskeysFe\\Controller\\ManagementController\|Netresearch\\NrPasskeysFe\\Controller\\RecoveryController\.$#'
