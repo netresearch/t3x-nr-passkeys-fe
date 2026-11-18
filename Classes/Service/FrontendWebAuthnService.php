@@ -126,21 +126,7 @@ final class FrontendWebAuthnService
             $existingCredentials,
         );
 
-        $authenticatorSelection = AuthenticatorSelectionCriteria::create(
-            userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
-            residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
-        );
-
-        $options = PublicKeyCredentialCreationOptions::create(
-            rp: $rp,
-            user: $user,
-            challenge: $this->ceremonyChallenge($challenge, $site, $feUserUid),
-            pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
-            authenticatorSelection: $authenticatorSelection,
-            attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
-            excludeCredentials: $excludeCredentials,
-            timeout: 60000,
-        );
+        $options = $this->registrationCeremonyOptions($rp, $user, $challenge, $site, $feUserUid, $excludeCredentials);
 
         return [
             'options'     => $options,
@@ -170,17 +156,7 @@ final class FrontendWebAuthnService
             displayName: '',
         );
 
-        $creationOptions = PublicKeyCredentialCreationOptions::create(
-            rp: $rp,
-            user: $user,
-            challenge: $this->ceremonyChallenge($challenge, $site, $feUserUid),
-            pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
-            authenticatorSelection: AuthenticatorSelectionCriteria::create(
-                userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
-                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
-            ),
-            attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
-        );
+        $creationOptions = $this->registrationCeremonyOptions($rp, $user, $challenge, $site, $feUserUid);
 
         $publicKeyCredential = $this->getSerializer()->deserialize(
             $attestationJson,
@@ -510,6 +486,30 @@ final class FrontendWebAuthnService
         }
 
         return $enabled;
+    }
+
+    /** @param list<PublicKeyCredentialDescriptor> $excludeCredentials */
+    private function registrationCeremonyOptions(
+        PublicKeyCredentialRpEntity $rp,
+        PublicKeyCredentialUserEntity $user,
+        string $challenge,
+        SiteInterface $site,
+        int $owner,
+        array $excludeCredentials = [],
+    ): PublicKeyCredentialCreationOptions {
+        return PublicKeyCredentialCreationOptions::create(
+            rp: $rp,
+            user: $user,
+            challenge: $this->ceremonyChallenge($challenge, $site, $owner),
+            pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
+            authenticatorSelection: AuthenticatorSelectionCriteria::create(
+                userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
+            ),
+            attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
+            excludeCredentials: $excludeCredentials,
+            timeout: 60000,
+        );
     }
 
     private function ceremonyChallenge(string $raw, SiteInterface $site, ?int $registrationOwner = null): string

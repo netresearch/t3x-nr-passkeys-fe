@@ -144,6 +144,27 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
+    public function registrationVerificationRequiresTheAuthenticatorsUvFlag(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $options = $this->subject->createRegistrationOptions(1, 'owner', 'challenge', $this->site)['options'];
+        $record = $this->createStub(CredentialRecord::class);
+        $client = $this->createStub(\Webauthn\CollectedClientData::class);
+        $statement = $this->createStub(\Webauthn\AttestationStatement\AttestationStatement::class);
+        $step = new \Webauthn\CeremonyStep\CheckUserVerification();
+        foreach ([true, false] as $verified) {
+            $flags = \Webauthn\AuthenticatorData::FLAG_UP | ($verified ? \Webauthn\AuthenticatorData::FLAG_UV : 0);
+            $authData = \Webauthn\AuthenticatorData::create('', '', chr($flags), 0);
+            $object = \Webauthn\AttestationStatement\AttestationObject::create('', $statement, $authData);
+            $response = \Webauthn\AuthenticatorAttestationResponse::create($client, $object);
+            if (!$verified) {
+                $this->expectException(\Webauthn\Exception\AuthenticatorResponseVerificationException::class);
+            }
+            $step->process($record, $response, $options, null, 'example.com');
+        }
+    }
+
+    #[Test]
     public function registrationChallengeIsBoundToOwnerAndCeremony(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');

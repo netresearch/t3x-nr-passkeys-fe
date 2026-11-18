@@ -5,6 +5,7 @@ import {
     loginWithPassword,
     removeAllCredentials,
     registerPasskey,
+    signInWithRegisteredPasskey,
     removeVirtualAuthenticator,
 } from './fixtures';
 
@@ -47,6 +48,7 @@ test.describe('Passkey enrollment plugin', () => {
         await expect(plugin.getByRole('heading', { name: 'Passkey set up successfully!' })).toBeVisible();
         await expect(page).toHaveURL(/\/enrollment$/);
 
+        await signInWithRegisteredPasskey(page);
         await removeAllCredentials(page);
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
@@ -94,9 +96,9 @@ test.describe('Passkey enrollment plugin', () => {
         await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);
     });
 
-    test('a user who has registered a passkey is not told to enroll any more', async ({ page }) => {
+    test('a user who has registered a passkey is not told to enroll any more', async ({ page }, testInfo) => {
         const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
-        await loginWithPassword(page, 'e2e_enforced');
+        await loginWithPassword(page, `e2e_enforced_enroll_${testInfo.retry}`);
         await page.goto('/enrollment', { waitUntil: 'load' });
 
         const plugin = page.locator('[data-nr-passkeys-fe="enrollment"]');
@@ -111,9 +113,7 @@ test.describe('Passkey enrollment plugin', () => {
         await expect(required).toHaveCount(0);
         await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);
 
-        // An enforced user holding a passkey may no longer log in with the
-        // password, so the credential goes before any later spec needs that.
-        await removeAllCredentials(page);
+        // Each attempt owns its seeded account. The final enforced key stays protected.
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 

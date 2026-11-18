@@ -79,6 +79,14 @@ final class FrontendEnforcementServiceTest extends TestCase
     // ---------------------------------------------------------------
 
     #[Test]
+    public function invalidSitePolicyPreventsAWeakerFallback(): void
+    {
+        $this->siteConfigService->method('getEnforcementLevel')->willReturn('invalid');
+        $this->expectException(RuntimeException::class);
+        $this->subject->getStatus(1, 'main', $this->site);
+    }
+
+    #[Test]
     public function getStatusReturnsOffWhenSiteAndGroupAreOff(): void
     {
         $this->siteConfigService->method('getEnforcementLevel')->willReturn('off');

@@ -299,8 +299,14 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             if (!SiteConfigurationService::allowsRecoveryMethod($site, 'password')) {
                 return 0;
             }
-            $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
-            $status         = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
+            try {
+                $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
+                $status = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
+            } catch (Throwable $error) {
+                $this->getLogger()->error('Frontend login policy unavailable', ['fe_user_uid' => $uid, 'exception' => $error::class]);
+
+                return 0;
+            }
 
             if ($status->passkeyCount > 0 && $status->effectiveLevel === 'enforced') {
                 $this->getLogger()->warning('FE password login blocked by enforcement', [

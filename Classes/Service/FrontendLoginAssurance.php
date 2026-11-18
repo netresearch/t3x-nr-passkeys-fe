@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysFe\Service;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\Event\AfterUserLoggedInEvent;
@@ -48,14 +49,22 @@ final class FrontendLoginAssurance
     public function complete(AfterUserLoggedInEvent $event): void
     {
         $user = $event->getUser();
-        if (!$user instanceof FrontendUserAuthentication || !isset($this->pending[$user])) {
+        $request = $event->getRequest();
+        if ($user instanceof FrontendUserAuthentication && $request !== null) {
+            $this->completeForRequest($user, $request);
+        }
+    }
+
+    public function completeForRequest(FrontendUserAuthentication $user, ServerRequestInterface $request): void
+    {
+        if (!isset($this->pending[$user])) {
             return;
         }
         $proof = $this->pending[$user];
         unset($this->pending[$user]);
-        $site = $event->getRequest()?->getAttribute('site');
+        $site = $request->getAttribute('site');
         $uid  = $user->getUserId() ?? 0;
-        if (!$site instanceof SiteInterface || $uid <= 0 || ($proof['uid'] !== 0 && $proof['uid'] !== $uid)) {
+        if (!$site instanceof SiteInterface || $uid <= 0 || $user->getSession()->getUserId() !== $uid || ($proof['uid'] !== 0 && $proof['uid'] !== $uid)) {
             return;
         }
         $credential = $proof['credential'];

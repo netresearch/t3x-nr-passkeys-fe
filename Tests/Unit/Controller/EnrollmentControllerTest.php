@@ -159,7 +159,7 @@ final class EnrollmentControllerTest extends TestCase
         $feUser->user = ['uid' => 42];
         $feUser->method('getKey')
             ->with('ses', 'nr_passkeys_fe_enrollment_nonce')
-            ->willReturn($nonce);
+            ->willReturn(['scope' => ['uid' => 42, 'site' => 'main'], 'nonce' => $nonce]);
         $feUser->expects($this->exactly(2))
             ->method('setKey')
             ->willReturnCallback(function (string $type, string $key, mixed $value): void {

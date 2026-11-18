@@ -117,6 +117,7 @@ final class FrontendEnforcementService
         $event = new EnforcementLevelResolvedEvent($feUserUid, $effectiveLevel);
         $this->eventDispatcher->dispatch($event);
         $effectiveLevel = $event->getEffectiveLevel();
+        $this->levelSeverity($effectiveLevel);
 
         // Calculate grace period
         $graceValue       = $userRow['passkey_grace_period_start'] ?? 0;
@@ -264,7 +265,7 @@ final class FrontendEnforcementService
 
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
-            $level            = is_string($enforcementValue) ? $enforcementValue : 'off';
+            $level            = is_string($enforcementValue) ? $enforcementValue : '';
             $levelSeverity    = $this->levelSeverity($level);
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
@@ -290,6 +291,6 @@ final class FrontendEnforcementService
 
     private function levelSeverity(string $level): int
     {
-        return self::SEVERITY_MAP[$level] ?? 0;
+        return self::SEVERITY_MAP[$level] ?? throw new \RuntimeException('Invalid passkey enforcement policy');
     }
 }

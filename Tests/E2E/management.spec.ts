@@ -4,6 +4,7 @@ import {
     eidUrl,
     loginWithPassword,
     registerPasskey,
+    signInWithRegisteredPasskey,
     removeAllCredentials,
     removeVirtualAuthenticator,
 } from './fixtures';
@@ -58,10 +59,7 @@ test.describe('Passkey management plugin', () => {
             data: { uid: credentials[0].uid },
         });
         expect(staleProof.status()).toBe(403);
-        await page.context().clearCookies();
-        await page.goto('/login-plugin');
-        await page.locator('#nr-passkeys-fe-login-btn').click();
-        await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status(), { timeout: 30_000 }).toBe(200);
+        await signInWithRegisteredPasskey(page);
 
         const removed = await page.request.post(eidUrl('manageRemove'), {
             headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },

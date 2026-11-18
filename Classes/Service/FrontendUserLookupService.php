@@ -85,7 +85,7 @@ final readonly class FrontendUserLookupService
         if ($pid <= 0 || !$site instanceof Site) {
             return false;
         }
-        $folders = $site->getSettings()->get('nr_passkeys_fe.userStoragePids');
+        $folders = SiteConfigurationService::setting($site, 'userStoragePids');
         if ($folders !== null && $folders !== '') {
             $values = is_string($folders) ? explode(',', $folders) : $folders;
             if (!is_array($values)) {

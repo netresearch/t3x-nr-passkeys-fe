@@ -97,7 +97,7 @@ final readonly class SiteConfigurationService
         $settings = $site->getSettings();
         $level    = $settings->get('nr_passkeys_fe.enforcementLevel', 'off');
 
-        return is_string($level) ? $level : 'off';
+        return is_string($level) ? $level : throw new RuntimeException('Invalid site enforcement policy');
     }
 
     /**
@@ -152,9 +152,18 @@ final readonly class SiteConfigurationService
         if ($method === 'recovery_code' && !\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration::class)->isRecoveryCodesEnabled()) {
             return false;
         }
-        $methods = $site->getSettings()->get('nr_passkeys_fe.enabledRecoveryMethods', ['password', 'recovery_code']);
+        $methods = self::setting($site, 'enabledRecoveryMethods', ['password', 'recovery_code']);
 
         return is_array($methods) && in_array($method, $methods, true);
+    }
+
+    public static function setting(SiteInterface $site, string $key, mixed $default = null): mixed
+    {
+        $settings = $site->getSettings();
+        $section = $settings->getAll()['nr_passkeys_fe'] ?? [];
+        $fallback = is_array($section) && array_key_exists($key, $section) ? $section[$key] : $default;
+
+        return $settings->get('nr_passkeys_fe.' . $key, $fallback);
     }
 
     private function isStandardPort(string $scheme, int $port): bool

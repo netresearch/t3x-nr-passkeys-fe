@@ -74,10 +74,19 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function authenticatedRequestRequiresASite(): void
+    {
+        $request = $this->buildRequest($this->createAuthenticatedFeUser(42));
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::never())->method('handle');
+        self::assertSame(503, $this->subject->process($request, $handler)->getStatusCode());
+    }
+
+    #[Test]
     public function passesThroughWhenUserHasPasskeys(): void
     {
         $feUser  = $this->createAuthenticatedFeUser(42);
-        $request = $this->buildRequest($feUser);
+        $request = $this->buildRequest($feUser, site: $this->createSite('main', 'https://example.com/', '/enroll'));
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(2);
@@ -95,10 +104,11 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
         );
 
         $feUser  = $this->createAuthenticatedFeUser(42);
-        $request = $this->buildRequest($feUser);
+        $request = $this->buildRequest($feUser, site: $this->createSite('main', 'https://example.com/', '/enroll'));
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
+        $this->enforcementService->method('getStatus')->willReturn($this->makeStatus('encourage'));
         $this->subject->process($request, $handler);
     }
 

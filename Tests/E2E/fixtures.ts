@@ -200,15 +200,23 @@ export async function registerPasskey(
 }
 
 /** Remove every credential the seeded user holds, so specs do not inherit each other's. */
+export async function signInWithRegisteredPasskey(page: Page): Promise<void> {
+    await logOut(page);
+    await page.goto('/login-plugin');
+    await page.locator('#nr-passkeys-fe-login-btn').click();
+    await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status(), { timeout: 30_000 }).toBe(200);
+}
+
 export async function removeAllCredentials(page: Page): Promise<void> {
     const listResponse = await page.request.get(eidUrl('manageList'));
-    if (!listResponse.ok()) return;
+    expect(listResponse.status(), await listResponse.text()).toBe(200);
 
     const data = await listResponse.json();
     for (const credential of data.credentials || []) {
-        await page.request.post(eidUrl('manageRemove'), {
+        const removed = await page.request.post(eidUrl('manageRemove'), {
             headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credential.uid },
         });
+        expect(removed.status(), await removed.text()).toBe(200);
     }
 }

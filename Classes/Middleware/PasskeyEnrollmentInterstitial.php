@@ -50,6 +50,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         private FrontendCredentialRepository $credentialRepository,
         private SiteConfigurationService $siteConfigurationService,
         private FrontendConfiguration $frontendConfiguration,
+        private ?\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance $loginAssurance = null,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -60,6 +61,9 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             return $handler->handle($request);
         }
 
+        // Core may omit AfterUserLoggedInEvent for accounts without frontend groups.
+        // Only an active login observed on this request has a pending proof.
+        $this->loginAssurance?->completeForRequest($feUser, $request);
         $userRow = $feUser->user;
         if (!is_array($userRow)) {
             return $handler->handle($request);
@@ -83,8 +87,8 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Get the current site
         $site = $request->getAttribute('site');
-        if (!$site instanceof SiteInterface) {
-            return $handler->handle($request);
+        if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site) {
+            return new \TYPO3\CMS\Core\Http\HtmlResponse('Login policy is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
         }
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
