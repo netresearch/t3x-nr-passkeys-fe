@@ -158,7 +158,8 @@ final readonly class SiteConfigurationService
             return false;
         }
 
-        $methods = self::setting($site, 'enabledRecoveryMethods', ['password', 'recovery_code']);
+        $methods = $site->getConfiguration()['nr_passkeys_fe_localRecoveryMethods']
+            ?? self::setting($site, 'enabledRecoveryMethods', ['password', 'recovery_code']);
 
         return is_array($methods) && in_array($method, $methods, true);
     }
