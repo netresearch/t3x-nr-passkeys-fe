@@ -315,6 +315,20 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
+    public function aLegacyRegistrationMustRestartWhileAnExistingLoginChallengeRemainsValid(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.test');
+        $this->siteConfigService->method('getOrigin')->willReturn('https://example.test');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $registration = $this->subject->createRegistrationOptions(42, 'user', 'upgrade-check', $this->site);
+        $login        = $this->subject->createDiscoverableAssertionOptions('upgrade-check', $this->site);
+
+        // These two challenge vectors were issued by the UID-only registration format.
+        self::assertNotSame('0b0a7533a8778a4691dfaaae7402bd4a9511fc418333ca1cbd7a6202c0c0e9de', bin2hex($registration['options']->challenge));
+        self::assertSame('92873b977dc3cc786f6b16f2ee307bd709adcd3bf88d95ca5ae1ea1f60f9cc82', bin2hex($login['options']->challenge));
+    }
+
+    #[Test]
     public function sitesSharingAnRpIdIssueDistinctHandlesToTheSameAccount(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');

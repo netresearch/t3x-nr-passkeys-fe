@@ -127,7 +127,7 @@ final class FrontendWebAuthnService
             $existingCredentials,
         );
 
-        $options = $this->registrationCeremonyOptions($rp, $user, $challenge, $site, $feUserUid, $excludeCredentials);
+        $options = $this->registrationCeremonyOptions($rp, $user, $challenge, $site, $excludeCredentials);
 
         return [
             'options'     => $options,
@@ -157,7 +157,7 @@ final class FrontendWebAuthnService
             displayName: '',
         );
 
-        $creationOptions = $this->registrationCeremonyOptions($rp, $user, $challenge, $site, $feUserUid);
+        $creationOptions = $this->registrationCeremonyOptions($rp, $user, $challenge, $site);
 
         $publicKeyCredential = $this->getSerializer()->deserialize(
             $attestationJson,
@@ -497,13 +497,12 @@ final class FrontendWebAuthnService
         PublicKeyCredentialUserEntity $user,
         string $challenge,
         SiteInterface $site,
-        int $owner,
         array $excludeCredentials = [],
     ): PublicKeyCredentialCreationOptions {
         return PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
-            challenge: $this->ceremonyChallenge($challenge, $site, $owner),
+            challenge: $this->ceremonyChallenge($challenge, $site, $user->id),
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
             authenticatorSelection: AuthenticatorSelectionCriteria::create(
                 userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
@@ -515,16 +514,16 @@ final class FrontendWebAuthnService
         );
     }
 
-    private function ceremonyChallenge(string $raw, SiteInterface $site, ?int $registrationOwner = null): string
+    private function ceremonyChallenge(string $raw, SiteInterface $site, ?string $registrationHandle = null): string
     {
         $context = [
             'nr_passkeys_fe/v1',
-            $registrationOwner === null ? 'authentication' : 'registration',
-            $registrationOwner,
+            $registrationHandle === null ? 'authentication' : 'registration',
+            $registrationHandle === null ? null : bin2hex($registrationHandle),
             $this->siteConfigurationService->getSiteIdentifier($site),
             $this->siteConfigurationService->getRpId($site),
             $this->siteConfigurationService->getOrigin($site),
-            $registrationOwner === null ? [] : $this->supportedAlgorithms(),
+            $registrationHandle === null ? [] : $this->supportedAlgorithms(),
             bin2hex($raw),
         ];
 
