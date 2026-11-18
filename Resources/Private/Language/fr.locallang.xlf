@@ -895,6 +895,10 @@
                 <source>Registration failed. Please try again.</source>
                 <target>L'enregistrement a échoué. Veuillez réessayer.</target>
             </trans-unit>
+            <trans-unit id="js.enrollment.error.postponeFailed" resname="js.enrollment.error.postponeFailed">
+                <source>Could not postpone enrollment. Reload and try again.</source>
+                <target>Impossible de reporter l’inscription. Rechargez la page et réessayez.</target>
+            </trans-unit>
             <trans-unit id="js.enrollment.error.startFailed" resname="js.enrollment.error.startFailed">
                 <source>Failed to start registration. Please try again.</source>
                 <target>Impossible de démarrer l'enregistrement. Veuillez réessayer.</target>

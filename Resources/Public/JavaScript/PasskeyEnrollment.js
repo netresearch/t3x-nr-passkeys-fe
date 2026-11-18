@@ -63,7 +63,7 @@
           if (!result.ok) throw new Error();
           window.location.assign(new URL(eidUrl, window.location.href).pathname);
         } catch {
-          U.showError(errorEl, U.t('enrollment.postponeFailed', 'Could not postpone enrollment. Reload and try again.'));
+          U.showError(errorEl, U.t('js.enrollment.error.postponeFailed', 'Could not postpone enrollment. Reload and try again.'));
         }
       });
     }
