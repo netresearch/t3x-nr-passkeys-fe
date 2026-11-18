@@ -48,6 +48,11 @@ function createRecoveryContainer({ eidUrl = EID_URL, username = 'jdoe' } = {}) {
 
     container.append(form, status, error);
     document.body.appendChild(container);
+    const login = document.createElement('form');
+    login.id = 'nr-passkeys-fe-token-form';
+    login.action = '/login';
+    login.method = 'post';
+    document.body.appendChild(login);
     return { container, form, usernameInput, codeInput, submitBtn, error };
 }
 
@@ -139,6 +144,17 @@ describe('PasskeyRecovery — submitting', () => {
         expect(error.textContent).toBe('Please enter your username.');
     });
 
+    it('preserves the unused code if the login form is unavailable', async () => {
+        const { form, codeInput, error } = createRecoveryContainer();
+        document.getElementById('nr-passkeys-fe-token-form').remove();
+        await loadModules('PasskeyUtils.js', 'PasskeyRecovery.js');
+        type(codeInput, 'ABCD1234');
+        await submit(form);
+        expect(fetch).not.toHaveBeenCalled();
+        expect(codeInput.value).toBe('ABCD-1234');
+        expect(error.textContent).toContain('Reload the login page');
+    });
+
     it('posts username and code to recoveryVerify and hands the token to felogin', async () => {
         const { form, codeInput } = createRecoveryContainer();
         await loadModules('PasskeyUtils.js', 'PasskeyRecovery.js');
@@ -163,6 +179,7 @@ describe('PasskeyRecovery — submitting', () => {
         type(codeInput, 'ABCD1234');
         await submit(form);
         expect(error.textContent).toContain('Contact support before using another code');
+        expect(codeInput.value).toBe('');
         expect(submitBtn.disabled).toBe(false);
     });
 

@@ -39,6 +39,31 @@
     return (window.NrPasskeysFe.lang && window.NrPasskeysFe.lang[key]) || fallback;
   };
 
+  // Check the actual target again before transferring a single-use login ticket.
+  window.NrPasskeysFe.getLoginTokenForm = function () {
+    // felogin's own form where the plugin sits beside it, and the plugin's
+    // hidden form where it stands alone. Both are rendered by TYPO3 and carry
+    // the `__RequestToken` a frontend login is only accepted with — a form
+    // assembled here would be rejected silently, leaving the visitor anonymous
+    // after a ceremony that succeeded.
+    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
+      || document.querySelector('#nr-passkeys-fe-felogin-token-form')
+      || document.querySelector('#nr-passkeys-fe-token-form');
+    if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() !== 'post') {
+      return null;
+    }
+    try {
+      var action = new URL(form.action, document.baseURI);
+      if (action.origin !== window.location.origin || !['https:', 'http:'].includes(action.protocol)) {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+
+    return form;
+  };
+
   /**
    * Submit a passkey login token via the felogin form to establish an FE session.
    *
@@ -50,23 +75,8 @@
    */
 
   window.NrPasskeysFe.submitLoginToken = function (token) {
-    // felogin's own form where the plugin sits beside it, and the plugin's
-    // hidden form where it stands alone. Both are rendered by TYPO3 and carry
-    // the `__RequestToken` a frontend login is only accepted with — a form
-    // assembled here would be rejected silently, leaving the visitor anonymous
-    // after a ceremony that succeeded.
-    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
-      || document.querySelector('#nr-passkeys-fe-felogin-token-form')
-      || document.querySelector('#nr-passkeys-fe-token-form');
-    if (!form || form.method.toLowerCase() !== 'post') {
-      return false;
-    }
-    try {
-      var action = new URL(form.action, document.baseURI);
-      if (action.origin !== window.location.origin || !['https:', 'http:'].includes(action.protocol)) {
-        return false;
-      }
-    } catch (e) {
+    var form = window.NrPasskeysFe.getLoginTokenForm();
+    if (!form) {
       return false;
     }
 

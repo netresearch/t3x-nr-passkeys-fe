@@ -106,6 +106,11 @@
       return;
     }
 
+    if (!U.getLoginTokenForm()) {
+      U.showError(errorEl, U.t('js.login.error.missingForm', 'Sign-in could not be completed. Reload the login page and try again.'));
+      return;
+    }
+
     U.setLoading(true, submitBtn, btnText, btnLoading);
 
     try {
@@ -124,6 +129,7 @@
         if (U.submitLoginToken(data.loginToken)) {
           return;
         }
+        codeInput.value = '';
         U.showError(errorEl, U.t('js.recovery.error.missingForm', 'The code was accepted, but sign-in could not be completed. Contact support before using another code.'));
         U.setLoading(false, submitBtn, btnText, btnLoading);
         return;
