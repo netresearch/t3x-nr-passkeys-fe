@@ -330,7 +330,11 @@ test.describe('Passkey tab in the felogin form', () => {
         await second.press('ArrowLeft');
         const password = tabLists.last().getByRole('tab', { name: 'Password' });
         await expect(password).toBeFocused();
-        await expect(page.getByRole('tabpanel', { name: 'Password' })).toBeVisible();
+        const passwordPanel = page.getByRole('tabpanel', { name: 'Password' });
+        await expect(passwordPanel).toBeVisible();
+        await expect(passwordPanel.getByRole('textbox', { name: 'Username', exact: true })).toBeVisible();
+        await expect(passwordPanel.getByLabel('Password', { exact: true })).toBeVisible();
+        await expect(passwordPanel.getByRole('button', { name: 'Login', exact: true })).toBeVisible();
         await expect(first).toHaveAttribute('aria-selected', 'true');
         await password.press('ArrowRight');
         await expect(second).toBeFocused();

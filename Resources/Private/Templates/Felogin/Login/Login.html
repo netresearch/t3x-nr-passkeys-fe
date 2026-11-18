@@ -77,7 +77,7 @@
          data-discoverable="{passkeyDiscoverable}">
 
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
-        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-felogin-login-status-{loginId}" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+        <output class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-felogin-login-status-{loginId}" aria-live="polite" aria-atomic="true" style="display:none"></output>
 
         <div class="nr-passkeys-fe-passkey-content">
             <div class="nr-passkeys-fe-passkey-icon" aria-hidden="true">
@@ -230,13 +230,13 @@
                 <fieldset class="nr-passkeys-fe-fieldset">
                     <div class="nr-passkeys-fe-field">
                         <label class="nr-passkeys-fe-label" for="tx-felogin-input-username-{loginId}">
-                            <f:translate key="username"/>
+                            <f:translate key="LLL:EXT:felogin/Resources/Private/Language/locallang.xlf:username"/>
                         </label>
                         <f:form.textfield name="user" required="true" autocomplete="username" id="tx-felogin-input-username-{loginId}" class="nr-passkeys-fe-input"/>
                     </div>
                     <div class="nr-passkeys-fe-field">
                         <label class="nr-passkeys-fe-label" for="tx-felogin-input-password-{loginId}">
-                            <f:translate key="password"/>
+                            <f:translate key="LLL:EXT:felogin/Resources/Private/Language/locallang.xlf:password"/>
                         </label>
                         <f:form.password name="pass" required="required" autocomplete="current-password" id="tx-felogin-input-password-{loginId}" class="nr-passkeys-fe-input"/>
                     </div>
@@ -253,12 +253,12 @@
                             </f:if>
                             <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1" checked="{permaloginStatus} == 1"/>
                             <label for="permalogin-{loginId}">
-                                <f:translate id="permalogin"/>
+                                <f:translate key="LLL:EXT:felogin/Resources/Private/Language/locallang.xlf:permalogin"/>
                             </label>
                         </div>
                     </f:if>
 
-                    <f:form.submit value="{f:translate(key: 'login')}" name="submit" class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary nr-passkeys-fe-btn--fullwidth"/>
+                    <f:form.submit value="{f:translate(key: 'LLL:EXT:felogin/Resources/Private/Language/locallang.xlf:login')}" name="submit" class="nr-passkeys-fe-btn nr-passkeys-fe-btn--primary nr-passkeys-fe-btn--fullwidth"/>
 
                     <div class="felogin-hidden">
                         <f:form.hidden name="logintype" value="login"/>

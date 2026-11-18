@@ -344,6 +344,10 @@
   font-size: 0.9rem;
 }
 
+.nr-passkeys-fe-login__status {
+  display: block;
+}
+
 .nr-passkeys-fe-login__status,
 .nr-passkeys-fe-recovery__status,
 .nr-passkeys-fe-management__status,
