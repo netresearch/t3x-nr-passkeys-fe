@@ -57,7 +57,15 @@
     // after a ceremony that succeeded.
     var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
       || document.querySelector('#nr-passkeys-fe-token-form');
-    if (!form) {
+    if (!form || form.method.toLowerCase() !== 'post') {
+      return false;
+    }
+    try {
+      var action = new URL(form.action, document.baseURI);
+      if (action.origin !== window.location.origin || !['https:', 'http:'].includes(action.protocol)) {
+        return false;
+      }
+    } catch (e) {
       return false;
     }
 

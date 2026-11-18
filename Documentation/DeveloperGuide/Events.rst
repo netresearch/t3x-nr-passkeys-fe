@@ -164,3 +164,12 @@ IP-based enforcement).
 
     Magic link login (including ``MagicLinkRequestedEvent``) is deferred
     to v0.2. See :doc:`ADR-011 </Adr/Adr011MagicLinkDeferredToV02>`.
+
+Operational notifications
+-------------------------
+
+Connect the enrollment and recovery-code generation events to a channel
+whose ownership the installation has already verified. Include the account,
+site and time and a way to contact support. Keep recovery codes, tickets,
+assertions and challenge data out of notifications and logs. Test delivery
+and failure handling as part of the installation's recovery drill.

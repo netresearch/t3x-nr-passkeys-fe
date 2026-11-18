@@ -124,8 +124,8 @@
         if (U.submitLoginToken(data.loginToken)) {
           return;
         }
-        // Fallback: reload
-        window.location.reload();
+        U.showError(errorEl, U.t('js.recovery.error.missingForm', 'The code was accepted, but sign-in could not be completed. Contact support before using another code.'));
+        U.setLoading(false, submitBtn, btnText, btnLoading);
         return;
       }
 

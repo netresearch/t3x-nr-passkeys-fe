@@ -59,5 +59,10 @@ final readonly class InjectPasskeyLoginFields
 
         // The felogin template override reads the eID URL for its passkey tab.
         $event->getView()->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
+        $site = $event->getRequest()->getAttribute('site');
+        if ($site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface) {
+            $event->getView()->assign('passkeyRecoveryDisabled', !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'));
+            $event->getView()->assign('passkeyPasswordDisabled', !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'password'));
+        }
     }
 }

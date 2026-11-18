@@ -606,6 +606,12 @@
             <trans-unit id="js.recovery.error.noUsername" resname="js.recovery.error.noUsername">
                 <source>Please enter your username.</source>
             </trans-unit>
+            <trans-unit id="js.login.error.missingForm" resname="js.login.error.missingForm">
+                <source>Sign-in could not be completed. Reload the login page and try again.</source>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.missingForm" resname="js.recovery.error.missingForm">
+                <source>The code was accepted, but sign-in could not be completed. Contact support before using another code.</source>
+            </trans-unit>
             <trans-unit id="js.recovery.error.rateLimit" resname="js.recovery.error.rateLimit">
                 <source>Too many attempts. Please try again later.</source>
             </trans-unit>

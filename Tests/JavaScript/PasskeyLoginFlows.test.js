@@ -67,6 +67,7 @@ function appendTokenForm() {
     const form = document.createElement('form');
     form.id = 'nr-passkeys-fe-token-form';
     form.setAttribute('action', '/login');
+    form.method = 'post';
     document.body.appendChild(form);
     return form;
 }

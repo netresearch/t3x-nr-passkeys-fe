@@ -959,6 +959,14 @@
                 <source>Please enter your username.</source>
                 <target>Veuillez saisir votre nom d'utilisateur.</target>
             </trans-unit>
+            <trans-unit id="js.login.error.missingForm" resname="js.login.error.missingForm">
+                <source>Sign-in could not be completed. Reload the login page and try again.</source>
+                <target>La connexion n’a pas abouti. Rechargez la page de connexion et réessayez.</target>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.missingForm" resname="js.recovery.error.missingForm">
+                <source>The code was accepted, but sign-in could not be completed. Contact support before using another code.</source>
+                <target>Le code a été accepté, mais la connexion n’a pas abouti. Contactez l’assistance avant d’utiliser un autre code.</target>
+            </trans-unit>
             <trans-unit id="js.recovery.error.rateLimit" resname="js.recovery.error.rateLimit">
                 <source>Too many attempts. Please try again later.</source>
                 <target>Trop de tentatives. Veuillez réessayer plus tard.</target>

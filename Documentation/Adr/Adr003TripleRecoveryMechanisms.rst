@@ -32,14 +32,13 @@ Decision
 
 **Option D: All three recovery mechanisms, phased.**
 
-- **v0.1 — Password fallback:** Standard felogin password login remains available.
-  Blocked only at ``Enforced`` enforcement level.
-- **v0.1 — Recovery codes:** 10 one-time codes generated at passkey enrollment.
-  Stored bcrypt-hashed. Format: ``XXXX-XXXX`` (alphanumeric).
-- **v0.2 — Magic link:** Email-based one-time login URL. 15-minute TTL, single-use.
-  Requires TYPO3 mail configuration.
+Password login follows the site's permitted recovery methods and enrollment
+policy. Users generate recovery codes explicitly in passkey management after
+recent authentication. Rotation replaces the site's previous set. The default
+is ten single-use codes in the format ``XXXX-XXXX``. Codes are stored as
+bcrypt hashes. Email magic links remain a planned feature.
 
-The current implementation supports password fallback and recovery codes. Magic link is planned. Configure the permitted methods per site:
+Configure the permitted methods per site:
 
 .. code-block:: yaml
 

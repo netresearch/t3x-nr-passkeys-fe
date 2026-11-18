@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Netresearch\NrPasskeysFe\Service\LinkablePageResolver;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
@@ -68,7 +69,8 @@ final class LoginPluginController extends ActionController
             'discoverableEnabled' => $discoverableEnabled,
             // The link needs a page to point to: without one, or with one
             // this plugin must not link to, the switch has nothing to show.
-            'passwordFallbackUrl' => $showPasswordFallback
+            'recoveryAllowed' => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'),
+            'passwordFallbackUrl' => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'password') && $showPasswordFallback
                 ? $this->resolveSameSitePageUri($this->settings['passwordLoginPage'] ?? null, $site)
                 : null,
             // The hidden token form below posts to this page instead of the

@@ -478,12 +478,8 @@
         return true;
       }
 
-      // No felogin form (standalone plugin) — just reload
-      U.showStatus(statusEl, U.t('js.login.status.authenticated', 'Authenticated! Redirecting...'));
-      ctx.navigatingAway = true;
-      stopConditionalLogin(ctx);
-      window.location.reload();
-      return true;
+      U.showError(ctx.errorEl, U.t('js.login.error.missingForm', 'Sign-in could not be completed. Reload the login page and try again.'));
+      return false;
     }
 
     try { sessionStorage.removeItem('nr_passkeys_fe_attempt'); } catch (e) { /* ignore */ }

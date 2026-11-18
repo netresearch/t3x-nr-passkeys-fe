@@ -25,6 +25,7 @@ function clearBody() {
 function appendForm({ wrapperId = null, formId = null } = {}) {
     const form = document.createElement('form');
     form.setAttribute('action', '/login');
+    form.method = 'post';
     if (formId) {
         form.id = formId;
     }
@@ -87,6 +88,17 @@ describe('submitLoginToken', () => {
             token: 'token-456',
         });
         expect(submitSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the ticket out of URLs and refuses a foreign destination', () => {
+        const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        form.method = 'get';
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        form.method = 'post';
+        form.action = 'https://other.example/login';
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        expect(form.querySelector('input[name="pass"]').value).toBe('');
+        expect(submitSpy).not.toHaveBeenCalled();
     });
 
     it('refuses when the page carries no form at all', () => {
