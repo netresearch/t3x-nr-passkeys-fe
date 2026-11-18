@@ -12,10 +12,34 @@ namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 use Netresearch\NrPasskeysFe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Clock\MockClock;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 final class ConsumedTokenStoreTest extends AbstractPasskeyFunctionalTestCase
 {
+    #[Test]
+    public function claimFinishingAtTheDeadlineIsRejectedAndRemainsConsumed(): void
+    {
+        $clock      = new MockClock('2026-01-01 10:00:00 UTC');
+        $expiresAt  = $clock->now()->getTimestamp() + 1;
+        $pool       = $this->get(ConnectionPool::class);
+        $database   = $pool->getConnectionForTable('tx_nrpasskeysfe_consumed_token');
+        $slowWriter = $this->createMock(Connection::class);
+        $slowWriter->expects(self::once())->method('insert')->willReturnCallback(
+            static function (string $table, array $values) use ($database, $clock): int {
+                $clock->sleep(1);
+
+                return (int) $database->insert($table, $values);
+            },
+        );
+        $worker = $this->createStub(ConnectionPool::class);
+        $worker->method('getConnectionForTable')->willReturn($slowWriter);
+        $worker->method('getQueryBuilderForTable')->willReturnCallback($pool->getQueryBuilderForTable(...));
+        self::assertFalse((new ConsumedTokenStore($worker, $clock))->claim('login:deadline', $expiresAt));
+        self::assertSame(1, (int) $database->count('*', 'tx_nrpasskeysfe_consumed_token', ['token_hash' => hash('sha256', 'login:deadline')]));
+    }
+
     #[Test]
     public function pruningRetainsLiveAndRecentlyExpiredClaims(): void
     {
