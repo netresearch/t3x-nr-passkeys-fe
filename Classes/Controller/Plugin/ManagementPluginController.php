@@ -49,6 +49,7 @@ final class ManagementPluginController extends ActionController
             $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
         }
 
+        $recoveryAllowed = $site instanceof SiteInterface && \Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code');
         $this->view->assignMultiple([
             'eidUrl'                 => $eidUrl,
             'siteIdentifier'         => $siteIdentifier,
@@ -58,6 +59,7 @@ final class ManagementPluginController extends ActionController
             'renameUrl'              => $eidUrl . '&action=manageRename',
             'removeUrl'              => $eidUrl . '&action=manageRemove',
             'recoveryGenerateUrl'    => $eidUrl . '&action=recoveryGenerate',
+            'recoveryAllowed'        => $recoveryAllowed,
             'credentials'            => $credentials,
             'recoveryCodesRemaining' => $recoveryCodesRemaining,
         ]);

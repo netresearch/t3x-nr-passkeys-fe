@@ -24,8 +24,6 @@ use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 use function is_array;
 use function is_numeric;
-use function is_string;
-use function parse_url;
 
 /**
  * Intercepts frontend requests to enforce passkey enrollment.
@@ -45,8 +43,6 @@ use function parse_url;
  */
 final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterface
 {
-    private const SESSION_KEY = 'tx_nrpasskeysfe';
-
     private const EID = 'nr_passkeys_fe';
 
     public function __construct(
@@ -75,16 +71,6 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             return $handler->handle($request);
         }
 
-        // 2. User already has passkeys → pass through
-        if ($this->credentialRepository->countByFeUser($feUserUid) > 0) {
-            return $handler->handle($request);
-        }
-
-        // 3. postLoginEnrollmentEnabled is false → pass through
-        if (!$this->frontendConfiguration->isPostLoginEnrollmentEnabled()) {
-            return $handler->handle($request);
-        }
-
         // 4. eID request for our extension → pass through (exempt, prevent loops)
         if ($this->isOurEidRequest($request)) {
             return $handler->handle($request);
@@ -103,6 +89,10 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
+        if ($this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
+            return $handler->handle($request);
+        }
+
         // 5-9. Check enforcement status
         $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
 
@@ -118,15 +108,23 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Required or Enforced: check for redirect necessity
         $enrollmentUrl = $this->resolveEnrollmentUrl($request, $site);
-        if ($enrollmentUrl === '') {
-            // No enrollment URL configured → pass through to avoid hard lock-out
+        $optional      = $status->effectiveLevel === 'required' && $status->inGracePeriod;
+        if ($optional && !$this->frontendConfiguration->isPostLoginEnrollmentEnabled()) {
             return $handler->handle($request);
         }
 
-        // Avoid redirect loops: if we're already on the enrollment page, pass through
-        $requestPath      = $request->getUri()->getPath();
-        $enrollmentPath   = parse_url($enrollmentUrl, PHP_URL_PATH);
-        $onEnrollmentPage = is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath;
+        $uri        = $request->getUri();
+        $target     = new \TYPO3\CMS\Core\Http\Uri($enrollmentUrl);
+        $absolute   = $target->getScheme() !== '' || $target->getAuthority() !== '';
+        $sameOrigin = $target->getScheme() === $uri->getScheme() && $target->getAuthority() === $uri->getAuthority();
+        if ($enrollmentUrl === '' || !str_starts_with($target->getPath(), '/') || ($absolute && !$sameOrigin)) {
+            if ($optional) {
+                return $handler->handle($request);
+            }
+
+            return new \TYPO3\CMS\Core\Http\HtmlResponse('Passkey enrollment is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
+        }
+        $onEnrollmentPage = $target->getPath() === $uri->getPath() && $target->getQuery() === $uri->getQuery();
 
         // Required within the grace period may be skipped for the session;
         // an expired grace period and Enforced may not. The skip signal
@@ -134,7 +132,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         // template or JS module consumes it.
         if (
             $onEnrollmentPage
-            || ($status->effectiveLevel === 'required' && $status->inGracePeriod && $this->hasSkippedEnrollment($feUser))
+            || ($status->effectiveLevel === 'required' && $status->inGracePeriod && $this->hasSkippedEnrollment($feUser, $siteIdentifier))
         ) {
             return $handler->handle($request);
         }
@@ -162,11 +160,11 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         return $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
     }
 
-    private function hasSkippedEnrollment(FrontendUserAuthentication $feUser): bool
+    private function hasSkippedEnrollment(FrontendUserAuthentication $feUser, string $siteIdentifier): bool
     {
-        $sessionData = $feUser->getKey('ses', self::SESSION_KEY);
+        $sessionData = $feUser->getKey('ses', 'nr_passkeys_fe_skip_enrollment');
 
-        return is_array($sessionData) && ($sessionData['enrollment_skipped'] ?? false) === true;
+        return $sessionData === $siteIdentifier;
     }
 
     private function resolveFrontendUser(ServerRequestInterface $request): ?FrontendUserAuthentication

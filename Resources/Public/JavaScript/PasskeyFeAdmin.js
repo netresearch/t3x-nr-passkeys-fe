@@ -13,6 +13,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import { sudoModeInterceptor } from '@typo3/backend/security/sudo-mode-interceptor.js';
 import Modal from '@typo3/backend/modal.js';
 import Notification from '@typo3/backend/notification.js';
 import DocumentService from '@typo3/core/document-service.js';
@@ -96,7 +97,7 @@ class PasskeyFeAdmin {
       if (!url) {
         throw new Error('AJAX route nr_passkeys_fe_admin_update_enforcement not registered.');
       }
-      const response = await new AjaxRequest(url).post({ groupUid, enforcement });
+      const response = await new AjaxRequest(url).addMiddleware(sudoModeInterceptor).post({ groupUid, enforcement });
       const data = await response.resolve();
 
       if (data.status === 'ok') {
@@ -275,7 +276,7 @@ class PasskeyFeAdmin {
     try {
       const response = await new AjaxRequest(
         TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_remove,
-      ).post({
+      ).addMiddleware(sudoModeInterceptor).post({
         feUserUid: this.currentFeUserUid,
         credentialUid,
       });
@@ -338,7 +339,7 @@ class PasskeyFeAdmin {
     try {
       const response = await new AjaxRequest(
         TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_revoke_all,
-      ).post({ feUserUid: this.currentFeUserUid });
+      ).addMiddleware(sudoModeInterceptor).post({ feUserUid: this.currentFeUserUid });
       const data = await response.resolve();
 
       if (data.status === 'ok') {
@@ -400,7 +401,7 @@ class PasskeyFeAdmin {
     try {
       const response = await new AjaxRequest(
         TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_unlock,
-      ).post({
+      ).addMiddleware(sudoModeInterceptor).post({
         feUserUid: this.currentFeUserUid,
         username: username.trim(),
       });
@@ -470,7 +471,7 @@ class PasskeyFeAdmin {
     try {
       const response = await new AjaxRequest(
         TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_reset_grace_period,
-      ).post({ feUserUid: this.currentFeUserUid });
+      ).addMiddleware(sudoModeInterceptor).post({ feUserUid: this.currentFeUserUid });
       const data = await response.resolve();
 
       if (data.status === 'ok') {

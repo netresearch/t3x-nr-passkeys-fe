@@ -28,7 +28,7 @@ test.describe('Passkey recovery', () => {
         await page.goto('/login-plugin');
 
         const response = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
         });
 
@@ -43,11 +43,11 @@ test.describe('Passkey recovery', () => {
         await page.goto('/login-plugin');
 
         const known = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
         });
         const unknown = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: 'nobody_e2e_xyz', code: 'AAAA-BBBB-CCCC' },
         });
 

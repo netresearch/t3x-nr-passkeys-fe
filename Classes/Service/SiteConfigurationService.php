@@ -144,6 +144,16 @@ final readonly class SiteConfigurationService
         return is_string($url) ? trim($url) : '';
     }
 
+    public static function allowsRecoveryMethod(SiteInterface $site, string $method): bool
+    {
+        if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site) {
+            return false;
+        }
+        $methods = $site->getSettings()->get('nr_passkeys_fe.enabledRecoveryMethods', ['password', 'recovery_code']);
+
+        return is_array($methods) && in_array($method, $methods, true);
+    }
+
     private function isStandardPort(string $scheme, int $port): bool
     {
         return ($scheme === 'https' && $port === 443)

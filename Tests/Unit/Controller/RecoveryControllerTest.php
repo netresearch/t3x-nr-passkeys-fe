@@ -166,7 +166,11 @@ final class RecoveryControllerTest extends TestCase
             ->method('set')
             ->with(
                 self::callback(static fn (string $key): bool => str_starts_with($key, 'passkey_login_')),
-                '42',
+                self::callback(static function (string $raw): bool {
+                    $ticket = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
+
+                    return $ticket['uid'] === 42 && $ticket['site'] === 'main' && $ticket['method'] === 'recovery' && $ticket['expiresAt'] > time();
+                }),
                 [],
                 120,
             );
@@ -196,14 +200,20 @@ final class RecoveryControllerTest extends TestCase
         $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
-        return (new ServerRequest('https://example.com/', 'POST'))
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+
+        return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
             ->withAttribute('frontend.user', $feUser)
             ->withParsedBody([]);
     }
 
     private function buildRequest(array $body): ServerRequest
     {
-        return (new ServerRequest('https://example.com/', 'POST'))
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+
+        return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
             ->withParsedBody($body);
     }
 
@@ -215,6 +225,9 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionRateLimitsAndChecksTheLockoutForTheAddressFromTheNormalizedParams(): void
     {
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
         $calls = [];
         $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
             static function (string $endpoint, string $ip) use (&$calls): void {
@@ -229,7 +242,7 @@ final class RecoveryControllerTest extends TestCase
         );
 
         $request = (new ServerRequest('https://example.com/', 'POST', 'php://input', [], ['REMOTE_ADDR' => '192.0.2.1']))
-            ->withParsedBody(['username' => 'jdoe', 'code' => 'ABCD-1234'])
+            ->withAttribute('site', $site)->withParsedBody(['username' => 'jdoe', 'code' => 'ABCD-1234'])
             // Set by core's normalized-params-attribute middleware; the
             // differing server param must not be used.
             ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.11'], [], '', ''));
@@ -237,6 +250,6 @@ final class RecoveryControllerTest extends TestCase
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(429, $response->getStatusCode());
-        self::assertSame(['rate:fe_recovery_verify@203.0.113.11', 'lockout:jdoe@203.0.113.11'], $calls);
+        self::assertSame(['rate:fe_recovery_verify@203.0.113.11', 'lockout:42@203.0.113.11'], $calls);
     }
 }

@@ -96,7 +96,7 @@ test.describe('Passkey login plugin', () => {
         await page.goto('/login-plugin');
 
         const response = await page.request.post(eidUrl('loginOptions'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: {},
         });
 
@@ -281,11 +281,11 @@ test.describe('Passkey login plugin', () => {
         await page.goto('/login-plugin');
 
         const known = await page.request.post(eidUrl('loginOptions'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: FE_USER },
         });
         const unknown = await page.request.post(eidUrl('loginOptions'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: 'nobody_e2e_xyz' },
         });
 

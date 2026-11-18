@@ -127,8 +127,14 @@ final readonly class EnrollmentController
             return new JsonResponse(['error' => 'Invalid nonce'], 403);
         }
 
+        $site           = $this->siteConfigurationService->getCurrentSite($request);
+        $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
+        $status         = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
+        if ($status->effectiveLevel !== 'required' || !$status->inGracePeriod || $status->passkeyCount > 0) {
+            return new JsonResponse(['error' => 'Enrollment cannot be postponed'], 403);
+        }
         // Set the skip flag for this session
-        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', true);
+        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', $siteIdentifier);
 
         // Invalidate the nonce so it cannot be replayed
         $this->setFeUserSessionKey($request, 'nr_passkeys_fe_enrollment_nonce', '');

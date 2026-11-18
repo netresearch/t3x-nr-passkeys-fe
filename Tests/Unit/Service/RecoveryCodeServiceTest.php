@@ -38,6 +38,9 @@ final class RecoveryCodeServiceTest extends TestCase
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
         $this->connection     = $this->createStub(Connection::class);
+        $owner = $this->createStub(Result::class);
+        $owner->method('fetchOne')->willReturn(1);
+        $this->connection->method('select')->willReturn($owner);
 
         $this->connectionPool->method('getConnectionForTable')
             ->willReturn($this->connection);
@@ -104,6 +107,9 @@ final class RecoveryCodeServiceTest extends TestCase
     public function generateDeletesExistingCodesFirst(): void
     {
         $connection     = $this->createMock(Connection::class);
+        $owner = $this->createStub(Result::class);
+        $owner->method('fetchOne')->willReturn(1);
+        $connection->method('select')->willReturn($owner);
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getConnectionForTable')->willReturn($connection);
         $subject = new RecoveryCodeService($connectionPool);
@@ -206,6 +212,9 @@ final class RecoveryCodeServiceTest extends TestCase
 
         // Create a mock connection to verify the code is marked as used
         $connection     = $this->createMock(Connection::class);
+        $owner = $this->createStub(Result::class);
+        $owner->method('fetchOne')->willReturn(1);
+        $connection->method('select')->willReturn($owner);
         $connectionPool = $this->createStub(ConnectionPool::class);
         $connectionPool->method('getConnectionForTable')->willReturn($connection);
         $connectionPool->method('getQueryBuilderForTable')->willReturn($queryBuilder);
@@ -216,8 +225,8 @@ final class RecoveryCodeServiceTest extends TestCase
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
                 self::callback(static fn (array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
-                ['uid' => 99],
-            );
+                ['uid' => 99, 'fe_user' => 1, 'used_at' => 0],
+            )->willReturn(1);
 
         // Verify with dash-formatted code
         self::assertTrue($subject->verify(1, 'ABCD-EFGH'));

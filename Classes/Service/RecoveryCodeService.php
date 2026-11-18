@@ -10,6 +10,9 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Service;
 
 use Doctrine\DBAL\ParameterType;
+use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
@@ -76,26 +79,43 @@ final readonly class RecoveryCodeService
      */
     public function generate(int $feUserUid, int $count = 10): array
     {
-        // Delete all existing codes for this user
-        $this->deleteAllForUser($feUserUid);
-
-        $connection     = $this->connectionPool->getConnectionForTable(self::TABLE);
+        if ($count === 0) { return []; }
+        if ($feUserUid <= 0 || $count < 0) {
+            throw new InvalidArgumentException('A valid owner and at least one code are required');
+        }
         $now            = time();
         $plaintextCodes = [];
-
+        $rows           = [];
         for ($i = 0; $i < $count; ++$i) {
-            $rawCode       = $this->generateRandomCode();
-            $formattedCode = $this->formatCode($rawCode);
-            $hash          = password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
-
-            $connection->insert(self::TABLE, [
+            $rawCode = $this->generateRandomCode();
+            $rows[]  = [
                 'fe_user'    => $feUserUid,
-                'code_hash'  => $hash,
+                'code_hash'  => password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]),
                 'used_at'    => 0,
                 'created_at' => $now,
-            ]);
+            ];
+            $plaintextCodes[] = $this->formatCode($rawCode);
+        }
 
-            $plaintextCodes[] = $formattedCode;
+        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
+        if ($connection !== $this->connectionPool->getConnectionForTable('fe_users')) {
+            throw new RuntimeException('Recovery codes and their owner must use the same database connection.');
+        }
+        $connection->beginTransaction();
+        try {
+            // A stable owner row serializes rotations even when the old set is empty.
+            $connection->update('fe_users', ['uid' => $feUserUid], ['uid' => $feUserUid]);
+            if ($connection->select(['uid'], 'fe_users', ['uid' => $feUserUid, 'deleted' => 0])->fetchOne() === false) {
+                throw new RuntimeException('Recovery code owner is unavailable');
+            }
+            $connection->delete(self::TABLE, ['fe_user' => $feUserUid]);
+            foreach ($rows as $row) {
+                $connection->insert(self::TABLE, $row);
+            }
+            $connection->commit();
+        } catch (Throwable $error) {
+            $connection->rollBack();
+            throw $error;
         }
 
         return $plaintextCodes;
@@ -117,11 +137,6 @@ final readonly class RecoveryCodeService
         $normalised = strtoupper(str_replace('-', '', trim($code)));
 
         if (strlen($normalised) !== self::CODE_LENGTH) {
-            // Perform dummy bcrypt ops to prevent length-based timing leak
-            for ($i = 0; $i < self::MAX_CODES; ++$i) {
-                password_verify($normalised, self::DUMMY_HASH);
-            }
-
             return false;
         }
 
@@ -146,7 +161,7 @@ final readonly class RecoveryCodeService
         foreach ($rows as $row) {
             $hash = is_string($row['code_hash'] ?? null) ? $row['code_hash'] : '';
 
-            if (!$matched && password_verify($normalised, $hash)) {
+            if (password_verify($normalised, $hash) && !$matched) {
                 $matched    = true;
                 $matchedUid = (int) ($row['uid'] ?? 0);
             }
@@ -157,10 +172,14 @@ final readonly class RecoveryCodeService
             password_verify($normalised, self::DUMMY_HASH);
         }
 
-        if ($matched) {
-            $this->markUsed($matchedUid);
+        if ($matched && $feUserUid > 0) {
+            $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
 
-            return true;
+            return $connection->update(
+                self::TABLE,
+                ['used_at' => time()],
+                ['uid' => $matchedUid, 'fe_user' => $feUserUid, 'used_at' => 0],
+            ) === 1;
         }
 
         return false;
@@ -210,22 +229,6 @@ final readonly class RecoveryCodeService
     private function formatCode(string $raw): string
     {
         return substr($raw, 0, 4) . '-' . substr($raw, 4, 4);
-    }
-
-    private function deleteAllForUser(int $feUserUid): void
-    {
-        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->delete(self::TABLE, ['fe_user' => $feUserUid]);
-    }
-
-    private function markUsed(int $uid): void
-    {
-        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->update(
-            self::TABLE,
-            ['used_at' => time()],
-            ['uid' => $uid],
-        );
     }
 
     private function getQueryBuilder(): QueryBuilder

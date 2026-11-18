@@ -62,18 +62,24 @@ services:
 
   Netresearch\NrPasskeysFe\Controller\LoginController:
     public: true
+    arguments:
+      $rateLimiterService: '@nr_passkeys_fe.limiter'
 
   Netresearch\NrPasskeysFe\Controller\ManagementController:
     public: true
 
   Netresearch\NrPasskeysFe\Controller\RecoveryController:
     public: true
+    arguments:
+      $rateLimiterService: '@nr_passkeys_fe.limiter'
 
   Netresearch\NrPasskeysFe\Controller\EnrollmentController:
     public: true
 
   Netresearch\NrPasskeysFe\Controller\AdminController:
     public: true
+    arguments:
+      $rateLimiterService: '@nr_passkeys_fe.limiter'
 
   Netresearch\NrPasskeysFe\Controller\AdminModuleController:
     public: true
@@ -83,3 +89,25 @@ services:
 
   Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement:
     public: true
+
+  Netresearch\NrPasskeysFe\Service\ConsumedTokenStore:
+    public: true
+
+  Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance:
+    public: true
+
+  cache.nr_passkeys_fe_ratelimit:
+    class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
+    factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
+    arguments: ['nr_passkeys_fe_ratelimit']
+
+  nr_passkeys_fe.limiter:
+    class: Netresearch\NrPasskeysBe\Service\RateLimiterService
+    public: true
+    arguments:
+      $rateLimitCache: '@cache.nr_passkeys_fe_ratelimit'
+
+  Netresearch\NrPasskeysFe\Service\FrontendRateLimiter:
+    public: true
+    arguments:
+      $service: '@nr_passkeys_fe.limiter'

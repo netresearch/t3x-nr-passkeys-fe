@@ -49,3 +49,10 @@ CREATE TABLE tx_nrpasskeysfe_recovery_code (
 
     KEY fe_user (fe_user)
 );
+
+CREATE TABLE tx_nrpasskeysfe_consumed_token (
+    token_hash varchar(64) DEFAULT '' NOT NULL,
+    expires_at int(11) unsigned DEFAULT '0' NOT NULL,
+    PRIMARY KEY (token_hash),
+    KEY expires_at (expires_at)
+);

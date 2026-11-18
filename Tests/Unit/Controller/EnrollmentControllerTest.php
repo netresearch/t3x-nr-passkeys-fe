@@ -152,6 +152,7 @@ final class EnrollmentControllerTest extends TestCase
     public function skipActionReturns200WhenNonceMatchesSession(): void
     {
         $nonce = 'valid-enrollment-nonce-abc123';
+        $this->enforcementService->method('getStatus')->willReturn(new FrontendEnforcementStatus('required', 'required', 'off', 0, true, null, 0));
 
         // Mock FrontendUserAuthentication with session nonce
         $feUser       = $this->createMock(FrontendUserAuthentication::class);
@@ -167,7 +168,7 @@ final class EnrollmentControllerTest extends TestCase
                 self::assertSame('ses', $type);
                 if ($callCount === 1) {
                     self::assertSame('nr_passkeys_fe_skip_enrollment', $key);
-                    self::assertTrue($value);
+                    self::assertSame('main', $value);
                 } else {
                     self::assertSame('nr_passkeys_fe_enrollment_nonce', $key);
                     self::assertSame('', $value);

@@ -161,12 +161,12 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughWhenNoEnrollmentUrlConfigured(): void
+    public function deniesProtectedContentWithoutMandatoryEnrollmentTarget(): void
     {
         $feUser  = $this->createAuthenticatedFeUser(42);
         $site    = $this->createSite('main', 'https://example.com', '');
         $request = $this->buildRequest($feUser, [], $site);
-        $handler = $this->createPassThroughHandler();
+        $handler = $this->createStub(RequestHandlerInterface::class);
 
         $this->credentialRepository->method('countByFeUser')->willReturn(0);
         $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
@@ -174,7 +174,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
             $this->makeStatus('required'),
         );
 
-        $this->subject->process($request, $handler);
+        self::assertSame(503, $this->subject->process($request, $handler)->getStatusCode());
     }
 
     #[Test]
@@ -398,7 +398,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     {
         $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid, 'username' => 'testuser'];
-        $feUser->method('getKey')->willReturn($sessionData ?: null);
+        $feUser->method('getKey')->willReturn($sessionData !== [] ? 'main' : null);
 
         return $feUser;
     }

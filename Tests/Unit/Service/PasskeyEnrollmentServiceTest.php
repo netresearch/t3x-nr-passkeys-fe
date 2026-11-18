@@ -45,6 +45,9 @@ final class PasskeyEnrollmentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $lookup = $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class);
+        $lookup->method('ownerStoragePid')->willReturn(12);
+        \TYPO3\CMS\Core\Utility\GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class, $lookup);
 
         $this->webAuthnService      = $this->createStub(FrontendWebAuthnService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);

@@ -93,3 +93,5 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1742000000] = [
 // Register eID for passkey FE API endpoints
 $GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['nr_passkeys_fe']
     = EidDispatcher::class . '::processRequest';
+
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_ratelimit'] ??= ['backend' => TYPO3\CMS\Core\Cache\Backend\FileBackend::class];

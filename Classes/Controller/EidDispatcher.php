@@ -65,10 +65,41 @@ final class EidDispatcher
 
     public function processRequest(ServerRequestInterface $request): ResponseInterface
     {
+        return $this->dispatch($request)->withHeader('Cache-Control', 'private, no-store');
+    }
+
+    private function dispatch(ServerRequestInterface $request): ResponseInterface
+    {
         $action = $request->getQueryParams()['action'] ?? '';
 
         if (!is_string($action) || !isset(self::ACTION_MAP[$action])) {
             return new JsonResponse(['error' => 'Unknown action'], 404);
+        }
+
+        $allowed = match ($action) {
+            'manageList', 'enrollmentStatus' => ['GET'],
+            'loginOptions'                   => ['GET', 'POST'],
+            default                          => ['POST'],
+        };
+        if (!in_array($request->getMethod(), $allowed, true)) {
+            return new JsonResponse(['error' => 'Method not allowed'], 405, ['Allow' => implode(', ', $allowed)]);
+        }
+
+        // A browser supplies Origin on POST. Require an exact origin match before
+        // any cookie-authorized mutation, including requests routed through eID.
+        if ($request->getMethod() === 'POST' && !in_array($action, self::PUBLIC_ACTIONS, true)) {
+            $uri    = $request->getUri();
+            $origin = $uri->getScheme() . '://' . $uri->getAuthority();
+            if ($uri->getHost() === '' || $request->getHeaderLine('Origin') !== $origin) {
+                return new JsonResponse(['error' => 'Same-origin request required'], 403);
+            }
+        }
+
+        if (in_array($action, ['recoveryGenerate', 'recoveryVerify'], true)) {
+            $site = $request->getAttribute('site');
+            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site || !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code')) {
+                return new JsonResponse(['error' => 'Recovery codes are disabled for this site'], 403);
+            }
         }
 
         [$controllerClass, $method] = self::ACTION_MAP[$action];
@@ -113,6 +144,17 @@ final class EidDispatcher
 
         if ($feUserUid === 0) {
             return new JsonResponse(['error' => 'Authentication required'], 401);
+        }
+
+        if (in_array($action, ['registrationOptions', 'registrationVerify', 'recoveryGenerate', 'manageRemove'], true)) {
+            $site = $request->getAttribute('site');
+            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site || $site->getIdentifier() === '') {
+                return new JsonResponse(['error' => 'A configured site is required'], 403);
+            }
+            $hasPasskeys = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->countByFeUser($feUserUid);
+            if (!\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $site->getIdentifier(), $hasPasskeys > 0)) {
+                return new JsonResponse(['error' => 'Sign out and sign in again to manage passkeys. Use an existing passkey or recovery code if you have one.'], 403);
+            }
         }
 
         /** @var LoginController|ManagementController|RecoveryController|EnrollmentController $controller */

@@ -72,6 +72,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // The decoy descriptors are keyed by the encryption key, so the stub
         // answers with the same one the user-handle derivation above uses.
         $this->configurationService = $this->createStub(ExtensionConfigurationService::class);
+        $this->configurationService->method('getConfiguration')->willReturn(new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration());
         $this->configurationService->method('getEncryptionKey')->willReturn(str_repeat('a', 64));
 
         $this->subject = new FrontendWebAuthnService(
@@ -216,13 +217,13 @@ final class FrontendWebAuthnServiceTest extends TestCase
     public function findFeUserUidFromAssertionReturnsNullOnInvalidJson(): void
     {
         // This will throw during deserialization, which is caught
-        self::assertNull($this->subject->findFeUserUidFromAssertion('not-json'));
+        self::assertNull($this->subject->findFeUserUidFromAssertion('not-json', $this->site));
     }
 
     #[Test]
     public function findFeUserUidFromAssertionReturnsNullOnEmptyJson(): void
     {
-        self::assertNull($this->subject->findFeUserUidFromAssertion('{}'));
+        self::assertNull($this->subject->findFeUserUidFromAssertion('{}', $this->site));
     }
 
     // ---------------------------------------------------------------
@@ -356,7 +357,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     public function findFeUserUidFromAssertionReturnsNullForUnknownCredential(): void
     {
         // Repository stub returns null by default
-        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     #[Test]
@@ -365,7 +366,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $revoked = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123', revokedAt: 1700000000);
         $this->credentialRepository->method('findByCredentialId')->willReturn($revoked);
 
-        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     #[Test]
@@ -374,7 +375,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $credential = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123');
         $this->credentialRepository->method('findByCredentialId')->willReturn($credential);
 
-        self::assertSame(42, $this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertSame(42, $this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     // ---------------------------------------------------------------

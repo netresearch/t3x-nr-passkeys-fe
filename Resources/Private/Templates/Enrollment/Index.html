@@ -107,6 +107,9 @@
             </span>
         </button>
 
+        <f:if condition="{skipNonce}">
+            <button type="button" data-action="postpone-enrollment" data-nonce="{skipNonce}"><f:translate key="enrollment.postpone" default="Continue during the grace period" /></button>
+        </f:if>
     </div>
 </div>
 </f:section>

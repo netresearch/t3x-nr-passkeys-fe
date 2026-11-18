@@ -19,6 +19,8 @@ vi.mock('@typo3/core/ajax/ajax-request.js', () => ({
             this.url = url;
         }
 
+        addMiddleware() { return this; }
+
         async post(body) {
             posts.push({ url: this.url, body });
             return answer();

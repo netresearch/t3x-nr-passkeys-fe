@@ -112,7 +112,7 @@ export async function registerPasskey(
     label = 'E2E key',
 ): Promise<{ success: boolean; error?: string }> {
     const optionsResponse = await page.request.post(eidUrl('registrationOptions'), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
         data: {},
     });
     if (!optionsResponse.ok()) {
@@ -182,7 +182,7 @@ export async function registerPasskey(
     }
 
     const verifyResponse = await page.request.post(eidUrl('registrationVerify'), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
         data: {
             credential,
             challengeToken: optionsData.challengeToken,
@@ -207,7 +207,7 @@ export async function removeAllCredentials(page: Page): Promise<void> {
     const data = await listResponse.json();
     for (const credential of data.credentials || []) {
         await page.request.post(eidUrl('manageRemove'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credential.uid },
         });
     }

@@ -324,7 +324,7 @@ final class FrontendWebAuthnService
         $credentialId = $publicKeyCredential->rawId;
         $credential   = $this->credentialRepository->findByCredentialId($credentialId);
 
-        if (!$credential instanceof FrontendCredential) {
+        if (!$credential instanceof FrontendCredential || $credential->getSiteIdentifier() !== $siteIdentifier) {
             $this->logger->warning('FE assertion with unknown credential ID', [
                 'site' => $siteIdentifier,
             ]);
@@ -335,6 +335,10 @@ final class FrontendWebAuthnService
             throw new RuntimeException('Credential has been revoked', 1700200033);
         }
 
+        $pid = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($credential->getFeUser(), $site);
+        if ($pid === null || ($credential->getStoragePid() !== 0 && $credential->getStoragePid() !== $pid)) {
+            throw new RuntimeException('Credential outside the configured user pool', self::CODE_UNKNOWN_CREDENTIAL);
+        }
         $storedSource = $this->credentialToSource($credential);
 
         $requestOptions = PublicKeyCredentialRequestOptions::create(
@@ -370,7 +374,7 @@ final class FrontendWebAuthnService
 
         $this->credentialRepository->updateAfterAssertion($credential->getUid(), $updatedSource->counter);
 
-        $this->logger->info('Frontend passkey login successful', [
+        $this->logger->info('Frontend passkey assertion verified', [
             'fe_user_uid'    => $credential->getFeUser(),
             'credential_uid' => $credential->getUid(),
             'site'           => $siteIdentifier,
@@ -388,7 +392,7 @@ final class FrontendWebAuthnService
      * Used for discoverable (usernameless) login where the credential ID
      * in the assertion identifies the user without requiring a username.
      */
-    public function findFeUserUidFromAssertion(string $assertionJson): ?int
+    public function findFeUserUidFromAssertion(string $assertionJson, SiteInterface $site): ?int
     {
         try {
             $publicKeyCredential = $this->getSerializer()->deserialize(
@@ -402,7 +406,7 @@ final class FrontendWebAuthnService
             }
 
             $credential = $this->credentialRepository->findByCredentialId($publicKeyCredential->rawId);
-            if (!$credential instanceof FrontendCredential || $credential->isRevoked()) {
+            if (!$credential instanceof FrontendCredential || $credential->isRevoked() || $credential->getSiteIdentifier() !== $site->getIdentifier()) {
                 return null;
             }
 
@@ -464,10 +468,15 @@ final class FrontendWebAuthnService
     private function createAlgorithmManager(): AlgorithmManager
     {
         $manager = AlgorithmManager::create();
-        $manager->add(ES256::create());
-        $manager->add(ES384::create());
-        $manager->add(ES512::create());
-        $manager->add(RS256::create());
+        foreach ($this->supportedAlgorithms() as $algorithm) {
+            $manager->add(match ($algorithm) {
+                'ES256' => ES256::create(),
+                'ES384' => ES384::create(),
+                'ES512' => ES512::create(),
+                'RS256' => RS256::create(),
+                default => throw new RuntimeException('Unsupported passkey algorithm'),
+            });
+        }
 
         return $manager;
     }
@@ -478,12 +487,26 @@ final class FrontendWebAuthnService
     private function getPublicKeyCredentialParameters(): array
     {
         $params = [];
-        foreach (self::ALLOWED_ALGORITHMS as $algo) {
-            $algoId   = self::ALGORITHM_MAP[$algo] ?? null;
+        foreach ($this->supportedAlgorithms() as $algo) {
+            $algoId   = self::ALGORITHM_MAP[$algo];
             $params[] = PublicKeyCredentialParameters::createPk($algoId);
         }
 
         return $params;
+    }
+
+    /** @return list<string> */
+    private function supportedAlgorithms(): array
+    {
+        $enabled = array_values(array_intersect(
+            self::ALLOWED_ALGORITHMS,
+            $this->configurationService->getConfiguration()->getAllowedAlgorithmsList(),
+        ));
+        if ($enabled === []) {
+            throw new RuntimeException('No supported passkey algorithm configured');
+        }
+
+        return $enabled;
     }
 
     private function createUserHandle(int $feUserUid): string

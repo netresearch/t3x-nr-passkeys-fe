@@ -39,7 +39,7 @@ Decision
 - **v0.2 — Magic link:** Email-based one-time login URL. 15-minute TTL, single-use.
   Requires TYPO3 mail configuration.
 
-Each mechanism can be enabled/disabled per site via site configuration:
+The current implementation supports password fallback and recovery codes. Magic link is planned. Configure the permitted methods per site:
 
 .. code-block:: yaml
 
@@ -47,7 +47,6 @@ Each mechanism can be enabled/disabled per site via site configuration:
      enabledRecoveryMethods:
        - password
        - recovery_code
-       - magic_link
 
 Consequences
 ============

@@ -313,12 +313,18 @@ final class RequestPayloadFuzzTest extends TestCase
         }
 
         // Track attributes so withAttribute()/getAttribute() work correctly
-        $attributes = [];
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $attributes = ['site'=>$site];
         if ($feUser instanceof Stub) {
             $attributes['frontend.user'] = $feUser;
         }
 
         $request = $this->createStub(ServerRequestInterface::class);
+        $request->method('getMethod')->willReturn(in_array($action,['manageList','enrollmentStatus'],true) ? 'GET' : 'POST');
+        $request->method('getUri')->willReturn(new \TYPO3\CMS\Core\Http\Uri('https://example.com/'));
+        $request->method('getHeaderLine')->willReturn('https://example.com');
         $request->method('getQueryParams')->willReturn(['eID' => 'nr_passkeys_fe', 'action' => $action]);
         $request->method('getParsedBody')->willReturn(null);
         $request->method('getBody')->willReturn($stream);

@@ -72,17 +72,15 @@ final readonly class InjectPasskeyBanner
 
         $feUserUid = (int) $userRow['uid'];
 
-        // User already has passkeys → skip
-        if ($this->credentialRepository->countByFeUser($feUserUid) > 0) {
-            return;
-        }
-
         $site = $request->getAttribute('site');
         if (!$site instanceof SiteInterface) {
             return;
         }
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
+        if ($this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
+            return;
+        }
         $status         = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
         $effectiveLevel = $status->effectiveLevel;
 

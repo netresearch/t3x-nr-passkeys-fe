@@ -52,6 +52,22 @@
     var errorEl = container.querySelector('.nr-passkeys-fe-enrollment__error, .nr-passkeys-fe-enrollment-form__error');
     var successEl = container.querySelector('.nr-passkeys-fe-enrollment__success, .nr-passkeys-fe-enrollment-form__success');
 
+    var postpone = container.querySelector('[data-action="postpone-enrollment"]');
+    if (postpone) {
+      postpone.addEventListener('click', async function () {
+        try {
+          var result = await fetch(U.buildEidUrl(eidUrl, {action: 'enrollmentSkip'}), {
+            method: 'POST', credentials: 'same-origin', mode: 'same-origin',
+            headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nonce: postpone.dataset.nonce})
+          });
+          if (!result.ok) throw new Error();
+          window.location.assign(new URL(eidUrl, window.location.href).pathname);
+        } catch {
+          U.showError(errorEl, U.t('enrollment.postponeFailed', 'Could not postpone enrollment. Reload and try again.'));
+        }
+      });
+    }
+
     // Feature detection
     if (!window.PublicKeyCredential) {
       U.showError(errorEl, U.t('js.error.unsupported', 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.'));

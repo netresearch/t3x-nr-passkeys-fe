@@ -110,3 +110,14 @@ auto-detected RP ID) and later add multiple sites:
 
 Plan migrations carefully and communicate re-enrollment to users in
 advance.
+
+Frontend account folders
+------------------------
+
+By default, a frontend account's current storage page must belong to the
+request's TYPO3 site. For shared user folders configure the comma-separated
+site setting nr_passkeys_fe.userStoragePids with the permitted page IDs.
+Set this for each participating site before rollout. Credential use also
+requires its original registration site. Existing credentials without a
+stored folder are checked against their owner's current folder and the
+recorded site on each login.

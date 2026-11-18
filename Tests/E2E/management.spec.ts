@@ -46,7 +46,7 @@ test.describe('Passkey management plugin', () => {
         expect(credentials[0].label).toBe('E2E management key');
 
         const renamed = await page.request.post(eidUrl('manageRename'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credentials[0].uid, label: 'Renamed by e2e' },
         });
         expect(renamed.status(), await renamed.text()).toBe(200);
@@ -54,7 +54,7 @@ test.describe('Passkey management plugin', () => {
         expect(afterRename[0].label).toBe('Renamed by e2e');
 
         const removed = await page.request.post(eidUrl('manageRemove'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credentials[0].uid },
         });
         expect(removed.status(), await removed.text()).toBe(200);
@@ -72,7 +72,7 @@ test.describe('Passkey management plugin', () => {
         expect(listed.status()).toBeGreaterThanOrEqual(400);
 
         const renamed = await page.request.post(eidUrl('manageRename'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: 1, label: 'anonymous rename' },
         });
         expect(renamed.status()).toBeGreaterThanOrEqual(400);

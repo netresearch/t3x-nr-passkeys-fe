@@ -52,8 +52,17 @@ final class EnrollmentPluginController extends ActionController
             $graceDaysRemaining = $status->graceDaysRemaining(new DateTimeImmutable());
         }
 
+        $nonce = '';
+        $user  = $this->request->getAttribute('frontend.user');
+        if ($status?->effectiveLevel === 'required' && $status->inGracePeriod && $status->passkeyCount === 0 && $user instanceof FrontendUserAuthentication) {
+            $nonce = bin2hex(random_bytes(32));
+            $user->setKey('ses', 'nr_passkeys_fe_enrollment_nonce', $nonce);
+            $user->storeSessionData();
+        }
+
         $this->view->assignMultiple([
             'eidUrl'                   => $eidUrl,
+            'skipNonce'                => $nonce,
             'siteIdentifier'           => $site?->getIdentifier() ?? '',
             'registerOptionsUrl'       => $eidUrl . '&action=registrationOptions',
             'registerVerifyUrl'        => $eidUrl . '&action=registrationVerify',

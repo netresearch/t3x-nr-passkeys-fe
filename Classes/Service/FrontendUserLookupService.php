@@ -11,6 +11,11 @@ namespace Netresearch\NrPasskeysFe\Service;
 
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function is_numeric;
 use function is_string;
@@ -34,11 +39,11 @@ final readonly class FrontendUserLookupService
      *
      * Queries the fe_users table for a non-disabled, non-deleted user.
      */
-    public function findFeUserUidByUsername(string $username): ?int
+    public function findFeUserUidByUsername(string $username, ?SiteInterface $site = null): ?int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
-        $row          = $queryBuilder
-            ->select('uid')
+        $queryBuilder
+            ->select('uid', 'pid')
             ->from(self::TABLE)
             ->where(
                 $queryBuilder->expr()->eq(
@@ -48,16 +53,57 @@ final readonly class FrontendUserLookupService
                 $queryBuilder->expr()->eq('disable', 0),
                 $queryBuilder->expr()->eq('deleted', 0),
             )
-            ->executeQuery()
-            ->fetchAssociative();
+        ;
+        if ($site === null) {
+            $row = $queryBuilder->executeQuery()->fetchAssociative();
 
-        if ($row === false) {
-            return null;
+            return is_array($row) && is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : null;
+        }
+        $uid = null;
+        foreach ($queryBuilder->executeQuery()->iterateAssociative() as $candidate) {
+            if (is_numeric($candidate['pid'] ?? null) && $this->allowsStoragePid((int) $candidate['pid'], $site) && is_numeric($candidate['uid'] ?? null)) {
+                if ($uid !== null) {
+                    return null;
+                }
+                $uid = (int) $candidate['uid'];
+            }
         }
 
-        $rawUid = $row['uid'] ?? null;
+        return $uid;
+    }
 
-        return is_numeric($rawUid) ? (int) $rawUid : null;
+    public function ownerStoragePid(int $uid, SiteInterface $site): ?int
+    {
+        $db  = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $pid = $db->select(['pid'], self::TABLE, ['uid' => $uid, 'disable' => 0, 'deleted' => 0])->fetchOne();
+
+        return is_numeric($pid) && $this->allowsStoragePid((int) $pid, $site) ? (int) $pid : null;
+    }
+
+    private function allowsStoragePid(int $pid, SiteInterface $site): bool
+    {
+        if ($pid <= 0 || !$site instanceof Site) {
+            return false;
+        }
+        $folders = $site->getSettings()->get('nr_passkeys_fe.userStoragePids');
+        if ($folders !== null && $folders !== '') {
+            $values = is_string($folders) ? explode(',', $folders) : $folders;
+            if (!is_array($values)) {
+                return false;
+            }
+            foreach ($values as $value) {
+                if ((is_int($value) || is_string($value)) && trim((string) $value) === (string) $pid) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        try {
+            return GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pid)->getIdentifier() === $site->getIdentifier();
+        } catch (SiteNotFoundException) {
+            return false;
+        }
     }
 
     /**

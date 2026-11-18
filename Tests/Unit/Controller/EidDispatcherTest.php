@@ -183,8 +183,15 @@ final class EidDispatcherTest extends TestCase
         $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 42];
 
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $feUserStub->method('getKey')->willReturn(['uid' => 42, 'site' => 'main', 'method' => 'passkey', 'at' => time()]);
+        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class, $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class));
+
         // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
+            ->withAttribute('site', $site)
             ->withAttribute('frontend.user', $feUserStub);
 
         $response = $this->subject->processRequest($request);
@@ -305,9 +312,29 @@ final class EidDispatcherTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------
 
+    #[Test]
+    public function rejectsUnsafeManagementRequestsBeforeSessionBootstrap(): void
+    {
+        $request     = $this->buildRequest(['action' => 'recoveryGenerate']);
+        $methodError = $this->subject->processRequest($request->withMethod('GET'));
+        self::assertSame(405, $methodError->getStatusCode());
+        self::assertSame('POST', $methodError->getHeaderLine('Allow'));
+        foreach (['', 'null', 'https://other.example.com'] as $origin) {
+            $response = $this->subject->processRequest($request->withHeader('Origin', $origin));
+            self::assertSame(403, $response->getStatusCode());
+            self::assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+        }
+    }
+
     private function buildRequest(array $queryParams): ServerRequest
     {
-        return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', 'GET'))
+        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $read = in_array($queryParams['action'] ?? '', ['loginOptions', 'manageList', 'enrollmentStatus'], true);
+
+        return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', $read ? 'GET' : 'POST'))
+            ->withAttribute('site', $site)->withHeader('Origin', 'https://example.com')
             ->withQueryParams($queryParams);
     }
 

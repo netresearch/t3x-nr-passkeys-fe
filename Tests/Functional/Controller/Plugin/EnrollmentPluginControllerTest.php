@@ -143,7 +143,7 @@ final class EnrollmentPluginControllerTest extends AbstractPasskeyFunctionalTest
             'base'     => 'https://example.com/',
             'settings' => ['nr_passkeys_fe' => ['enforcementLevel' => $siteLevel]],
         ]);
-        $feUser       = new FrontendUserAuthentication();
+        $feUser       = $this->createPartialMock(FrontendUserAuthentication::class, ['setKey', 'storeSessionData']);
         $feUser->user = ['uid' => $feUserUid];
 
         $request = (new ServerRequest('https://example.com/enrollment', 'GET'))

@@ -75,7 +75,7 @@ final class FrontendEnforcementService
             return $this->statusCache[$cacheKey];
         }
 
-        $passkeyCount           = $this->credentialRepository->countByFeUser($feUserUid);
+        $passkeyCount           = $this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier);
         $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
 
         $siteLevel    = $this->siteConfigurationService->getEnforcementLevel($site);
