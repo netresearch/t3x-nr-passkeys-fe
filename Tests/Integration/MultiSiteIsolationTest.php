@@ -36,6 +36,10 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/../Fixtures/fe_users.csv');
         $this->repository = $this->get(FrontendCredentialRepository::class);
 
+        $users = $this->getConnectionPool()->getConnectionForTable('fe_users');
+        $users->update('fe_users', ['pid' => 42], ['uid' => 1]);
+        $users->update('fe_users', ['pid' => 99], ['uid' => 2]);
+
         // Seed credentials for two distinct sites
         $this->seedSiteACredentials();
         $this->seedSiteBCredentials();
@@ -64,7 +68,7 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
     #[Test]
     public function findByFeUserReturnsSiteBCredentialsForSiteB(): void
     {
-        $credentials = $this->repository->findByFeUser(1, 'site-b');
+        $credentials = $this->repository->findByFeUser(2, 'site-b');
 
         self::assertNotEmpty($credentials, 'findByFeUser must return credentials for site-b');
 
@@ -81,7 +85,7 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
     public function findByFeUserDoesNotMixSites(): void
     {
         $siteACredentials = $this->repository->findByFeUser(1, 'site-a');
-        $siteBCredentials = $this->repository->findByFeUser(1, 'site-b');
+        $siteBCredentials = $this->repository->findByFeUser(2, 'site-b');
 
         $siteAIds = array_map(
             static fn (FrontendCredential $c): string => $c->getCredentialId(),
@@ -101,15 +105,12 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
     {
         // Site A uses storage PID 42, site B uses storage PID 99
         $siteACredentials = $this->repository->findByFeUser(1, 'site-a');
-        $siteBCredentials = $this->repository->findByFeUser(1, 'site-b');
+        $siteBCredentials = $this->repository->findByFeUser(2, 'site-b');
 
-        foreach ($siteACredentials as $credential) {
-            self::assertSame(42, $credential->getStoragePid(), 'Site-a credentials must have storagePid 42');
-        }
-
-        foreach ($siteBCredentials as $credential) {
-            self::assertSame(99, $credential->getStoragePid(), 'Site-b credentials must have storagePid 99');
-        }
+        self::assertSame([42, 42], array_map(static fn (FrontendCredential $c): int => $c->getStoragePid(), $siteACredentials));
+        self::assertSame([99], array_map(static fn (FrontendCredential $c): int => $c->getStoragePid(), $siteBCredentials));
+        self::assertSame([], $this->repository->findByFeUser(1, 'site-b'));
+        self::assertSame([], $this->repository->findByFeUser(2, 'site-a'));
     }
 
     // ---------------------------------------------------------------
@@ -203,7 +204,17 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
     #[Test]
     public function countByFeUserCountsAcrossAllSites(): void
     {
-        // User 1 has credentials on both site-a (2) and site-b (1)
+        // User 1 can use a shared folder on another site without mixing site-scoped keys.
+        $this->repository->save(new FrontendCredential(
+            feUser: 1,
+            credentialId: 'shared-folder-site-b',
+            publicKeyCose: 'cose-b',
+            label: 'Shared folder key',
+            siteIdentifier: 'site-b',
+            storagePid: 42,
+        ));
+        self::assertSame(2, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertSame(1, $this->repository->countByFeUser(1, 'site-b'));
         $count = $this->repository->countByFeUser(1);
 
         self::assertSame(3, $count, 'countByFeUser must count active credentials across all sites');
@@ -231,9 +242,9 @@ final class MultiSiteIsolationTest extends AbstractPasskeyFunctionalTestCase
 
     private function seedSiteBCredentials(): void
     {
-        // One credential for user 1 on site-b, storage PID 99
+        // One credential for user 2 on site-b, storage PID 99
         $credential = new FrontendCredential(
-            feUser: 1,
+            feUser: 2,
             credentialId: 'multi-site-cred-b-1',
             publicKeyCose: 'cose-data-b',
             label: 'Site B Key',

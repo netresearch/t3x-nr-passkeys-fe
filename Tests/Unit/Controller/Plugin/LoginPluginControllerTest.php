@@ -24,8 +24,8 @@ use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Http\StreamFactory;
 use TYPO3\CMS\Core\Site\Entity\Site;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
@@ -517,7 +517,8 @@ final class LoginPluginControllerTest extends TestCase
             $languages[] = new SiteLanguage($languageId + 1, 'de_DE.UTF-8', new Uri($languageBase), []);
         }
 
-        $site = $this->createStub(SiteInterface::class);
+        $site = $this->createStub(Site::class);
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         $site->method('getIdentifier')->willReturn($siteIdentifier);
         $site->method('getBase')->willReturn(new Uri($baseUrl));
         $site->method('getLanguages')->willReturn($languages);
