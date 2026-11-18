@@ -108,7 +108,8 @@ test.describe('Passkey enrollment plugin', () => {
         const registered = await registerPasskey(page, 'E2E enforced key');
         expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
 
-        await page.reload({ waitUntil: 'load' });
+        await signInWithRegisteredPasskey(page, cdp, authenticatorId);
+        await page.goto('/enrollment', { waitUntil: 'load' });
         await expect(plugin).toBeVisible();
         await expect(required).toHaveCount(0);
         await expect(plugin.getByText(/days remaining to set up your passkey/)).toHaveCount(0);

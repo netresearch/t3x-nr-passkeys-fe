@@ -15,7 +15,8 @@ use Netresearch\NrPasskeysFe\Controller\EnrollmentController;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
-use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -39,10 +40,17 @@ final class EidDispatcherTest extends TestCase
 {
     private EidDispatcher $subject;
 
+    private string $level = 'off';
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->subject = new EidDispatcher();
+        $enforcement   = $this->createStub(FrontendEnforcementService::class);
+        $enforcement->method('getStatus')->willReturnCallback(
+            fn (): FrontendEnforcementStatus => new FrontendEnforcementStatus($this->level, $this->level, 'off', 1, false, null, 0),
+        );
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $enforcement);
 
         // Register a Context singleton so bootstrapFrontendUser() can set aspects
         GeneralUtility::setSingletonInstance(Context::class, new Context());
@@ -190,7 +198,6 @@ final class EidDispatcherTest extends TestCase
         $site->method('getIdentifier')->willReturn('main');
         $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         $feUserStub->method('getKey')->willReturn(['uid' => 42, 'site' => 'main', 'method' => 'passkey', 'at' => time()]);
-        GeneralUtility::addInstance(FrontendCredentialRepository::class, $this->createStub(FrontendCredentialRepository::class));
 
         // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
@@ -224,6 +231,17 @@ final class EidDispatcherTest extends TestCase
 
         self::assertSame(500, $response->getStatusCode());
         $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
+    }
+
+    #[Test]
+    public function anEnforcedSiteRequiresItsOwnLoginProofForPrivateActions(): void
+    {
+        $this->level = 'enforced';
+        $user        = $this->createStub(FrontendUserAuthentication::class);
+        $user->user  = ['uid' => 42];
+        $user->method('getKey')->willReturn(['uid' => 42, 'site' => 'other', 'method' => 'passkey', 'at' => time()]);
+        $response = $this->subject->processRequest($this->buildRequest(['action' => 'manageList'])->withAttribute('frontend.user', $user));
+        self::assertSame(403, $response->getStatusCode());
     }
 
     #[Test]

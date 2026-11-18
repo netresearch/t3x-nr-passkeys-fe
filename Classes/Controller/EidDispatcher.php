@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
-use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
@@ -150,14 +150,20 @@ final class EidDispatcher
             return new JsonResponse(['error' => 'Authentication required'], 401);
         }
 
-        if (in_array($action, ['registrationOptions', 'registrationVerify', 'recoveryGenerate', 'manageRemove'], true)) {
-            $site = $request->getAttribute('site');
-            if (!$site instanceof Site || $site->getIdentifier() === '') {
-                return new JsonResponse(['error' => 'A configured site is required'], 403);
-            }
+        $site = $request->getAttribute('site');
+        if (!$site instanceof Site || $site->getIdentifier() === '') {
+            return new JsonResponse(['error' => 'A configured site is required'], 403);
+        }
 
-            $hasPasskeys = GeneralUtility::makeInstance(FrontendCredentialRepository::class)->countByFeUser($feUserUid, $site->getIdentifier());
-            if (!FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $site->getIdentifier(), $hasPasskeys > 0)) {
+        $siteIdentifier = $site->getIdentifier();
+        $status         = GeneralUtility::makeInstance(FrontendEnforcementService::class)->getStatus($feUserUid, $siteIdentifier, $site);
+        $proof          = FrontendLoginAssurance::siteProof($feUser, $feUserUid, $siteIdentifier);
+        if (!FrontendLoginAssurance::allowsSiteAccess($proof['method'] ?? null, $site, $status)) {
+            return new JsonResponse(['error' => 'Please sign in again on this site.'], 403);
+        }
+
+        if (in_array($action, ['registrationOptions', 'registrationVerify', 'recoveryGenerate', 'manageRemove'], true)) {
+            if (!FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $siteIdentifier, $status->passkeyCount > 0)) {
                 return new JsonResponse(['error' => 'Sign out and sign in again to manage passkeys. Use an existing passkey or recovery code if you have one.'], 403);
             }
         }

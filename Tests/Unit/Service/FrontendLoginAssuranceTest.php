@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
@@ -61,6 +62,18 @@ final class FrontendLoginAssuranceTest extends TestCase
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 7, 'shop', true));
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 7, 'other', false));
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 8, 'shop', false));
+    }
+
+    #[Test]
+    public function anEnforcedSiteDistinguishesEnrollmentFromAnAuthenticatedSession(): void
+    {
+        $site      = new Site('shop', 1, ['base' => 'https://shop.example/', 'nr_passkeys_fe_localRecoveryMethods' => ['password']]);
+        $enrolling = new FrontendEnforcementStatus('enforced', 'enforced', 'off', 0, false, null, 0);
+        $enrolled  = new FrontendEnforcementStatus('enforced', 'enforced', 'off', 1, false, null, 0);
+        self::assertTrue(FrontendLoginAssurance::allowsSiteAccess('primary', $site, $enrolling));
+        self::assertFalse(FrontendLoginAssurance::allowsSiteAccess('primary', $site, $enrolled));
+        self::assertTrue(FrontendLoginAssurance::allowsSiteAccess('passkey', $site, $enrolled));
+        self::assertFalse(FrontendLoginAssurance::allowsSiteAccess(null, $site, $enrolled));
     }
 
     #[Test]

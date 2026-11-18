@@ -41,7 +41,7 @@ use function is_numeric;
  *
  * Exempt cases (pass through):
  * - No authenticated frontend user
- * - User already has passkeys
+ * - Enrolled user with a login method accepted by the current site
  * - postLoginEnrollmentEnabled is false
  * - Request is an eID request for nr_passkeys_fe (prevents redirect loops)
  * - Enforcement level is Off or Encourage
@@ -99,15 +99,21 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
-        if ($this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
+        $proof = FrontendLoginAssurance::siteProof($feUser, $feUserUid, $siteIdentifier);
+        if (($proof['method'] ?? null) === 'passkey' && $this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
             return $handler->handle($request);
         }
 
         // 5-9. Check enforcement status
         $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
 
-        // Off and Encourage → pass through (the banner handles Encourage)
-        if ($status->effectiveLevel === 'off' || $status->effectiveLevel === 'encourage') {
+        if (!FrontendLoginAssurance::allowsSiteAccess($proof['method'] ?? null, $site, $status)) {
+            $feUser->logoff();
+
+            return new HtmlResponse('Please sign in again on this site.', 403, ['Cache-Control' => 'private, no-store']);
+        }
+
+        if ($status->passkeyCount > 0 || $status->effectiveLevel === 'off' || $status->effectiveLevel === 'encourage') {
             return $handler->handle($request);
         }
 

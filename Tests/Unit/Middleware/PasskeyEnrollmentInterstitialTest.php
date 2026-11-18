@@ -85,12 +85,29 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function passesThroughWhenUserHasPasskeys(): void
     {
-        $feUser  = $this->createAuthenticatedFeUser(42);
+        $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
+        $feUser  = $this->createAuthenticatedFeUser(42, method: 'passkey');
         $request = $this->buildRequest($feUser, site: $this->createSite('main', 'https://example.com/', '/enroll'));
         $handler = $this->createPassThroughHandler();
 
         $this->credentialRepository->method('countByFeUser')->willReturn(2);
         $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function anEnforcedSiteRequestsANewLoginForAnUnboundSession(): void
+    {
+        $site = $this->createSite('main', 'https://example.com/', '/enroll');
+        $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
+        $this->enforcementService->method('getStatus')->willReturn($this->makeStatus('enforced'));
+        $user       = $this->createMock(FrontendUserAuthentication::class);
+        $user->user = ['uid' => 42];
+        $user->expects(self::once())->method('logoff');
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::never())->method('handle');
+        $response = $this->subject->process($this->buildRequest($user, site: $site), $handler);
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('private, no-store', $response->getHeaderLine('Cache-Control'));
     }
 
     #[Test]
@@ -190,6 +207,7 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     #[Test]
     public function invalidEnrollmentUrlRespectsTheGracePeriod(): void
     {
+        $this->siteConfigurationService->method('getSiteIdentifier')->willReturn('main');
         $site    = $this->createSite('main', 'https://example.com', 'ftp://example.com/enroll');
         $request = $this->buildRequest($this->createAuthenticatedFeUser(42), site: $site);
         $this->enforcementService->method('getStatus')->willReturn(
@@ -420,11 +438,14 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     /**
      * @param array<string, mixed> $sessionData
      */
-    private function createAuthenticatedFeUser(int $uid, array $sessionData = []): FrontendUserAuthentication&Stub
+    private function createAuthenticatedFeUser(int $uid, array $sessionData = [], string $method = 'primary'): FrontendUserAuthentication&Stub
     {
         $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid, 'username' => 'testuser'];
-        $feUser->method('getKey')->willReturn($sessionData !== [] ? 'main' : null);
+        $feUser->method('getKey')->willReturnMap([
+            ['ses', 'nr_passkeys_fe_assurance', ['uid' => $uid, 'method' => $method, 'at' => time() - 600, 'site' => 'main']],
+            ['ses', 'nr_passkeys_fe_skip_enrollment', $sessionData !== [] ? 'main' : null],
+        ]);
 
         return $feUser;
     }

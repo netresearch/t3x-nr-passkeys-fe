@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -82,13 +83,37 @@ final class FrontendLoginAssurance
         $this->logger->info('Frontend login completed', ['uid' => $uid, 'site' => $site->getIdentifier(), 'method' => $proof['method']]);
     }
 
-    public static function allowsManagement(FrontendUserAuthentication $user, int $uid, string $site, bool $hasPasskeys): bool
+    /** @return array{method: string, at: int}|null */
+    public static function siteProof(FrontendUserAuthentication $user, int $uid, string $site): ?array
     {
         $proof = $user->getKey('ses', 'nr_passkeys_fe_assurance');
-        $now   = time();
+        if (!is_array($proof) || ($proof['uid'] ?? null) !== $uid || ($proof['site'] ?? null) !== $site
+            || !is_int($proof['at'] ?? null) || $proof['at'] <= 0 || $proof['at'] > time()
+            || !in_array($proof['method'] ?? null, ['passkey', 'recovery', 'primary'], true)) {
+            return null;
+        }
 
-        return is_array($proof) && ($proof['uid'] ?? null) === $uid && ($proof['site'] ?? null) === $site
-            && is_int($proof['at'] ?? null) && $proof['at'] <= $now && $proof['at'] > $now - 300
-            && in_array($proof['method'] ?? null, $hasPasskeys ? ['passkey', 'recovery'] : ['passkey', 'recovery', 'primary'], true);
+        return ['method' => $proof['method'], 'at' => $proof['at']];
+    }
+
+    public static function allowsSiteAccess(?string $method, SiteInterface $site, FrontendEnforcementStatus $status): bool
+    {
+        if ($status->effectiveLevel !== 'enforced') {
+            return true;
+        }
+
+        return match ($method) {
+            'passkey'  => true,
+            'recovery' => SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'),
+            'primary'  => $status->passkeyCount === 0 && SiteConfigurationService::allowsRecoveryMethod($site, 'password'),
+            default    => false,
+        };
+    }
+
+    public static function allowsManagement(FrontendUserAuthentication $user, int $uid, string $site, bool $hasPasskeys): bool
+    {
+        $proof = self::siteProof($user, $uid, $site);
+
+        return $proof !== null && $proof['at'] > time() - 300 && (!$hasPasskeys || $proof['method'] !== 'primary');
     }
 }
