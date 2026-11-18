@@ -25,6 +25,7 @@ final class FrontendUserLookupServiceTest extends AbstractPasskeyFunctionalTestC
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
         $db = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $db->update('fe_users', ['username' => 'testuser1'], ['uid' => 3]);
+
         $lookup = new FrontendUserLookupService($this->getConnectionPool());
         $origin = ['base' => 'https://portal.example/'];
         $first  = new Site('first', 100, $origin, SiteSettings::createFromSettingsTree(['nr_passkeys_fe' => ['userStoragePids' => '1']]));

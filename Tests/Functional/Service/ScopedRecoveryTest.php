@@ -63,7 +63,7 @@ final class ScopedRecoveryTest extends AbstractPasskeyFunctionalTestCase
         }
 
         self::assertSame($level, $db->getTransactionNestingLevel());
-        self::assertSame(0, (int) $db->count('*', $table, ['fe_user' => 9999]));
+        self::assertSame(0, $db->count('*', $table, ['fe_user' => 9999]));
     }
 
     #[Test]
