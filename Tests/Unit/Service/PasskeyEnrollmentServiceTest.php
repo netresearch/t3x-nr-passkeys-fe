@@ -70,6 +70,12 @@ final class PasskeyEnrollmentServiceTest extends TestCase
         );
     }
 
+    protected function tearDown(): void
+    {
+        GeneralUtility::purgeInstances();
+        parent::tearDown();
+    }
+
     // ---------------------------------------------------------------
     // startEnrollment()
     // ---------------------------------------------------------------
