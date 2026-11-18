@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
+use InvalidArgumentException;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -17,6 +18,7 @@ use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Core\Http\HtmlResponse;
@@ -121,11 +123,9 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             return $handler->handle($request);
         }
 
-        $uri        = $request->getUri();
-        $target     = new Uri($enrollmentUrl);
-        $absolute   = $target->getScheme() !== '' || $target->getAuthority() !== '';
-        $sameOrigin = $target->getScheme() === $uri->getScheme() && $target->getAuthority() === $uri->getAuthority();
-        if ($enrollmentUrl === '' || !str_starts_with($target->getPath(), '/') || ($absolute && !$sameOrigin)) {
+        $uri    = $request->getUri();
+        $target = $this->resolveEnrollmentTarget($enrollmentUrl, $uri);
+        if (!$target instanceof UriInterface) {
             if ($optional) {
                 return $handler->handle($request);
             }
@@ -146,7 +146,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             return $handler->handle($request);
         }
 
-        return new RedirectResponse($enrollmentUrl, 303);
+        return new RedirectResponse($target, 303);
     }
 
     /**
@@ -167,6 +167,25 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         $this->enforcementService->startGracePeriod($feUserUid);
 
         return $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
+    }
+
+    private function resolveEnrollmentTarget(string $url, UriInterface $origin): ?UriInterface
+    {
+        try {
+            $target = new Uri($url);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+
+        if (!str_starts_with($target->getPath(), '/')) {
+            return null;
+        }
+
+        if ($target->getScheme() === '' && $target->getAuthority() === '') {
+            return $target;
+        }
+
+        return $target->getScheme() === $origin->getScheme() && $target->getAuthority() === $origin->getAuthority() ? $target : null;
     }
 
     private function hasSkippedEnrollment(FrontendUserAuthentication $feUser, string $siteIdentifier): bool

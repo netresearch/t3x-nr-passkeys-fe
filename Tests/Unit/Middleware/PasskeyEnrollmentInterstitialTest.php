@@ -188,6 +188,22 @@ final class PasskeyEnrollmentInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function invalidEnrollmentUrlRespectsTheGracePeriod(): void
+    {
+        $site    = $this->createSite('main', 'https://example.com', 'ftp://example.com/enroll');
+        $request = $this->buildRequest($this->createAuthenticatedFeUser(42), site: $site);
+        $this->enforcementService->method('getStatus')->willReturn(
+            $this->makeStatus('required', inGracePeriod: true),
+            $this->makeStatus('enforced'),
+        );
+        $this->subject->process($request, $this->createPassThroughHandler());
+
+        $response = $this->subject->process($request, $this->createStub(RequestHandlerInterface::class));
+        self::assertSame(503, $response->getStatusCode());
+        self::assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+    }
+
+    #[Test]
     public function passesThroughWhenRequiredAndInGracePeriodWithSessionSkip(): void
     {
         $feUser  = $this->createAuthenticatedFeUser(42, ['enrollment_skipped' => true]);
