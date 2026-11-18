@@ -31,9 +31,9 @@ test.describe('Passkey management plugin', () => {
         await expect(page.locator('link[rel="stylesheet"][href*="passkey-fe.css"]')).toHaveCount(0);
     });
 
-    test('a registered credential appears in the list, can be renamed and removed', async ({ page }) => {
+    test('a registered credential appears in the list, can be renamed and removed', async ({ page }, testInfo) => {
         const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
-        await loginWithPassword(page);
+        await loginWithPassword(page, `e2e_management_${testInfo.retry}`);
         await removeAllCredentials(page);
 
         const registered = await registerPasskey(page, 'E2E management key');
