@@ -246,13 +246,12 @@
                             <f:if condition="{permaloginStatus} == 1">
                                 <f:then>
                                     <f:form.hidden name="permalogin" value="0" disabled="disabled"/>
-                                    <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1" checked="checked"/>
                                 </f:then>
                                 <f:else>
                                     <f:form.hidden name="permalogin" value="0"/>
-                                    <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1"/>
                                 </f:else>
                             </f:if>
+                            <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1" checked="{permaloginStatus} == 1"/>
                             <label for="permalogin-{loginId}">
                                 <f:translate id="permalogin"/>
                             </label>
