@@ -20,5 +20,6 @@ final readonly class RecoveryCodesGeneratedEvent
     public function __construct(
         public int $feUserUid,
         public int $codeCount,
+        public ?string $siteIdentifier = null,
     ) {}
 }

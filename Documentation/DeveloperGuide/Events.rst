@@ -128,8 +128,13 @@ code values are **never** included for security reasons.
         public function __construct(
             public readonly int $feUserUid,
             public readonly int $codeCount,
+            public readonly ?string $siteIdentifier = null,
         ) {}
     }
+
+The controller supplies the identifier of the site that generated the codes.
+Consumers of events constructed by older integrations may receive a null
+site identifier.
 
 Use cases: email notification, audit logging.
 

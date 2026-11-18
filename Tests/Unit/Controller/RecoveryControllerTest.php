@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Event\RecoveryCodesGeneratedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
@@ -81,8 +82,17 @@ final class RecoveryControllerTest extends TestCase
         $codes = ['ABCD-EFGH', 'WXYZ-1234', 'MNOP-QRST'];
         $this->recoveryCodeService->method('generate')->willReturn($codes);
 
-        $request  = $this->buildRequestWithUser(42);
-        $response = $this->subject->generateAction($request);
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::once())->method('dispatch')->willReturnCallback(static function (RecoveryCodesGeneratedEvent $event): object {
+            self::assertSame('main', $event->siteIdentifier);
+            self::assertSame(42, $event->feUserUid);
+            self::assertSame(3, $event->codeCount);
+
+            return $event;
+        });
+        $this->subject = new RecoveryController($this->recoveryCodeService, $this->rateLimiterService, $this->userLookupService, $dispatcher, new NullLogger());
+        $request       = $this->buildRequestWithUser(42);
+        $response      = $this->subject->generateAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeBody($response);

@@ -83,7 +83,7 @@ final readonly class RecoveryController
             return new JsonResponse(['error' => 'Failed to generate recovery codes'], 500);
         }
 
-        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, count($codes)));
+        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, count($codes), $site->getIdentifier()));
 
         $this->logger->info('FE recovery codes generated', [
             'fe_user_uid' => $feUserUid,
