@@ -177,6 +177,40 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
+    public function registrationVerifierAcceptsOnlyUserVerifiedAttestations(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $this->siteConfigService->method('getOrigin')->willReturn('https://example.com');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $rawChallenge = random_bytes(32);
+        $options      = $this->subject->createRegistrationOptions(1, 'test-user', $rawChallenge, $this->site)['options'];
+        $encode       = static fn (string $bytes): string => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+        $client       = json_encode(['type' => 'webauthn.create', 'origin' => 'https://example.com', 'challenge' => $encode($options->challenge)], JSON_THROW_ON_ERROR);
+        // The FIDO2 SDK fixtures share a public test key, RP and credential ID.
+        // One represents user verification and one represents presence alone.
+        $json = file_get_contents(__DIR__ . '/Fixtures/registration-attestations.json');
+        self::assertNotFalse($json);
+        $attestations = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($attestations);
+        foreach (['verified', 'presenceOnly'] as $case) {
+            $id       = $encode('unit-test-credential');
+            $response = json_encode([
+                'id'       => $id, 'rawId' => $id, 'type' => 'public-key',
+                'response' => ['clientDataJSON' => $encode($client), 'attestationObject' => $attestations[$case]],
+            ], JSON_THROW_ON_ERROR);
+            if ($case === 'presenceOnly') {
+                $this->expectException(RuntimeException::class);
+                $this->expectExceptionCode(1700200022);
+                $this->expectExceptionMessage('User authentication required.');
+            }
+
+            $credential = $this->subject->verifyRegistrationResponse($response, $rawChallenge, 1, $this->site);
+            self::assertSame(1, $credential->getFeUser());
+            self::assertSame('unit-test-credential', $credential->getCredentialId());
+        }
+    }
+
+    #[Test]
     public function registrationChallengeIsBoundToOwnerAndCeremony(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
