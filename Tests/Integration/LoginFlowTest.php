@@ -89,8 +89,9 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         $service->initAuth('getUserFE', $login, $user->getAuthInfoArray($request), $user);
         self::assertFalse($service->getUser());
         $this->getConnectionPool()->getConnectionForTable('fe_users')->update('fe_users', ['endtime' => 0], ['uid' => 1]);
-        $service->initAuth('authUserFE', $login, $user->getAuthInfoArray($request), $user);
-        self::assertSame(200, $service->authUser($record));
+        $authService = new PasskeyFrontendAuthenticationService();
+        $authService->initAuth('authUserFE', $login, $user->getAuthInfoArray($request), $user);
+        self::assertSame(200, $authService->authUser($record));
         self::assertFalse($service->getUser());
     }
 

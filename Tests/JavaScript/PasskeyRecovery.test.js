@@ -174,8 +174,10 @@ describe('PasskeyRecovery — submitting', () => {
     it('explains a failed handoff after a code was consumed', async () => {
         const { form, codeInput, error, submitBtn } = createRecoveryContainer();
         await loadModules('PasskeyUtils.js', 'PasskeyRecovery.js');
-        vi.spyOn(window.NrPasskeysFe, 'submitLoginToken').mockReturnValue(false);
-        fetch.mockResolvedValueOnce(jsonResponse(200, { status: 'ok', loginToken: 'ticket' }));
+        fetch.mockImplementationOnce(async () => {
+            document.getElementById('nr-passkeys-fe-token-form').remove();
+            return jsonResponse(200, { status: 'ok', loginToken: 'ticket' });
+        });
         type(codeInput, 'ABCD1234');
         await submit(form);
         expect(error.textContent).toContain('Contact support before using another code');
