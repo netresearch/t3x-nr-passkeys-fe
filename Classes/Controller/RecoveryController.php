@@ -141,9 +141,11 @@ final readonly class RecoveryController
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
 
-        try {
-            $this->rateLimiterService->consumeRateLimit('fe_recovery_capacity', 'all-sites');
-        } catch (RuntimeException) {
+        if (!RecoveryCodeService::hasValidCodeLength($code)) {
+            return new JsonResponse(['error' => 'Authentication failed'], 401);
+        }
+
+        if (!$this->recoveryCodeService->reserveVerificationCapacity()) {
             return new JsonResponse(['error' => 'Recovery temporarily busy'], 429, ['Retry-After' => '60']);
         }
 

@@ -44,13 +44,16 @@ final class RecoveryControllerTest extends TestCase
 
     private RecoveryController $subject;
 
+    private bool $capacityAvailable = true;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
-        $this->rateLimiterService  = $this->createStub(RateLimiterService::class);
-        $this->userLookupService   = $this->createStub(FrontendUserLookupService::class);
+        $this->recoveryCodeService->method('reserveVerificationCapacity')->willReturnCallback(fn (): bool => $this->capacityAvailable);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->userLookupService  = $this->createStub(FrontendUserLookupService::class);
         $this->userLookupService->method('ownerStoragePid')->willReturn(12);
 
         // Register a cache stub for the login token
@@ -154,6 +157,18 @@ final class RecoveryControllerTest extends TestCase
         // Without DB mock, findFeUserUid returns null → 401
         $response = $this->subject->verifyAction($request);
         self::assertSame(401, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function sharedRecoveryLimitAppliesOnlyToWellFormedCodes(): void
+    {
+        $this->capacityAvailable = false;
+        $short                   = $this->subject->verifyAction($this->buildRequest(['username' => 'known', 'code' => 'ABC']));
+        self::assertSame(401, $short->getStatusCode());
+
+        $full = $this->subject->verifyAction($this->buildRequest(['username' => 'known', 'code' => 'ABCD-EFGH']));
+        self::assertSame(429, $full->getStatusCode());
+        self::assertSame('60', $full->getHeaderLine('Retry-After'));
     }
 
     #[Test]

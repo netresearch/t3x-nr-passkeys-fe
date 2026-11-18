@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
+# cat=security/200/100; type=int+; label=Maximum frontend recovery code verifications per minute across all sites
+recoveryVerificationsPerMinute = 30

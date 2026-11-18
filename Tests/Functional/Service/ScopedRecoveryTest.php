@@ -9,19 +9,37 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
+use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Symfony\Component\Clock\MockClock;
 use TYPO3\CMS\Core\Configuration\SiteConfiguration;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 
 #[CoversClass(RecoveryCodeService::class)]
 final class ScopedRecoveryTest extends AbstractPasskeyFunctionalTestCase
 {
+    #[Test]
+    public function separateWorkersChargeTheConfiguredRecoveryQuota(): void
+    {
+        $pool          = $this->get(ConnectionPool::class);
+        $configuration = new FrontendConfiguration(recoveryVerificationsPerMinute: 2);
+        $clock         = new MockClock('2026-10-01 10:00:00 UTC');
+        $first         = new RecoveryCodeService($pool, $configuration, $clock);
+        $second        = new RecoveryCodeService($pool, $configuration, $clock);
+        self::assertTrue($first->reserveVerificationCapacity());
+        self::assertTrue($second->reserveVerificationCapacity());
+        self::assertFalse($first->reserveVerificationCapacity());
+        $clock->sleep(60);
+        self::assertTrue($second->reserveVerificationCapacity());
+    }
+
     #[Test]
     public function existingUnscopedCodesMoveOnlyToTheHomeSiteOfTheOwnerFolder(): void
     {

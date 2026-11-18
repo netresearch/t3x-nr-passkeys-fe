@@ -57,3 +57,9 @@ CREATE TABLE tx_nrpasskeysfe_consumed_token (
     PRIMARY KEY (token_hash),
     KEY expires_at (expires_at)
 );
+
+CREATE TABLE tx_nrpasskeysfe_recovery_capacity (
+    minute int(11) unsigned NOT NULL,
+    attempts int(11) unsigned NOT NULL,
+    PRIMARY KEY (minute)
+);

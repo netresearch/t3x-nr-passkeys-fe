@@ -9,9 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
 use InvalidArgumentException;
+use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
+use Psr\Clock\ClockInterface;
 use RuntimeException;
+use Symfony\Component\Clock\NativeClock;
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -43,6 +47,8 @@ final readonly class RecoveryCodeService
 {
     private const TABLE = 'tx_nrpasskeysfe_recovery_code';
 
+    private const CAPACITY_TABLE = 'tx_nrpasskeysfe_recovery_capacity';
+
     /**
      * 30-character alphabet excluding 0/O, 1/I/L.
      */
@@ -70,7 +76,47 @@ final readonly class RecoveryCodeService
 
     public function __construct(
         private ConnectionPool $connectionPool,
+        private FrontendConfiguration $configuration = new FrontendConfiguration(),
+        private ClockInterface $clock = new NativeClock(),
     ) {}
+
+    public static function hasValidCodeLength(string $code): bool
+    {
+        return strlen(str_replace('-', '', trim($code))) === self::CODE_LENGTH;
+    }
+
+    /** Reserve one bcrypt verification across all workers and sites. */
+    public function reserveVerificationCapacity(): bool
+    {
+        $db       = $this->connectionPool->getConnectionForTable(self::CAPACITY_TABLE);
+        $minute   = intdiv($this->clock->now()->getTimestamp(), 60);
+        $criteria = ['minute' => $minute];
+        $q        = $db->createQueryBuilder();
+        $q->update(self::CAPACITY_TABLE)
+            ->set('attempts', $db->quoteIdentifier('attempts') . ' + 1', false)
+            ->where(
+                $q->expr()->eq('minute', $q->createNamedParameter($minute, ParameterType::INTEGER)),
+                $q->expr()->lt('attempts', $q->createNamedParameter($this->configuration->getRecoveryVerificationsPerMinute(), ParameterType::INTEGER)),
+            );
+        if ($db->count('*', self::CAPACITY_TABLE, $criteria) > 0) {
+            return $q->executeStatement() === 1;
+        }
+
+        try {
+            $db->insert(self::CAPACITY_TABLE, $criteria + ['attempts' => 1]);
+        } catch (UniqueConstraintViolationException) {
+            // Another worker opened this minute between the count and insert.
+            return $q->executeStatement() === 1;
+        }
+
+        // Only the worker opening a minute prunes. Keep recent counters across clock skew.
+        $cleanup = $db->createQueryBuilder();
+        $cleanup->delete(self::CAPACITY_TABLE)
+            ->where($cleanup->expr()->lt('minute', $cleanup->createNamedParameter($minute - 60, ParameterType::INTEGER)))
+            ->executeStatement();
+
+        return true;
+    }
 
     /**
      * Generate a set of recovery codes for a frontend user.
@@ -147,11 +193,11 @@ final readonly class RecoveryCodeService
      */
     public function verify(int $feUserUid, string $code, ?SiteInterface $site = null): bool
     {
-        $normalised = strtoupper(str_replace('-', '', trim($code)));
-
-        if (strlen($normalised) !== self::CODE_LENGTH) {
+        if (!self::hasValidCodeLength($code)) {
             return false;
         }
+
+        $normalised = strtoupper(str_replace('-', '', trim($code)));
 
         $this->assignLegacyToHomeSite($feUserUid, $site);
         $queryBuilder = $this->getQueryBuilder();
