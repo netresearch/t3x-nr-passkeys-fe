@@ -67,6 +67,13 @@ function appendTokenForm() {
     const form = document.createElement('form');
     form.id = 'nr-passkeys-fe-token-form';
     form.setAttribute('action', '/login');
+    form.method = 'post';
+    for (const name of ['user', 'logintype', '__RequestToken']) {
+        const field = document.createElement('input');
+        field.name = name;
+        field.value = name === '__RequestToken' ? 'request-token' : '';
+        form.appendChild(field);
+    }
     document.body.appendChild(form);
     return form;
 }
@@ -494,8 +501,10 @@ describe('PasskeyLogin — tabs', () => {
 });
 
 describe('PasskeyLogin — recovery form toggle', () => {
-    it('swaps the passkey content for the recovery form and back', async () => {
-        installWebAuthn(async () => fakeAssertion());
+    it.each([true, false])('opens and closes recovery with WebAuthn available: %s', async (supported) => {
+        if (supported) {
+            installWebAuthn(async () => fakeAssertion());
+        }
         const { container, passkeyContent, recovery } = buildLogin();
 
         await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');

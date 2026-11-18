@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Netresearch\NrPasskeysFe\Service\LinkablePageResolver;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
@@ -68,7 +69,8 @@ final class LoginPluginController extends ActionController
             'discoverableEnabled' => $discoverableEnabled,
             // The link needs a page to point to: without one, or with one
             // this plugin must not link to, the switch has nothing to show.
-            'passwordFallbackUrl' => $showPasswordFallback
+            'recoveryAllowed'     => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'),
+            'passwordFallbackUrl' => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'password') && $showPasswordFallback
                 ? $this->resolveSameSitePageUri($this->settings['passwordLoginPage'] ?? null, $site)
                 : null,
             // The hidden token form below posts to this page instead of the
@@ -128,7 +130,7 @@ final class LoginPluginController extends ActionController
             ->setLinkAccessRestrictedPages($isLoginTarget)
             ->build();
 
-        return $this->staysOnSite($uri, $site) ? $uri : null;
+        return $this->staysOnSite($uri, $site, $isLoginTarget) ? $uri : null;
     }
 
     /**
@@ -139,7 +141,7 @@ final class LoginPluginController extends ActionController
      * outright: browsers strip or reinterpret them, which is how
      * "/<TAB>/host" and "http://host\@site" read as another host.
      */
-    private function staysOnSite(string $uri, SiteInterface $site): bool
+    private function staysOnSite(string $uri, SiteInterface $site, bool $isLoginTarget): bool
     {
         if ($uri === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $uri) === 1) {
             return false;
@@ -155,7 +157,15 @@ final class LoginPluginController extends ActionController
             parse_url($uri, PHP_URL_PORT),
         );
 
-        return $origin !== null && in_array($origin, $this->allowedOrigins($site), true);
+        if ($origin === null || !in_array($origin, $this->allowedOrigins($site), true)) {
+            return false;
+        }
+
+        // The handoff carries a login ticket. Keep its POST on the current
+        // origin even when a different language host belongs to this site.
+        $requestUri = $this->request->getUri();
+
+        return !$isLoginTarget || $origin === $this->originOf($requestUri->getScheme(), $requestUri->getHost(), $requestUri->getPort());
     }
 
     /**

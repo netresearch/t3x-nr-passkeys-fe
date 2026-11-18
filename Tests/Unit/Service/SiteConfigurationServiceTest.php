@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -19,6 +20,7 @@ use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteSettings;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function array_key_exists;
 use function explode;
@@ -33,6 +35,29 @@ final class SiteConfigurationServiceTest extends TestCase
     {
         parent::setUp();
         $this->subject = new SiteConfigurationService();
+    }
+
+    #[Test]
+    public function recoveryRequiresBothTheSitePolicyAndTheGlobalSetting(): void
+    {
+        $site = new Site('members', 1, ['base' => 'https://members.example/'], SiteSettings::createFromSettingsTree([
+            'nr_passkeys_fe' => ['enabledRecoveryMethods' => ['recovery_code'], 'enrollmentPageUrl' => ' /keys '],
+        ]));
+        self::assertSame('/keys', $this->subject->getEnrollmentPageUrl($site));
+        self::assertFalse(SiteConfigurationService::allowsRecoveryMethod($site, 'password'));
+        GeneralUtility::addInstance(FrontendConfiguration::class, new FrontendConfiguration(recoveryCodesEnabled: false));
+        self::assertFalse(SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'));
+        GeneralUtility::addInstance(FrontendConfiguration::class, new FrontendConfiguration(recoveryCodesEnabled: true));
+        self::assertTrue(SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'));
+    }
+
+    #[Test]
+    public function missingSiteConfigurationCannotSupplyAnEnrollmentOrRecoveryPolicy(): void
+    {
+        $site = $this->createStub(SiteInterface::class);
+        self::assertFalse(SiteConfigurationService::allowsRecoveryMethod($site, 'password'));
+        $this->expectException(RuntimeException::class);
+        $this->subject->getEnrollmentPageUrl($site);
     }
 
     // ---------------------------------------------------------------
@@ -155,6 +180,13 @@ final class SiteConfigurationServiceTest extends TestCase
         );
 
         self::assertSame('required', $this->subject->getEnforcementLevel($site));
+    }
+
+    #[Test]
+    public function legacyBooleanFalsePreservesTheDisabledSitePolicy(): void
+    {
+        $site = $this->createSiteWithSettings(['nr_passkeys_fe' => ['enforcementLevel' => false]], 'https://example.com/');
+        self::assertSame('off', $this->subject->getEnforcementLevel($site));
     }
 
     #[Test]

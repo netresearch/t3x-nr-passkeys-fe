@@ -43,9 +43,23 @@ CREATE TABLE tx_nrpasskeysfe_credential (
 
 CREATE TABLE tx_nrpasskeysfe_recovery_code (
     fe_user int(11) unsigned NOT NULL DEFAULT 0,
+    site_identifier varchar(255) NOT NULL DEFAULT '',
     code_hash varchar(255) NOT NULL DEFAULT '',
     used_at int(11) unsigned NOT NULL DEFAULT 0,
     created_at int(11) unsigned NOT NULL DEFAULT 0,
 
     KEY fe_user (fe_user)
+);
+
+CREATE TABLE tx_nrpasskeysfe_consumed_token (
+    token_hash varchar(64) DEFAULT '' NOT NULL,
+    expires_at int(11) unsigned DEFAULT '0' NOT NULL,
+    PRIMARY KEY (token_hash),
+    KEY expires_at (expires_at)
+);
+
+CREATE TABLE tx_nrpasskeysfe_recovery_capacity (
+    minute int(11) unsigned NOT NULL,
+    attempts int(11) unsigned NOT NULL,
+    PRIMARY KEY (minute)
 );

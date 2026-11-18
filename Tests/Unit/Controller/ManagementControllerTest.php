@@ -9,10 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Exception\ConnectionException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -75,7 +78,16 @@ final class ManagementControllerTest extends TestCase
             $this->challengeService,
             $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
+            $this->enforcement(),
         );
+    }
+
+    private function enforcement(): FrontendEnforcementService
+    {
+        $service = $this->createStub(FrontendEnforcementService::class);
+        $service->method('getStatus')->willReturn(new FrontendEnforcementStatus('off', 'off', 'off', 1, false, null, 0));
+
+        return $service;
     }
 
     private function createSubjectWithCredentialRepository(
@@ -89,6 +101,7 @@ final class ManagementControllerTest extends TestCase
             $this->challengeService,
             $this->createStub(EventDispatcherInterface::class),
             new NullLogger(),
+            $this->enforcement(),
         );
     }
 
@@ -139,6 +152,16 @@ final class ManagementControllerTest extends TestCase
         $response = $this->subject->registrationVerifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationReturnsARetryableResponseWhenTheChallengeStoreIsUnavailable(): void
+    {
+        $this->challengeService->method('verifyChallengeToken')->willThrowException($this->createStub(ConnectionException::class));
+        $request  = $this->buildRequestWithUser(42, 'user@example.com', ['credential' => ['id' => 'abc'], 'challengeToken' => 'ticket']);
+        $response = $this->subject->registrationVerifyAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
     }
 
     #[Test]
@@ -255,7 +278,7 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old Name');
+        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old Name', siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
         $credentialRepository->expects(self::once())->method('updateLabel')->with(10, 'New Name');
 
@@ -275,7 +298,7 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old');
+        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old', siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
         $credentialRepository->expects(self::once())->method('updateLabel')->with(10, $expectedLabel);
 
@@ -315,9 +338,9 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(uid: 10, feUser: 42);
+        $credential = new FrontendCredential(uid: 10, feUser: 42, siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
-        $credentialRepository->expects(self::once())->method('revoke')->with(10, 42);
+        $credentialRepository->expects(self::once())->method('removeOwned')->with(10, 42, false, 'main')->willReturn(true);
 
         $request  = $this->buildRequestWithUser(42, '', ['uid' => 10]);
         $response = $subject->removeAction($request);
@@ -332,7 +355,8 @@ final class ManagementControllerTest extends TestCase
 
     private function buildRequestWithUser(int $uid, string $username = '', array $body = []): ServerRequest
     {
-        $feUser       = $this->createStub(FrontendUserAuthentication::class);
+        $feUser = $this->createStub(FrontendUserAuthentication::class);
+        $feUser->method('getKey')->willReturn(['token' => hash('sha256', 'valid-token'), 'uid' => $uid, 'site' => '', 'rp' => '', 'origin' => '']);
         $feUser->user = ['uid' => $uid, 'username' => $username];
 
         return (new ServerRequest('https://example.com/', 'POST'))

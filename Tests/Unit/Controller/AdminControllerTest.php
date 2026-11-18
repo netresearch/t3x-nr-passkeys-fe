@@ -386,7 +386,7 @@ final class AdminControllerTest extends TestCase
         $rateLimiterService
             ->expects($this->once())
             ->method('resetLockout')
-            ->with('johndoe');
+            ->with('42');
 
         $request = (new ServerRequest('/nr-passkeys-fe/admin/unlock', 'POST'))
             ->withParsedBody(['feUserUid' => 42, 'username' => 'johndoe']);

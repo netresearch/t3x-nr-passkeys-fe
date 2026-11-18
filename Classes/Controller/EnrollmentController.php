@@ -117,8 +117,10 @@ final readonly class EnrollmentController
             return new JsonResponse(['error' => 'Missing nonce'], 400);
         }
 
-        // Validate the nonce against what the middleware stored in the session
-        $expectedNonce = $this->getSessionNonce($request);
+        $site           = $this->siteConfigurationService->getCurrentSite($request);
+        $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
+        // Validate the nonce against the current site and account
+        $expectedNonce = $this->getSessionNonce($request, $feUserUid, $siteIdentifier);
         if ($expectedNonce === '' || !hash_equals($expectedNonce, $nonce)) {
             $this->logger->warning('Enrollment skip: invalid nonce', [
                 'fe_user_uid' => $feUserUid,
@@ -127,8 +129,13 @@ final readonly class EnrollmentController
             return new JsonResponse(['error' => 'Invalid nonce'], 403);
         }
 
+        $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
+        if ($status->effectiveLevel !== 'required' || !$status->inGracePeriod || $status->passkeyCount > 0) {
+            return new JsonResponse(['error' => 'Enrollment cannot be postponed'], 403);
+        }
+
         // Set the skip flag for this session
-        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', true);
+        $this->setFeUserSessionKey($request, 'nr_passkeys_fe_skip_enrollment', $siteIdentifier);
 
         // Invalidate the nonce so it cannot be replayed
         $this->setFeUserSessionKey($request, 'nr_passkeys_fe_enrollment_nonce', '');
@@ -143,13 +150,13 @@ final readonly class EnrollmentController
     /**
      * Retrieve the enrollment nonce stored in the current FE session.
      */
-    private function getSessionNonce(ServerRequestInterface $request): string
+    private function getSessionNonce(ServerRequestInterface $request, int $uid, string $site): string
     {
         $feUserAuth = $request->getAttribute('frontend.user');
         if ($feUserAuth instanceof FrontendUserAuthentication) {
             $value = $feUserAuth->getKey('ses', 'nr_passkeys_fe_enrollment_nonce');
 
-            return is_string($value) ? $value : '';
+            return is_array($value) && ($value['scope'] ?? null) === ['uid' => $uid, 'site' => $site] && is_string($value['nonce'] ?? null) ? $value['nonce'] : '';
         }
 
         $this->logger->warning('Enrollment: frontend.user not available for nonce retrieval');

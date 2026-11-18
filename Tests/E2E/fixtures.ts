@@ -112,7 +112,7 @@ export async function registerPasskey(
     label = 'E2E key',
 ): Promise<{ success: boolean; error?: string }> {
     const optionsResponse = await page.request.post(eidUrl('registrationOptions'), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
         data: {},
     });
     if (!optionsResponse.ok()) {
@@ -182,7 +182,7 @@ export async function registerPasskey(
     }
 
     const verifyResponse = await page.request.post(eidUrl('registrationVerify'), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
         data: {
             credential,
             challengeToken: optionsData.challengeToken,
@@ -199,16 +199,28 @@ export async function registerPasskey(
     return { success: true };
 }
 
-/** Remove every credential the seeded user holds, so specs do not inherit each other's. */
+/** Sign in through the explicit passkey button with the registered resident credential. */
+export async function signInWithRegisteredPasskey(page: Page, cdp: CDPSession, authenticatorId: string): Promise<void> {
+    await setAutomaticPresence(cdp, authenticatorId, false);
+    await logOut(page);
+    await page.goto('/login-plugin');
+    const button = page.locator('#nr-passkeys-fe-login-btn');
+    await expect(button).toBeVisible();
+    await button.click();
+    await setAutomaticPresence(cdp, authenticatorId, true);
+    await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status(), { timeout: 30_000 }).toBe(200);
+}
+
 export async function removeAllCredentials(page: Page): Promise<void> {
     const listResponse = await page.request.get(eidUrl('manageList'));
-    if (!listResponse.ok()) return;
+    expect(listResponse.status(), await listResponse.text()).toBe(200);
 
     const data = await listResponse.json();
     for (const credential of data.credentials || []) {
-        await page.request.post(eidUrl('manageRemove'), {
-            headers: { 'Content-Type': 'application/json' },
+        const removed = await page.request.post(eidUrl('manageRemove'), {
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credential.uid },
         });
+        expect(removed.status(), await removed.text()).toBe(200);
     }
 }

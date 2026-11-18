@@ -21,6 +21,7 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -31,8 +32,6 @@ use function hash;
 use function is_numeric;
 use function is_scalar;
 use function random_bytes;
-use function random_int;
-use function usleep;
 
 /**
  * Handles recovery code management for frontend users.
@@ -69,7 +68,16 @@ final readonly class RecoveryController
         $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
-            $codes = $this->recoveryCodeService->generate($feUserUid);
+            $site = $request->getAttribute('site');
+            if (!$site instanceof SiteInterface || $site->getIdentifier() === '') {
+                return new JsonResponse(['error' => 'A configured site is required'], 403);
+            }
+
+            if ($this->userLookupService->ownerStoragePid($feUserUid, $site) === null) {
+                return new JsonResponse(['error' => 'Account unavailable for this site'], 403);
+            }
+
+            $codes = $this->recoveryCodeService->generate($feUserUid, site: $site);
         } catch (Throwable $e) {
             $this->logger->error('FE recovery code generation failed', [
                 'fe_user_uid' => $feUserUid,
@@ -79,7 +87,7 @@ final readonly class RecoveryController
             return new JsonResponse(['error' => 'Failed to generate recovery codes'], 500);
         }
 
-        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, count($codes)));
+        $this->eventDispatcher->dispatch(new RecoveryCodesGeneratedEvent($feUserUid, count($codes), $site->getIdentifier()));
 
         $this->logger->info('FE recovery codes generated', [
             'fe_user_uid' => $feUserUid,
@@ -119,25 +127,35 @@ final readonly class RecoveryController
 
         try {
             $this->rateLimiterService->consumeRateLimit('fe_recovery_verify', $ip);
-            $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
 
-        // Look up the fe_user to get their UID
-        $feUserUid = $this->findFeUserUid($username);
-        if ($feUserUid === null) {
-            // Prevent user enumeration
-            usleep(random_int(50000, 150000));
+        $site = $request->getAttribute('site');
+        if (!$site instanceof SiteInterface || $site->getIdentifier() === '') {
+            return new JsonResponse(['error' => 'Invalid site'], 400);
+        }
 
+        // Look up the fe_user to get their UID
+        $feUserUid = $this->userLookupService->findFeUserUidByUsername($username, $site);
+        $account   = $feUserUid === null ? 'unknown:' . hash('sha256', $site->getIdentifier() . '|' . $username) : (string) $feUserUid;
+        try {
+            $this->rateLimiterService->checkLockout($account, $ip);
+        } catch (RuntimeException) {
+            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
+        }
+
+        if (!RecoveryCodeService::hasValidCodeLength($code)) {
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
 
-        $valid = $this->recoveryCodeService->verify($feUserUid, $code);
+        if (!$this->recoveryCodeService->reserveVerificationCapacity()) {
+            return new JsonResponse(['error' => 'Recovery temporarily busy'], 429, ['Retry-After' => '60']);
+        }
 
-        if (!$valid) {
-            $this->rateLimiterService->recordFailure($username, $ip);
-
+        $valid = $this->recoveryCodeService->verify($feUserUid ?? 0, $code, $site);
+        if ($feUserUid === null || !$valid) {
+            $this->rateLimiterService->recordFailure($account, $ip, false);
             $this->logger->warning('FE recovery code verification failed', [
                 'username_hash' => hash('sha256', $username),
                 'ip'            => $ip,
@@ -146,19 +164,24 @@ final readonly class RecoveryController
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
 
-        $this->rateLimiterService->recordSuccess($username, $ip);
+        $this->rateLimiterService->recordSuccess($account, $ip);
 
         $this->logger->info('FE recovery code accepted', [
             'fe_user_uid' => $feUserUid,
         ]);
 
         // Create a one-time login token (same mechanism as passkey login)
+        $storagePid = $this->userLookupService->ownerStoragePid($feUserUid, $site);
+        if ($storagePid === null) {
+            return new JsonResponse(['error' => 'Authentication failed'], 401);
+        }
+
         $token = bin2hex(random_bytes(32));
         $cache = GeneralUtility::makeInstance(CacheManager::class)
             ->getCache('nr_passkeys_fe_nonce');
         $cache->set(
             'passkey_login_' . $token,
-            (string) $feUserUid,
+            json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'storagePid' => $storagePid, 'expiresAt' => time() + 120, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR),
             [],
             120,
         );
@@ -168,10 +191,5 @@ final readonly class RecoveryController
             'feUserUid'  => $feUserUid,
             'loginToken' => $token,
         ]);
-    }
-
-    private function findFeUserUid(string $username): ?int
-    {
-        return $this->userLookupService->findFeUserUidByUsername($username);
     }
 }

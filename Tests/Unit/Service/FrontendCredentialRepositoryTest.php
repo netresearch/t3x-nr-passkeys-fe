@@ -133,6 +133,11 @@ final class FrontendCredentialRepositoryTest extends TestCase
             $this->buildCredentialRow(uid: 2, feUser: 7, siteIdentifier: 'main'),
         ];
 
+        $pidResult = $this->createStub(Result::class);
+        $pidResult->method('fetchOne')->willReturn(1);
+        $ownerConnection = $this->createStub(Connection::class);
+        $ownerConnection->method('select')->willReturn($pidResult);
+        $this->connectionPool->method('getConnectionForTable')->willReturnMap([['fe_users', $ownerConnection]]);
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn($rows);
 
@@ -151,6 +156,11 @@ final class FrontendCredentialRepositoryTest extends TestCase
     #[Test]
     public function findByFeUserReturnsEmptyArrayWhenNoneFound(): void
     {
+        $pidResult = $this->createStub(Result::class);
+        $pidResult->method('fetchOne')->willReturn(false);
+        $ownerConnection = $this->createStub(Connection::class);
+        $ownerConnection->method('select')->willReturn($pidResult);
+        $this->connectionPool->method('getConnectionForTable')->willReturnMap([['fe_users', $ownerConnection]]);
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([]);
 

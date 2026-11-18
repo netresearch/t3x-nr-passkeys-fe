@@ -34,6 +34,13 @@ async function loginToBackend(page: Page): Promise<boolean> {
     return !page.url().includes('/login');
 }
 
+async function confirmSudo(page: Page): Promise<void> {
+    const password = page.locator('typo3-backend-security-sudo-mode-form input[name="password"]');
+    await expect(password).toBeVisible();
+    await password.fill(BE_PASSWORD);
+    await password.press('Enter');
+}
+
 test.describe('Backend module', () => {
     test('an administrator reaches the module and it renders its own content', async ({ page }) => {
         expect(await loginToBackend(page), 'the backend login has to succeed').toBe(true);
@@ -62,8 +69,9 @@ test.describe('Backend module', () => {
 
         try {
             const [response] = await Promise.all([
-                page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/update-enforcement')),
+                page.waitForResponse((r) => r.url().includes('/nr-passkeys-fe/admin/update-enforcement') && r.status() !== 422),
                 select.selectOption('encourage'),
+                confirmSudo(page),
             ]);
             expect(response.status(), 'the save has to succeed').toBe(200);
             expect(await response.json()).toMatchObject({ status: 'ok', enforcement: 'encourage' });
@@ -101,12 +109,20 @@ test.describe('Backend module', () => {
         const frame = page.frame('list_frame') ?? page;
 
         // The route URL with its token, as TYPO3 issued it to this session.
-        const status = await frame.evaluate(async () => {
+        const request = frame.evaluate(async () => {
             const url = (window as unknown as { TYPO3: { settings: { ajaxUrls: Record<string, string> } } })
                 .TYPO3.settings.ajaxUrls.nr_passkeys_fe_admin_update_enforcement;
             const body = new URLSearchParams({ groupUid: '1', enforcement: 'mandatory' });
+            const response = await fetch(url, { method: 'POST', body });
+            if (response.status !== 422) {
+                return response.status;
+            }
+            const moduleName = '@typo3/backend/security/element/sudo-mode.js';
+            const { initiateSudoModeModal } = await import(moduleName);
+            await initiateSudoModeModal((await response.json()).sudoModeInitialization);
             return (await fetch(url, { method: 'POST', body })).status;
         });
+        const [status] = await Promise.all([request, confirmSudo(page)]);
         expect(status).toBe(400);
     });
 

@@ -9,12 +9,15 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +26,15 @@ use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webauthn\AttestationStatement\AttestationObject;
+use Webauthn\AttestationStatement\AttestationStatement;
+use Webauthn\AuthenticatorAttestationResponse;
+use Webauthn\AuthenticatorData;
+use Webauthn\CeremonyStep\CheckUserVerification;
+use Webauthn\CollectedClientData;
 use Webauthn\CredentialRecord;
+use Webauthn\Exception\AuthenticatorResponseVerificationException;
 use Webauthn\PublicKeyCredentialDescriptor;
 
 use function array_diff;
@@ -72,6 +83,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // The decoy descriptors are keyed by the encryption key, so the stub
         // answers with the same one the user-handle derivation above uses.
         $this->configurationService = $this->createStub(ExtensionConfigurationService::class);
+        $this->configurationService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
         $this->configurationService->method('getEncryptionKey')->willReturn(str_repeat('a', 64));
 
         $this->subject = new FrontendWebAuthnService(
@@ -143,7 +155,63 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
-    public function createRegistrationOptionsPassesChallengeThrough(): void
+    public function registrationVerificationRequiresTheAuthenticatorsUvFlag(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $options   = $this->subject->createRegistrationOptions(1, 'owner', 'challenge', $this->site)['options'];
+        $record    = $this->createStub(CredentialRecord::class);
+        $client    = $this->createStub(CollectedClientData::class);
+        $statement = $this->createStub(AttestationStatement::class);
+        $step      = new CheckUserVerification();
+        foreach ([true, false] as $verified) {
+            $flags    = AuthenticatorData::FLAG_UP | ($verified ? AuthenticatorData::FLAG_UV : 0);
+            $authData = AuthenticatorData::create('', '', chr($flags), 0);
+            $object   = AttestationObject::create('', $statement, $authData);
+            $response = AuthenticatorAttestationResponse::create($client, $object);
+            if (!$verified) {
+                $this->expectException(AuthenticatorResponseVerificationException::class);
+            }
+
+            $step->process($record, $response, $options, null, 'example.com');
+        }
+    }
+
+    #[Test]
+    public function registrationVerifierAcceptsOnlyUserVerifiedAttestations(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $this->siteConfigService->method('getOrigin')->willReturn('https://example.com');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $rawChallenge = random_bytes(32);
+        $options      = $this->subject->createRegistrationOptions(1, 'test-user', $rawChallenge, $this->site)['options'];
+        $encode       = static fn (string $bytes): string => rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
+        $client       = json_encode(['type' => 'webauthn.create', 'origin' => 'https://example.com', 'challenge' => $encode($options->challenge)], JSON_THROW_ON_ERROR);
+        // The FIDO2 SDK fixtures share a public test key, RP and credential ID.
+        // One represents user verification and one represents presence alone.
+        $json = file_get_contents(__DIR__ . '/Fixtures/registration-attestations.json');
+        self::assertNotFalse($json);
+        $attestations = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($attestations);
+        foreach (['verified', 'presenceOnly'] as $case) {
+            $id       = $encode('unit-test-credential');
+            $response = json_encode([
+                'id'       => $id, 'rawId' => $id, 'type' => 'public-key',
+                'response' => ['clientDataJSON' => $encode($client), 'attestationObject' => $attestations[$case]],
+            ], JSON_THROW_ON_ERROR);
+            if ($case === 'presenceOnly') {
+                $this->expectException(RuntimeException::class);
+                $this->expectExceptionCode(1700200022);
+                $this->expectExceptionMessage('User authentication required.');
+            }
+
+            $credential = $this->subject->verifyRegistrationResponse($response, $rawChallenge, 1, $this->site);
+            self::assertSame(1, $credential->getFeUser());
+            self::assertSame('unit-test-credential', $credential->getCredentialId());
+        }
+    }
+
+    #[Test]
+    public function registrationChallengeIsBoundToOwnerAndCeremony(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -152,7 +220,9 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $challenge = random_bytes(32);
         $result    = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
 
-        self::assertSame($challenge, $result['options']->challenge);
+        self::assertNotSame($challenge, $result['options']->challenge);
+        self::assertNotSame($result['options']->challenge, $this->subject->createRegistrationOptions(2, 'other', $challenge, $this->site)['options']->challenge);
+        self::assertNotSame($result['options']->challenge, $this->subject->createDiscoverableAssertionOptions($challenge, $this->site)['options']->challenge);
     }
 
     // ---------------------------------------------------------------
@@ -216,13 +286,13 @@ final class FrontendWebAuthnServiceTest extends TestCase
     public function findFeUserUidFromAssertionReturnsNullOnInvalidJson(): void
     {
         // This will throw during deserialization, which is caught
-        self::assertNull($this->subject->findFeUserUidFromAssertion('not-json'));
+        self::assertNull($this->subject->findFeUserUidFromAssertion('not-json', $this->site));
     }
 
     #[Test]
     public function findFeUserUidFromAssertionReturnsNullOnEmptyJson(): void
     {
-        self::assertNull($this->subject->findFeUserUidFromAssertion('{}'));
+        self::assertNull($this->subject->findFeUserUidFromAssertion('{}', $this->site));
     }
 
     // ---------------------------------------------------------------
@@ -242,6 +312,32 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $result2 = $this->subject->createRegistrationOptions(42, 'user', $challenge, $this->site);
 
         self::assertSame($result1['options']->user->id, $result2['options']->user->id);
+    }
+
+    #[Test]
+    public function aLegacyRegistrationMustRestartWhileAnExistingLoginChallengeRemainsValid(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.test');
+        $this->siteConfigService->method('getOrigin')->willReturn('https://example.test');
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $registration = $this->subject->createRegistrationOptions(42, 'user', 'upgrade-check', $this->site);
+        $login        = $this->subject->createDiscoverableAssertionOptions('upgrade-check', $this->site);
+
+        // These two challenge vectors were issued by the UID-only registration format.
+        self::assertNotSame('0b0a7533a8778a4691dfaaae7402bd4a9511fc418333ca1cbd7a6202c0c0e9de', bin2hex($registration['options']->challenge));
+        self::assertSame('92873b977dc3cc786f6b16f2ee307bd709adcd3bf88d95ca5ae1ea1f60f9cc82', bin2hex($login['options']->challenge));
+    }
+
+    #[Test]
+    public function sitesSharingAnRpIdIssueDistinctHandlesToTheSameAccount(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $secondSite = $this->createStub(SiteInterface::class);
+        $this->siteConfigService->method('getSiteIdentifier')->willReturnMap([[$this->site, 'shop'], [$secondSite, 'intranet']]);
+        $challenge = random_bytes(32);
+        $shop      = $this->subject->createRegistrationOptions(42, 'user', $challenge, $this->site);
+        $intranet  = $this->subject->createRegistrationOptions(42, 'user', $challenge, $secondSite);
+        self::assertNotSame($shop['options']->user->id, $intranet['options']->user->id);
     }
 
     #[Test]
@@ -339,6 +435,40 @@ final class FrontendWebAuthnServiceTest extends TestCase
         ], JSON_THROW_ON_ERROR);
     }
 
+    /** @return array<string, array{string, int, int, int, string}> */
+    public static function unusableCredentials(): array
+    {
+        return [
+            'different site'      => ['other', 12, 0, 1700200036, 'Credential outside the current site'],
+            'revoked key'         => ['main', 12, 1, 1700200033, 'Credential has been revoked'],
+            'owner moved folders' => ['main', 18, 0, 1700200036, 'Credential outside the configured user pool'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unusableCredentials')]
+    public function existingCredentialsMustStillBelongToTheCurrentSiteAndOwnerFolder(string $site, int $folder, int $revoked, int $code, string $message): void
+    {
+        $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
+        $this->credentialRepository->method('findByCredentialId')->willReturn(new FrontendCredential(
+            feUser: 42,
+            credentialId: 'stored-key',
+            siteIdentifier: $site,
+            storagePid: $folder,
+            revokedAt: $revoked,
+        ));
+        if ($site === 'main' && $revoked === 0) {
+            $owners = $this->createStub(FrontendUserLookupService::class);
+            $owners->method('ownerStoragePid')->willReturn(12);
+            GeneralUtility::addInstance(FrontendUserLookupService::class, $owners);
+        }
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode($code);
+        $this->expectExceptionMessage($message);
+        $this->subject->verifyAssertionResponse($this->buildAssertionJson('stored-key'), 'challenge', $this->site);
+    }
+
     #[Test]
     public function verifyAssertionResponseRejectsUnknownCredential(): void
     {
@@ -356,7 +486,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     public function findFeUserUidFromAssertionReturnsNullForUnknownCredential(): void
     {
         // Repository stub returns null by default
-        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     #[Test]
@@ -365,7 +495,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $revoked = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123', revokedAt: 1700000000);
         $this->credentialRepository->method('findByCredentialId')->willReturn($revoked);
 
-        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertNull($this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     #[Test]
@@ -374,7 +504,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $credential = new FrontendCredential(feUser: 42, credentialId: 'credential-id-123');
         $this->credentialRepository->method('findByCredentialId')->willReturn($credential);
 
-        self::assertSame(42, $this->subject->findFeUserUidFromAssertion($this->buildAssertionJson()));
+        self::assertSame(42, $this->subject->findFeUserUidFromAssertion($this->buildAssertionJson(), $this->site));
     }
 
     // ---------------------------------------------------------------
@@ -422,7 +552,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'challenge-bytes', $this->site);
 
-        self::assertSame('challenge-bytes', $result['options']->challenge);
+        self::assertSame($this->subject->createDiscoverableAssertionOptions('challenge-bytes', $this->site)['options']->challenge, $result['options']->challenge);
         self::assertSame('example.com', $result['options']->rpId);
         self::assertSame('required', $result['options']->userVerification);
         self::assertNotSame('', $result['optionsJson']);

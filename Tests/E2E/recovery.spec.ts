@@ -1,34 +1,42 @@
 import { test, expect } from '@playwright/test';
-import { eidUrl, FE_USER } from './fixtures';
+import { eidUrl, FE_USER, loginWithPassword, logOut } from './fixtures';
 
 /**
  * Recovery: the path a user takes when the passkey is gone.
- *
- * Generating a code needs a session and delivers out of band, so what is
- * asserted here is the half a browser can reach — the form the login page
- * offers, and that a wrong code is refused without saying whether the user
- * exists.
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 test.describe('Passkey recovery', () => {
-    test('the login page offers the recovery form', async ({ page }) => {
-        await page.goto('/login-plugin');
-        await page.waitForLoadState('networkidle');
+    for (const [layout, route] of [['standalone', '/login-plugin'], ['felogin', '/login']] as const) {
+        test(`recovery completes a frontend login without WebAuthn in the ${layout} form`, async ({ page }, testInfo) => {
+            const username = `e2e_recovery_${layout}_${testInfo.retry}`;
+            await loginWithPassword(page, username);
+            const generated = await page.request.post(eidUrl('recoveryGenerate'), {
+                headers: { Origin: new URL(page.url()).origin },
+            });
+            expect(generated.status()).toBe(200);
+            const { codes } = await generated.json();
+            expect(codes.length).toBeGreaterThan(0);
+            await logOut(page);
 
-        await page.locator('[data-action="show-recovery"]').first().click();
-
-        await expect(page.locator('#nr-passkeys-fe-recovery-username')).toBeVisible();
-        await expect(page.locator('#nr-passkeys-fe-recovery-code')).toBeVisible();
-    });
+            await page.addInitScript(() => { Object.defineProperty(window, 'PublicKeyCredential', { value: undefined }); });
+            await page.goto(route);
+            await page.locator('[data-action="show-recovery"]').click();
+            const recovery = page.locator('[data-nr-passkeys-fe="recovery"]');
+            await recovery.locator('[name="recovery_username"]').fill(username);
+            await recovery.locator('[data-action="recovery-format"]').fill(codes[0]);
+            await recovery.locator('[data-action="recovery-submit"]').click();
+            await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status()).toBe(200);
+        });
+    }
 
     test('a wrong recovery code is refused', async ({ page }) => {
         await page.goto('/login-plugin');
 
         const response = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
         });
 
@@ -43,11 +51,11 @@ test.describe('Passkey recovery', () => {
         await page.goto('/login-plugin');
 
         const known = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: FE_USER, code: 'AAAA-BBBB-CCCC' },
         });
         const unknown = await page.request.post(eidUrl('recoveryVerify'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { username: 'nobody_e2e_xyz', code: 'AAAA-BBBB-CCCC' },
         });
 

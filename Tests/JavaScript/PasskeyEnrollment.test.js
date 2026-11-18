@@ -103,6 +103,52 @@ afterEach(() => {
     delete window.PublicKeyCredential;
 });
 
+describe('postponing enrollment', () => {
+    function createPostponeForm() {
+        const result = createEnrollmentContainer({ dataset: { eidUrl: '/site/?eID=nr_passkeys_fe' } });
+        const postpone = document.createElement('button');
+        postpone.dataset.action = 'postpone-enrollment';
+        postpone.dataset.nonce = 'enrollment-nonce';
+        result.container.append(postpone);
+        return { postpone, error: result.error };
+    }
+
+    it('sends the rendered nonce and returns to the site only after the server accepts', async () => {
+        const { postpone } = createPostponeForm();
+        const assign = vi.fn();
+        const browser = Object.create(window, {
+            location: { value: Object.assign(new URL('https://example.test/site/enroll'), { assign }) },
+        });
+        vi.stubGlobal('window', browser);
+        const fetchMock = stubFetch(jsonResponse(200, {}));
+        await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
+        postpone.click();
+        await settle();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const [url, request] = fetchMock.mock.calls[0];
+        const target = new URL(url, browser.location.href);
+        expect(target.pathname).toBe('/site/');
+        expect(target.searchParams.get('action')).toBe('enrollmentSkip');
+        expect(request).toMatchObject({ method: 'POST', mode: 'same-origin', credentials: 'same-origin' });
+        expect(JSON.parse(request.body)).toEqual({ nonce: 'enrollment-nonce' });
+        expect(assign).toHaveBeenCalledExactlyOnceWith('/site/');
+    });
+
+    it('shows the localized retry instruction when the server refuses postponement', async () => {
+        installWebAuthn(async () => fakeCredential());
+        const { postpone, error } = createPostponeForm();
+        stubFetch(jsonResponse(403, {}));
+        await loadModules('PasskeyUtils.js', 'PasskeyEnrollment.js');
+        window.NrPasskeysFe.lang = { 'js.enrollment.error.postponeFailed': 'Bitte Seite neu laden.' };
+        postpone.click();
+        await settle();
+        expect(error.style.display).not.toBe('none');
+        expect(error.textContent).toBe('Bitte Seite neu laden.');
+        delete window.NrPasskeysFe.lang;
+    });
+});
+
 describe('PasskeyEnrollment — feature detection', () => {
     it('disables the button and explains when WebAuthn is missing', async () => {
         delete window.PublicKeyCredential;

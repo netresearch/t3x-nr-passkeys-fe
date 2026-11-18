@@ -9,23 +9,27 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Middleware;
 
+use InvalidArgumentException;
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UriInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 use function is_array;
 use function is_numeric;
-use function is_string;
-use function parse_url;
 
 /**
  * Intercepts frontend requests to enforce passkey enrollment.
@@ -37,7 +41,7 @@ use function parse_url;
  *
  * Exempt cases (pass through):
  * - No authenticated frontend user
- * - User already has passkeys
+ * - Enrolled user with a login method accepted by the current site
  * - postLoginEnrollmentEnabled is false
  * - Request is an eID request for nr_passkeys_fe (prevents redirect loops)
  * - Enforcement level is Off or Encourage
@@ -45,8 +49,6 @@ use function parse_url;
  */
 final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterface
 {
-    private const SESSION_KEY = 'tx_nrpasskeysfe';
-
     private const EID = 'nr_passkeys_fe';
 
     public function __construct(
@@ -54,6 +56,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         private FrontendCredentialRepository $credentialRepository,
         private SiteConfigurationService $siteConfigurationService,
         private FrontendConfiguration $frontendConfiguration,
+        private ?FrontendLoginAssurance $loginAssurance = null,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -64,6 +67,9 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
             return $handler->handle($request);
         }
 
+        // Core may omit AfterUserLoggedInEvent for accounts without frontend groups.
+        // Only an active login observed on this request has a pending proof.
+        $this->loginAssurance?->completeForRequest($feUser, $request);
         $userRow = $feUser->user;
         if (!is_array($userRow)) {
             return $handler->handle($request);
@@ -72,16 +78,6 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         $rawUid    = $userRow['uid'] ?? null;
         $feUserUid = is_numeric($rawUid) ? (int) $rawUid : 0;
         if ($feUserUid === 0) {
-            return $handler->handle($request);
-        }
-
-        // 2. User already has passkeys → pass through
-        if ($this->credentialRepository->countByFeUser($feUserUid) > 0) {
-            return $handler->handle($request);
-        }
-
-        // 3. postLoginEnrollmentEnabled is false → pass through
-        if (!$this->frontendConfiguration->isPostLoginEnrollmentEnabled()) {
             return $handler->handle($request);
         }
 
@@ -97,17 +93,27 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Get the current site
         $site = $request->getAttribute('site');
-        if (!$site instanceof SiteInterface) {
-            return $handler->handle($request);
+        if (!$site instanceof Site) {
+            return new HtmlResponse('Login policy is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
         }
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
 
+        $proof = FrontendLoginAssurance::siteProof($feUser, $feUserUid, $siteIdentifier);
+        if (($proof['method'] ?? null) === 'passkey' && $this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
+            return $handler->handle($request);
+        }
+
         // 5-9. Check enforcement status
         $status = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
 
-        // Off and Encourage → pass through (the banner handles Encourage)
-        if ($status->effectiveLevel === 'off' || $status->effectiveLevel === 'encourage') {
+        if (!FrontendLoginAssurance::allowsSiteAccess($proof['method'] ?? null, $site, $status)) {
+            $feUser->logoff();
+
+            return new HtmlResponse('Please sign in again on this site.', 403, ['Cache-Control' => 'private, no-store']);
+        }
+
+        if ($status->passkeyCount > 0 || $status->effectiveLevel === 'off' || $status->effectiveLevel === 'encourage') {
             return $handler->handle($request);
         }
 
@@ -118,15 +124,22 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Required or Enforced: check for redirect necessity
         $enrollmentUrl = $this->resolveEnrollmentUrl($request, $site);
-        if ($enrollmentUrl === '') {
-            // No enrollment URL configured → pass through to avoid hard lock-out
+        $optional      = $status->effectiveLevel === 'required' && $status->inGracePeriod;
+        if ($optional && !$this->frontendConfiguration->isPostLoginEnrollmentEnabled()) {
             return $handler->handle($request);
         }
 
-        // Avoid redirect loops: if we're already on the enrollment page, pass through
-        $requestPath      = $request->getUri()->getPath();
-        $enrollmentPath   = parse_url($enrollmentUrl, PHP_URL_PATH);
-        $onEnrollmentPage = is_string($enrollmentPath) && $enrollmentPath !== '' && $requestPath === $enrollmentPath;
+        $uri    = $request->getUri();
+        $target = $this->resolveEnrollmentTarget($enrollmentUrl, $uri);
+        if (!$target instanceof UriInterface) {
+            if ($optional) {
+                return $handler->handle($request);
+            }
+
+            return new HtmlResponse('Passkey enrollment is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
+        }
+
+        $onEnrollmentPage = $target->getPath() === $uri->getPath() && $target->getQuery() === $uri->getQuery();
 
         // Required within the grace period may be skipped for the session;
         // an expired grace period and Enforced may not. The skip signal
@@ -134,12 +147,12 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         // template or JS module consumes it.
         if (
             $onEnrollmentPage
-            || ($status->effectiveLevel === 'required' && $status->inGracePeriod && $this->hasSkippedEnrollment($feUser))
+            || ($status->effectiveLevel === 'required' && $status->inGracePeriod && $this->hasSkippedEnrollment($feUser, $siteIdentifier))
         ) {
             return $handler->handle($request);
         }
 
-        return new RedirectResponse($enrollmentUrl, 303);
+        return new RedirectResponse($target, 303);
     }
 
     /**
@@ -162,11 +175,30 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         return $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
     }
 
-    private function hasSkippedEnrollment(FrontendUserAuthentication $feUser): bool
+    private function resolveEnrollmentTarget(string $url, UriInterface $origin): ?UriInterface
     {
-        $sessionData = $feUser->getKey('ses', self::SESSION_KEY);
+        try {
+            $target = new Uri($url);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
 
-        return is_array($sessionData) && ($sessionData['enrollment_skipped'] ?? false) === true;
+        if (!str_starts_with($target->getPath(), '/')) {
+            return null;
+        }
+
+        if ($target->getScheme() === '' && $target->getAuthority() === '') {
+            return $target;
+        }
+
+        return $target->getScheme() === $origin->getScheme() && $target->getAuthority() === $origin->getAuthority() ? $target : null;
+    }
+
+    private function hasSkippedEnrollment(FrontendUserAuthentication $feUser, string $siteIdentifier): bool
+    {
+        $sessionData = $feUser->getKey('ses', 'nr_passkeys_fe_skip_enrollment');
+
+        return $sessionData === $siteIdentifier;
     }
 
     private function resolveFrontendUser(ServerRequestInterface $request): ?FrontendUserAuthentication

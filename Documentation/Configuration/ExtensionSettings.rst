@@ -14,7 +14,8 @@ Global extension settings are managed in
 ..  note::
 
     The FE extension reuses the relying party, challenge TTL, rate
-    limiting, and algorithm settings from ``nr_passkeys_be``. Per-site
+    limiting per address, and algorithm settings from ``nr_passkeys_be``.
+    The deployment-wide recovery budget is configured on ``nr_passkeys_fe``. Per-site
     RP ID override is configured in the site configuration
     (see :ref:`site-configuration`).
 
@@ -48,6 +49,16 @@ Rate limiting
 
    Duration of the rate limiting window in seconds. The counter resets
    after this period.
+
+..  confval:: recoveryVerificationsPerMinute
+
+   :type: int
+   :Default: ``30``
+
+   Maximum full-length recovery code checks per calendar minute across all
+   frontend sites and application nodes. Set this option on ``nr_passkeys_fe``.
+   Each check may perform ten bcrypt verifications. Size this budget against
+   the CPU available for recovery. The per-IP limit remains independent.
 
 Account lockout
 ---------------

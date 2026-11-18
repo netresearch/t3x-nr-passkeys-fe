@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+rootPageId: 1
+base: 'https://home.example/'
+languages:
+  - title: English
+    enabled: true
+    languageId: 0
+    base: /
+    locale: en_US.UTF-8
+    websiteTitle: Home
+    navigationTitle: English
+    hreflang: en-US
+    flag: us
