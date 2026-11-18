@@ -342,22 +342,34 @@ final readonly class FrontendCredentialRepository
     }
 
     /**
-     * Hard-delete a credential record by UID.
+     * Revoke an active credential owned by this account on this site.
      */
     public function removeOwned(int $uid, int $ownerUid, bool $protectLast, string $siteIdentifier): bool
     {
         $db = $this->connectionPool->getConnectionForTable(self::TABLE);
 
         return $db->transactional(function () use ($db, $uid, $ownerUid, $protectLast, $siteIdentifier): bool {
-            // Serialize removals before counting the remaining active credentials.
+            // Serialize simultaneous removals before deciding which active key remains.
             $lock = $db->createQueryBuilder();
             $lock->update(self::TABLE)->set('revoked_at', $db->quoteIdentifier('revoked_at'), false)
                 ->where($lock->expr()->eq('fe_user', $lock->createNamedParameter($ownerUid, ParameterType::INTEGER)))->executeStatement();
-            if ($protectLast && $this->countByFeUser($ownerUid, $siteIdentifier) <= 1) {
-                return false;
+            $target = ['uid' => $uid, 'fe_user' => $ownerUid, 'site_identifier' => $siteIdentifier, 'revoked_at' => 0];
+            if ($protectLast) {
+                $storagePid = $db->select(['storage_pid'], self::TABLE, $target)->fetchOne();
+                if (!is_numeric($storagePid)) {
+                    return false;
+                }
+
+                $folder = $this->ownerFolder($ownerUid);
+                if (((int) $storagePid === 0 || (int) $storagePid === $folder)
+                    && $this->countActive($ownerUid, $siteIdentifier, $folder) <= 1) {
+                    return false;
+                }
             }
 
-            return $db->update(self::TABLE, ['revoked_at' => time(), 'revoked_by' => $ownerUid, 'tstamp' => time()], ['uid' => $uid, 'fe_user' => $ownerUid, 'revoked_at' => 0, 'site_identifier' => $siteIdentifier]) === 1;
+            $now = time();
+
+            return $db->update(self::TABLE, ['revoked_at' => $now, 'revoked_by' => $ownerUid, 'tstamp' => $now], $target) === 1;
         });
     }
 

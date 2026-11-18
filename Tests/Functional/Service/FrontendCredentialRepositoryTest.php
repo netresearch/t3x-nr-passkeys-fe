@@ -190,6 +190,20 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
     }
 
     #[Test]
+    public function staleFolderCredentialCanBeRemovedWhileTheLastUsableCredentialIsProtected(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        $this->repository->revoke(2, 1);
+        $stale = new FrontendCredential(feUser: 1, credentialId: 'old-folder', publicKeyCose: 'cose', siteIdentifier: 'site-a', storagePid: 88);
+        $this->repository->save($stale);
+        self::assertSame(1, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned($stale->getUid(), 1, true, 'site-a'));
+        self::assertNull($this->repository->findByUidAndFeUser($stale->getUid(), 1));
+        self::assertFalse($this->repository->removeOwned(1, 1, true, 'site-a'));
+        self::assertNotNull($this->repository->findByUidAndFeUser(1, 1));
+    }
+
+    #[Test]
     public function findByFeUserExcludesRevokedCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
