@@ -109,6 +109,14 @@ describe('submitLoginToken', () => {
         expect(submitSpy).not.toHaveBeenCalled();
     });
 
+    it('leaves the ticket field empty when the configured action is malformed', () => {
+        const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        form.setAttribute('action', 'https://[');
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        expect(form.querySelector('input[name="pass"]').value).toBe('');
+        expect(submitSpy).not.toHaveBeenCalled();
+    });
+
     it('refuses when the page carries no form at all', () => {
         // Assembling one here would be rejected by TYPO3 without a word: a
         // frontend login needs the request token only a rendered form has.
