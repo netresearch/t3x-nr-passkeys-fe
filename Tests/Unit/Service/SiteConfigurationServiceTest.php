@@ -183,6 +183,13 @@ final class SiteConfigurationServiceTest extends TestCase
     }
 
     #[Test]
+    public function legacyBooleanFalsePreservesTheDisabledSitePolicy(): void
+    {
+        $site = $this->createSiteWithSettings(['nr_passkeys_fe' => ['enforcementLevel' => false]], 'https://example.com/');
+        self::assertSame('off', $this->subject->getEnforcementLevel($site));
+    }
+
+    #[Test]
     public function getEnforcementLevelDefaultsToOff(): void
     {
         $site = $this->createSiteWithSettings(

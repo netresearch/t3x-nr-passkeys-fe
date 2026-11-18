@@ -97,6 +97,11 @@ final readonly class SiteConfigurationService
     {
         $level = self::setting($site, 'enforcementLevel', 'off');
 
+        // Older YAML parsers can store an unquoted 'off' as boolean false.
+        if ($level === false) {
+            return 'off';
+        }
+
         return is_string($level) ? $level : throw new RuntimeException('Invalid site enforcement policy');
     }
 
