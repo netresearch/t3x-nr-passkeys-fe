@@ -127,6 +127,7 @@ final readonly class FrontendCredentialRepository
                     $queryBuilder->createNamedParameter($siteIdentifier),
                 ),
                 $queryBuilder->expr()->eq('revoked_at', 0),
+                $this->matchesCurrentFolder($queryBuilder, $feUserUid),
             )
             ->orderBy('created_at', 'DESC')
             ->executeQuery()
@@ -186,6 +187,7 @@ final readonly class FrontendCredentialRepository
             )
         ;
         if ($siteIdentifier !== null) {
+            $queryBuilder->andWhere($this->matchesCurrentFolder($queryBuilder, $feUserUid));
             $queryBuilder->andWhere($queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($siteIdentifier)));
         }
 
@@ -388,6 +390,14 @@ final readonly class FrontendCredentialRepository
             ],
             ['uid' => $uid],
         );
+    }
+
+    private function matchesCurrentFolder(QueryBuilder $query, int $uid): string
+    {
+        // The owner is bound on this query so the subquery shares its parameters.
+        $owner = $query->createNamedParameter($uid, ParameterType::INTEGER);
+
+        return '(storage_pid = 0 OR storage_pid IN (SELECT pid FROM fe_users WHERE uid = ' . $owner . '))';
     }
 
     private function getQueryBuilder(): QueryBuilder

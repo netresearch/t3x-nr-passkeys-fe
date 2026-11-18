@@ -144,9 +144,9 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
 
         $credentials = $this->repository->findByFeUser(1, 'site-b');
 
-        // User 1 has 1 active credential on site-b (credential-id-pid2)
-        self::assertCount(1, $credentials);
-        self::assertSame('site-b', $credentials[0]->getSiteIdentifier());
+        // The credential records PID 2, but the account's current folder is PID 1.
+        self::assertSame([], $credentials);
+        self::assertSame(0, $this->repository->countByFeUser(1, 'site-b'));
     }
 
     #[Test]

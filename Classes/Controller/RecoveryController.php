@@ -67,7 +67,11 @@ final readonly class RecoveryController
         $feUserUid = is_numeric($userRow['uid'] ?? null) ? (int) $userRow['uid'] : 0;
 
         try {
-            $codes = $this->recoveryCodeService->generate($feUserUid);
+            $site = $request->getAttribute('site');
+            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface || $site->getIdentifier() === '') {
+                return new JsonResponse(['error' => 'A configured site is required'], 403);
+            }
+            $codes = $this->recoveryCodeService->generate($feUserUid, site: $site);
         } catch (Throwable $e) {
             $this->logger->error('FE recovery code generation failed', [
                 'fe_user_uid' => $feUserUid,
@@ -134,7 +138,12 @@ final readonly class RecoveryController
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
-        $valid = $this->recoveryCodeService->verify($feUserUid ?? 0, $code);
+        try {
+            $this->rateLimiterService->consumeRateLimit('fe_recovery_capacity', 'all-sites');
+        } catch (RuntimeException) {
+            return new JsonResponse(['error' => 'Recovery temporarily busy'], 429, ['Retry-After' => '60']);
+        }
+        $valid = $this->recoveryCodeService->verify($feUserUid ?? 0, $code, $site);
         if ($feUserUid === null || !$valid) {
             $this->rateLimiterService->recordFailure($account, $ip, false);
             $this->logger->warning('FE recovery code verification failed', [
@@ -152,12 +161,16 @@ final readonly class RecoveryController
         ]);
 
         // Create a one-time login token (same mechanism as passkey login)
+        $storagePid = $this->userLookupService->ownerStoragePid($feUserUid, $site);
+        if ($storagePid === null) {
+            return new JsonResponse(['error' => 'Authentication failed'], 401);
+        }
         $token = bin2hex(random_bytes(32));
         $cache = GeneralUtility::makeInstance(CacheManager::class)
             ->getCache('nr_passkeys_fe_nonce');
         $cache->set(
             'passkey_login_' . $token,
-            json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'expiresAt' => time() + 120, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR),
+            json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'storagePid' => $storagePid, 'expiresAt' => time() + 120, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR),
             [],
             120,
         );

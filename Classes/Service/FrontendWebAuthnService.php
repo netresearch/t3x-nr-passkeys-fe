@@ -134,7 +134,7 @@ final class FrontendWebAuthnService
         $options = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site, $feUserUid),
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
             authenticatorSelection: $authenticatorSelection,
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
@@ -173,7 +173,7 @@ final class FrontendWebAuthnService
         $creationOptions = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site, $feUserUid),
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
             authenticatorSelection: AuthenticatorSelectionCriteria::create(
                 userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
@@ -252,7 +252,7 @@ final class FrontendWebAuthnService
         );
 
         $options = PublicKeyCredentialRequestOptions::create(
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site),
             rpId: $rpId,
             allowCredentials: $allowCredentials,
             userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
@@ -277,7 +277,7 @@ final class FrontendWebAuthnService
         $rpId = $this->siteConfigurationService->getRpId($site);
 
         $options = PublicKeyCredentialRequestOptions::create(
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site),
             rpId: $rpId,
             allowCredentials: [],
             userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
@@ -324,25 +324,28 @@ final class FrontendWebAuthnService
         $credentialId = $publicKeyCredential->rawId;
         $credential   = $this->credentialRepository->findByCredentialId($credentialId);
 
-        if (!$credential instanceof FrontendCredential || $credential->getSiteIdentifier() !== $siteIdentifier) {
+        if (!$credential instanceof FrontendCredential) {
             $this->logger->warning('FE assertion with unknown credential ID', [
                 'site' => $siteIdentifier,
             ]);
             throw new RuntimeException('Unknown credential', self::CODE_UNKNOWN_CREDENTIAL);
         }
 
+        if ($credential->getSiteIdentifier() !== $siteIdentifier) {
+            throw new RuntimeException('Credential outside the current site', 1700200036);
+        }
         if ($credential->isRevoked()) {
             throw new RuntimeException('Credential has been revoked', 1700200033);
         }
 
         $pid = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($credential->getFeUser(), $site);
         if ($pid === null || ($credential->getStoragePid() !== 0 && $credential->getStoragePid() !== $pid)) {
-            throw new RuntimeException('Credential outside the configured user pool', self::CODE_UNKNOWN_CREDENTIAL);
+            throw new RuntimeException('Credential outside the configured user pool', 1700200036);
         }
         $storedSource = $this->credentialToSource($credential);
 
         $requestOptions = PublicKeyCredentialRequestOptions::create(
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site),
             rpId: $rpId,
             userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
         );
@@ -509,6 +512,22 @@ final class FrontendWebAuthnService
         return $enabled;
     }
 
+    private function ceremonyChallenge(string $raw, SiteInterface $site, ?int $registrationOwner = null): string
+    {
+        $context = [
+            'nr_passkeys_fe/v1',
+            $registrationOwner === null ? 'authentication' : 'registration',
+            $registrationOwner,
+            $this->siteConfigurationService->getSiteIdentifier($site),
+            $this->siteConfigurationService->getRpId($site),
+            $this->siteConfigurationService->getOrigin($site),
+            $registrationOwner === null ? [] : $this->supportedAlgorithms(),
+            bin2hex($raw),
+        ];
+
+        return hash_hmac('sha256', json_encode($context, JSON_THROW_ON_ERROR), $this->getEncryptionKey(), true);
+    }
+
     private function createUserHandle(int $feUserUid): string
     {
         $key        = $this->getEncryptionKey();
@@ -605,7 +624,7 @@ final class FrontendWebAuthnService
         SiteInterface $site,
     ): array {
         $options = PublicKeyCredentialRequestOptions::create(
-            challenge: $challenge,
+            challenge: $this->ceremonyChallenge($challenge, $site),
             rpId: $this->siteConfigurationService->getRpId($site),
             allowCredentials: $this->buildDecoyDescriptors($username),
             userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,

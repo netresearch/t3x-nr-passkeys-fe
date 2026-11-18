@@ -12,6 +12,10 @@ services:
     exclude:
       - '../Classes/Domain/Model/*'
 
+  Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration:
+    public: true
+    factory: ['Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration', 'fromExtensionConfiguration']
+
   # Event listener for felogin passkey injection.
   # Registered via tag (not attribute) because felogin is optional —
   # the ::class constant can't be used in #[AsEventListener] when the

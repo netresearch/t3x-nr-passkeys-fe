@@ -144,7 +144,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
-    public function createRegistrationOptionsPassesChallengeThrough(): void
+    public function registrationChallengeIsBoundToOwnerAndCeremony(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
         $this->siteConfigService->method('getSiteIdentifier')->willReturn('main');
@@ -153,7 +153,9 @@ final class FrontendWebAuthnServiceTest extends TestCase
         $challenge = random_bytes(32);
         $result    = $this->subject->createRegistrationOptions(1, 'testuser', $challenge, $this->site);
 
-        self::assertSame($challenge, $result['options']->challenge);
+        self::assertNotSame($challenge, $result['options']->challenge);
+        self::assertNotSame($result['options']->challenge, $this->subject->createRegistrationOptions(2, 'other', $challenge, $this->site)['options']->challenge);
+        self::assertNotSame($result['options']->challenge, $this->subject->createDiscoverableAssertionOptions($challenge, $this->site)['options']->challenge);
     }
 
     // ---------------------------------------------------------------
@@ -423,7 +425,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createDecoyAssertionOptions('nobody@example.com', 'challenge-bytes', $this->site);
 
-        self::assertSame('challenge-bytes', $result['options']->challenge);
+        self::assertSame($this->subject->createDiscoverableAssertionOptions('challenge-bytes', $this->site)['options']->challenge, $result['options']->challenge);
         self::assertSame('example.com', $result['options']->rpId);
         self::assertSame('required', $result['options']->userVerification);
         self::assertNotSame('', $result['optionsJson']);

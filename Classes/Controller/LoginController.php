@@ -245,12 +245,16 @@ final readonly class LoginController
             // Store verified result in a short-lived cache token.
             // The JS will submit this token via the felogin form so the auth
             // service can authenticate without needing site context.
+            $storagePid = $this->userLookupService->ownerStoragePid($feUserUid, $site);
+            if ($storagePid === null) {
+                return new JsonResponse(['error' => 'Authentication failed'], 401);
+            }
             $token = bin2hex(random_bytes(32));
             $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');
             $cache->set(
                 'passkey_login_' . $token,
-                json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'expiresAt' => time() + 120, 'method' => 'passkey', 'credentialUid' => $result['credential']->getUid()], JSON_THROW_ON_ERROR),
+                json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'storagePid' => $storagePid, 'expiresAt' => time() + 120, 'method' => 'passkey', 'credentialUid' => $result['credential']->getUid()], JSON_THROW_ON_ERROR),
                 [],
                 120, // 2 minutes TTL
             );

@@ -991,7 +991,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     {
         $cache = $this->createMock(FrontendInterface::class);
         $this->site->method('getIdentifier')->willReturn('main');
-        $cache->method('get')->with('passkey_login_tok123')->willReturn(json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'site' => 'main', 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR));
+        $cache->method('get')->with('passkey_login_tok123')->willReturn(json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'site' => 'main', 'storagePid' => 12, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR));
         $store = $this->createStub(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class);
         $store->method('claim')->willReturn(true);
         GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class, $store);

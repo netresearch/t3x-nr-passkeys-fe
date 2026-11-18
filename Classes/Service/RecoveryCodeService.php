@@ -13,6 +13,10 @@ use Doctrine\DBAL\ParameterType;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
@@ -77,7 +81,7 @@ final readonly class RecoveryCodeService
      *
      * @return list<string> Plaintext codes in XXXX-XXXX format
      */
-    public function generate(int $feUserUid, int $count = 10): array
+    public function generate(int $feUserUid, int $count = 10, ?SiteInterface $site = null): array
     {
         if ($count === 0) { return []; }
         if ($feUserUid <= 0 || $count < 0) {
@@ -90,6 +94,7 @@ final readonly class RecoveryCodeService
             $rawCode = $this->generateRandomCode();
             $rows[]  = [
                 'fe_user'    => $feUserUid,
+                'site_identifier' => $site?->getIdentifier() ?? '',
                 'code_hash'  => password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]),
                 'used_at'    => 0,
                 'created_at' => $now,
@@ -108,7 +113,8 @@ final readonly class RecoveryCodeService
             if ($connection->select(['uid'], 'fe_users', ['uid' => $feUserUid, 'deleted' => 0])->fetchOne() === false) {
                 throw new RuntimeException('Recovery code owner is unavailable');
             }
-            $connection->delete(self::TABLE, ['fe_user' => $feUserUid]);
+            $this->assignLegacyToHomeSite($feUserUid, $site);
+            $connection->delete(self::TABLE, ['fe_user' => $feUserUid, 'site_identifier' => $site?->getIdentifier() ?? '']);
             foreach ($rows as $row) {
                 $connection->insert(self::TABLE, $row);
             }
@@ -132,7 +138,7 @@ final readonly class RecoveryCodeService
      * To prevent timing oracles that leak whether a user has codes,
      * dummy password_verify() calls pad the total to MAX_CODES.
      */
-    public function verify(int $feUserUid, string $code): bool
+    public function verify(int $feUserUid, string $code, ?SiteInterface $site = null): bool
     {
         $normalised = strtoupper(str_replace('-', '', trim($code)));
 
@@ -140,6 +146,7 @@ final readonly class RecoveryCodeService
             return false;
         }
 
+        $this->assignLegacyToHomeSite($feUserUid, $site);
         $queryBuilder = $this->getQueryBuilder();
         $rows         = $queryBuilder
             ->select('uid', 'code_hash')
@@ -150,6 +157,7 @@ final readonly class RecoveryCodeService
                     $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
                 ),
                 $queryBuilder->expr()->eq('used_at', 0),
+                $queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($site?->getIdentifier() ?? '')),
             )
             ->executeQuery()
             ->fetchAllAssociative();
@@ -178,7 +186,7 @@ final readonly class RecoveryCodeService
             return $connection->update(
                 self::TABLE,
                 ['used_at' => time()],
-                ['uid' => $matchedUid, 'fe_user' => $feUserUid, 'used_at' => 0],
+                ['uid' => $matchedUid, 'fe_user' => $feUserUid, 'site_identifier' => $site?->getIdentifier() ?? '', 'used_at' => 0],
             ) === 1;
         }
 
@@ -188,8 +196,9 @@ final readonly class RecoveryCodeService
     /**
      * Count remaining (unused) recovery codes for a frontend user.
      */
-    public function countRemaining(int $feUserUid): int
+    public function countRemaining(int $feUserUid, ?SiteInterface $site = null): int
     {
+        $this->assignLegacyToHomeSite($feUserUid, $site);
         $queryBuilder = $this->getQueryBuilder();
 
         $result = $queryBuilder
@@ -201,11 +210,36 @@ final readonly class RecoveryCodeService
                     $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
                 ),
                 $queryBuilder->expr()->eq('used_at', 0),
+                $queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($site?->getIdentifier() ?? '')),
             )
             ->executeQuery()
             ->fetchOne();
 
         return is_numeric($result) ? (int) $result : 0;
+    }
+
+    private function assignLegacyToHomeSite(int $uid, ?SiteInterface $site): void
+    {
+        if ($uid <= 0 || $site === null || $site->getIdentifier() === '') {
+            return;
+        }
+        $db = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $criteria = ['fe_user' => $uid, 'site_identifier' => ''];
+        if ($db->select(['uid'], self::TABLE, $criteria, limit: 1)->fetchOne() === false) {
+            return;
+        }
+        $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($uid, $site);
+        if ($pid === null) {
+            return;
+        }
+        try {
+            $home = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pid)->getIdentifier();
+        } catch (SiteNotFoundException) {
+            return;
+        }
+        if ($home === $site->getIdentifier()) {
+            $db->update(self::TABLE, ['site_identifier' => $home], $criteria);
+        }
     }
 
     /**

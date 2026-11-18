@@ -46,7 +46,7 @@ final class ManagementPluginController extends ActionController
 
         if ($feUserUid > 0) {
             $credentials            = $this->credentialRepository->findByFeUser($feUserUid, $siteIdentifier);
-            $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
+            $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid, $site);
         }
 
         $recoveryAllowed = $site instanceof SiteInterface && \Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code');

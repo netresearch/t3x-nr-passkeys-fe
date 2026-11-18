@@ -121,3 +121,18 @@ Set this for each participating site before rollout. Credential use also
 requires its original registration site. Existing credentials without a
 stored folder are checked against their owner's current folder and the
 recorded site on each login.
+
+Recovery codes and rollout
+--------------------------
+
+Apply the updated database schema and deploy the backend extension update
+before enabling the frontend workers. New recovery sets belong to one site.
+The extension assigns old unscoped codes only to the site containing the
+user's storage folder. A shared folder outside a configured site has no
+automatic assignment. Before cutover, establish a working passkey or
+supervised account recovery for these accounts and reissue their codes.
+Generate a separate set on each site where recovery is enabled.
+
+All sites share a recovery verification budget in addition to the IP and
+account limits. Monitor HTTP 429 responses and size recovery capacity and
+the database limits for the deployment.

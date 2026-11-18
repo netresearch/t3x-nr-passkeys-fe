@@ -164,26 +164,28 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         $ticket   = $this->resolvePasskeyToken();
         $tokenUid = $ticket['uid'] ?? 0;
         if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
-            $this->getLogger()->info('FE passkey token auth accepted', [
-                'fe_user_uid' => $tokenUid,
-            ]);
-
             $site = $this->resolveSite();
-            if ($site === null || GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class)->ownerStoragePid($tokenUid, $site) === null || $this->fetchUserByUid($tokenUid) === false) {
+            if ($site === null) {
+                return 0;
+            }
+            $pid = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class)->ownerStoragePid($tokenUid, $site);
+            if ($pid !== $ticket['storagePid'] || $this->fetchUserByUid($tokenUid) === false
+                || ($ticket['method'] === 'recovery' && !SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'))) {
                 return 0;
             }
             try {
                 if (!GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class)->claim('login:' . $ticket['token'], $ticket['expiresAt'])) {
                     return 0;
                 }
-                if ($this->pObj instanceof FrontendUserAuthentication) {
-                    $credential = null;
-                    if ($ticket['method'] === 'passkey') {
-                        $credential = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->findByUidAndFeUser($ticket['credentialUid'], $tokenUid);
-                        if ($credential === null || $credential->isRevoked() || $credential->getSiteIdentifier() !== $this->resolveSite()?->getIdentifier()) {
-                            return 0;
-                        }
+                $credential = null;
+                if ($ticket['method'] === 'passkey') {
+                    $credential = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->findByUidAndFeUser($ticket['credentialUid'], $tokenUid);
+                    if ($credential === null || $credential->isRevoked() || $credential->getSiteIdentifier() !== $site->getIdentifier()
+                        || ($credential->getStoragePid() !== 0 && $credential->getStoragePid() !== $pid)) {
+                        return 0;
                     }
+                }
+                if ($this->pObj instanceof FrontendUserAuthentication) {
                     GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::class)->verified($this->pObj, $tokenUid, $credential);
                 }
                 GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_fe_nonce')->remove('passkey_login_' . $ticket['token']);
@@ -325,7 +327,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
      * The token is consumed (deleted) on use to prevent replay.
      */
     /**
-     * @return array{uid:int, token:string, expiresAt:int, credentialUid:int, method:string}|null
+     * @return array{uid:int, token:string, expiresAt:int, credentialUid:int, method:string, storagePid:int}|null
      */
     private function resolvePasskeyToken(): ?array
     {
@@ -347,13 +349,14 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             $ticket    = is_string($rawTicket) ? json_decode($rawTicket, true, 8, JSON_THROW_ON_ERROR) : null;
             if (!is_array($ticket) || ($ticket['site'] ?? null) !== $site->getIdentifier()
                 || !is_int($ticket['uid'] ?? null) || $ticket['uid'] <= 0
+                || !is_int($ticket['storagePid'] ?? null) || $ticket['storagePid'] <= 0
                 || !is_int($ticket['expiresAt'] ?? null) || $ticket['expiresAt'] <= time()
                 || !in_array($ticket['method'] ?? null, ['passkey', 'recovery'], true)
                 || !is_int($ticket['credentialUid'] ?? null)) {
                 return null;
             }
 
-            return ['uid' => $ticket['uid'], 'token' => $token, 'expiresAt' => $ticket['expiresAt'], 'credentialUid' => $ticket['credentialUid'], 'method' => $ticket['method']];
+            return ['uid' => $ticket['uid'], 'storagePid' => $ticket['storagePid'], 'token' => $token, 'expiresAt' => $ticket['expiresAt'], 'credentialUid' => $ticket['credentialUid'], 'method' => $ticket['method']];
         } catch (Throwable $error) {
             $this->getLogger()->warning('FE passkey token resolution failed', ['exception' => $error::class]);
 

@@ -149,6 +149,9 @@ final readonly class SiteConfigurationService
         if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site) {
             return false;
         }
+        if ($method === 'recovery_code' && !\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration::class)->isRecoveryCodesEnabled()) {
+            return false;
+        }
         $methods = $site->getSettings()->get('nr_passkeys_fe.enabledRecoveryMethods', ['password', 'recovery_code']);
 
         return is_array($methods) && in_array($method, $methods, true);

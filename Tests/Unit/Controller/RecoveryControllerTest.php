@@ -50,6 +50,7 @@ final class RecoveryControllerTest extends TestCase
         $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
         $this->rateLimiterService  = $this->createStub(RateLimiterService::class);
         $this->userLookupService   = $this->createStub(FrontendUserLookupService::class);
+        $this->userLookupService->method('ownerStoragePid')->willReturn(12);
 
         // Register a cache stub for the login token
         $cacheStub        = $this->createStub(FrontendInterface::class);

@@ -69,6 +69,7 @@ final class LoginControllerTest extends TestCase
         $this->siteConfigService    = $this->createStub(SiteConfigurationService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);
         $this->userLookupService    = $this->createStub(FrontendUserLookupService::class);
+        $this->userLookupService->method('ownerStoragePid')->willReturn(12);
         $this->rateLimiterService   = $this->createStub(RateLimiterService::class);
         $this->challengeService     = $this->createStub(ChallengeService::class);
         $this->site                 = $this->createStub(SiteInterface::class);

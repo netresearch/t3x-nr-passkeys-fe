@@ -116,7 +116,7 @@ final class RecoveryCodeServiceTest extends TestCase
 
         $connection->expects(self::once())
             ->method('delete')
-            ->with('tx_nrpasskeysfe_recovery_code', ['fe_user' => 42]);
+            ->with('tx_nrpasskeysfe_recovery_code', ['fe_user' => 42, 'site_identifier' => '']);
 
         $connection->method('insert')->willReturn(1);
 
@@ -225,7 +225,7 @@ final class RecoveryCodeServiceTest extends TestCase
             ->with(
                 'tx_nrpasskeysfe_recovery_code',
                 self::callback(static fn (array $data): bool => isset($data['used_at']) && $data['used_at'] > 0),
-                ['uid' => 99, 'fe_user' => 1, 'used_at' => 0],
+                ['uid' => 99, 'fe_user' => 1, 'site_identifier' => '', 'used_at' => 0],
             )->willReturn(1);
 
         // Verify with dash-formatted code

@@ -43,6 +43,7 @@ CREATE TABLE tx_nrpasskeysfe_credential (
 
 CREATE TABLE tx_nrpasskeysfe_recovery_code (
     fe_user int(11) unsigned NOT NULL DEFAULT 0,
+    site_identifier varchar(255) NOT NULL DEFAULT '',
     code_hash varchar(255) NOT NULL DEFAULT '',
     used_at int(11) unsigned NOT NULL DEFAULT 0,
     created_at int(11) unsigned NOT NULL DEFAULT 0,

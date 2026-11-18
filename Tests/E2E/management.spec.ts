@@ -53,6 +53,16 @@ test.describe('Passkey management plugin', () => {
         const afterRename = (await (await page.request.get(eidUrl('manageList'))).json()).credentials;
         expect(afterRename[0].label).toBe('Renamed by e2e');
 
+        const staleProof = await page.request.post(eidUrl('manageRemove'), {
+            headers: { Origin: new URL(page.url()).origin },
+            data: { uid: credentials[0].uid },
+        });
+        expect(staleProof.status()).toBe(403);
+        await page.context().clearCookies();
+        await page.goto('/login-plugin');
+        await page.locator('#nr-passkeys-fe-login-btn').click();
+        await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status(), { timeout: 30_000 }).toBe(200);
+
         const removed = await page.request.post(eidUrl('manageRemove'), {
             headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credentials[0].uid },

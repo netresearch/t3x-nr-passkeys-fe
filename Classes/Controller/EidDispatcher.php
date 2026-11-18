@@ -151,7 +151,7 @@ final class EidDispatcher
             if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site || $site->getIdentifier() === '') {
                 return new JsonResponse(['error' => 'A configured site is required'], 403);
             }
-            $hasPasskeys = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->countByFeUser($feUserUid);
+            $hasPasskeys = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->countByFeUser($feUserUid, $site->getIdentifier());
             if (!\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $site->getIdentifier(), $hasPasskeys > 0)) {
                 return new JsonResponse(['error' => 'Sign out and sign in again to manage passkeys. Use an existing passkey or recovery code if you have one.'], 403);
             }
