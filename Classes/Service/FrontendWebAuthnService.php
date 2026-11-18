@@ -175,6 +175,10 @@ final class FrontendWebAuthnService
             user: $user,
             challenge: $challenge,
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
+            authenticatorSelection: AuthenticatorSelectionCriteria::create(
+                userVerification: AuthenticatorSelectionCriteria::USER_VERIFICATION_REQUIREMENT_REQUIRED,
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
+            ),
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
         );
 

@@ -18,6 +18,7 @@ use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Http\ServerRequest;
 
 use function json_encode;
 
@@ -127,7 +128,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         $service->initAuth(
             'authUserFE',
             ['uname' => 'testuser1', 'uident' => 'plaintext-password', 'status' => 'login'],
-            [],
+            ['request' => (new ServerRequest())->withAttribute('site', $this->makeSiteWithSettings())],
             null,
         );
 
@@ -228,20 +229,14 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
         $usersConnection = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $usersConnection->update('fe_users', ['usergroup' => '200'], ['uid' => 1]);
 
-        // Simulate a fake site request so authUser can resolve the site
-        $site = $this->makeSiteWithSettings();
-
-        // We test the enforcement service directly since the auth service
-        // requires $GLOBALS['TYPO3_REQUEST'] to resolve the site
-        $enforcementService = $this->get(FrontendEnforcementService::class);
-        $status             = $enforcementService->getStatus(1, 'site-a', $site);
-
-        // Verify enforcement + passkey count means password should be blocked
-        self::assertSame('enforced', $status->effectiveLevel);
-        self::assertGreaterThan(0, $status->passkeyCount);
-
-        $shouldBlock = $status->passkeyCount > 0 && $status->effectiveLevel === 'enforced';
-        self::assertTrue($shouldBlock, 'Password login must be blocked when enforcement=enforced and user has passkeys');
+        $service = new PasskeyFrontendAuthenticationService();
+        $service->initAuth(
+            'authUserFE',
+            ['uname' => 'testuser1', 'uident' => 'plaintext-password', 'status' => 'login'],
+            ['request' => (new ServerRequest())->withAttribute('site', $this->makeSiteWithSettings())],
+            null,
+        );
+        self::assertSame(0, $service->authUser(['uid' => 1, 'username' => 'testuser1']));
     }
 
     // ---------------------------------------------------------------

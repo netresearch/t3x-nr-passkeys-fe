@@ -25,8 +25,7 @@ use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Log\LogManager;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -39,7 +38,6 @@ use function is_numeric;
 use function is_string;
 use function json_decode;
 use function json_encode;
-use function parse_url;
 use function strlen;
 
 /**
@@ -199,7 +197,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
             // Resolve site for WebAuthn verification
             $site = $this->resolveSite();
-            if (!$site instanceof SiteInterface) {
+            if (!$site instanceof Site) {
                 $this->getLogger()->warning('FE passkey auth failed: no site context available');
 
                 return 0;
@@ -223,6 +221,13 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 challenge: bin2hex($rawChallenge),
                 site: $site,
             );
+
+            $candidateUid = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+            if ($candidateUid <= 0 || $result['feUserUid'] !== $candidateUid) {
+                $this->getLogger()->warning('FE passkey credential does not belong to the login candidate');
+
+                return 0;
+            }
 
             // Clear lockout on success
             $this->getRateLimiterService()->recordSuccess($username, $ip);
@@ -266,23 +271,27 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         // Check enforcement: block password login when enforced and user has passkeys
         if ($uid > 0) {
             $site = $this->resolveSite();
-            if ($site instanceof SiteInterface) {
-                $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
-                $status         = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
+            if (!$site instanceof Site) {
+                $this->getLogger()->warning('FE password login refused because the site policy cannot be resolved');
 
-                if ($status->passkeyCount > 0 && $status->effectiveLevel === 'enforced') {
-                    $this->getLogger()->warning('FE password login blocked by enforcement', [
-                        'fe_user_uid' => $uid,
-                        'username'    => $user['username'] ?? '',
-                    ]);
+                return 0;
+            }
 
-                    return 0;
-                }
+            $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
+            $status         = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
 
-                // Tag session for enrollment interstitial on password login
-                if ($status->effectiveLevel !== 'off') {
-                    $this->setFeUserSessionKey('nr_passkeys_fe_needs_enrollment', true);
-                }
+            if ($status->passkeyCount > 0 && $status->effectiveLevel === 'enforced') {
+                $this->getLogger()->warning('FE password login blocked by enforcement', [
+                    'fe_user_uid' => $uid,
+                    'username'    => $user['username'] ?? '',
+                ]);
+
+                return 0;
+            }
+
+            // Tag session for enrollment interstitial on password login
+            if ($status->effectiveLevel !== 'off') {
+                $this->setFeUserSessionKey('nr_passkeys_fe_needs_enrollment', true);
             }
         }
 
@@ -432,42 +441,12 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             ->fetchAssociative();
     }
 
-    /**
-     * Resolve the current site from TYPO3 request context.
-     *
-     * During frontend authentication, the site is available via $GLOBALS['TYPO3_REQUEST'].
-     * Falls back to SiteFinder when the site attribute is not yet set (auth runs
-     * before SiteResolver middleware in the middleware stack).
-     */
-    private function resolveSite(): ?SiteInterface
+    private function resolveSite(): ?Site
     {
-        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
-        if (!$request instanceof ServerRequestInterface) {
-            return null;
-        }
+        $request = $this->authInfo['request'] ?? null;
+        $site    = $request instanceof ServerRequestInterface ? $request->getAttribute('site') : null;
 
-        // Try request attribute first (set by SiteResolver middleware)
-        $siteAttr = $request->getAttribute('site');
-        if ($siteAttr instanceof SiteInterface) {
-            return $siteAttr;
-        }
-
-        // Fallback: resolve site by matching request host against configured sites
-        try {
-            $siteFinder = GeneralUtility::makeInstance(SiteFinder::class);
-            $host       = $request->getUri()->getHost();
-
-            foreach ($siteFinder->getAllSites() as $site) {
-                $siteHost = parse_url((string) $site->getBase(), PHP_URL_HOST);
-                if ($siteHost === $host) {
-                    return $site;
-                }
-            }
-        } catch (Throwable) {
-            // SiteFinder not available in unit tests or early bootstrap
-        }
-
-        return null;
+        return $site instanceof Site ? $site : null;
     }
 
     /**
@@ -477,7 +456,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
      */
     private function setFeUserSessionKey(string $key, mixed $value): void
     {
-        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+        $request = $this->authInfo['request'] ?? null;
         if (!$request instanceof ServerRequestInterface) {
             return;
         }

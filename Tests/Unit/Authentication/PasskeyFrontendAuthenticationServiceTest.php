@@ -32,11 +32,9 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
-use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Log\Logger;
 use TYPO3\CMS\Core\Log\LogManager;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
-use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function bin2hex;
@@ -57,7 +55,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
     private ChallengeService&Stub $challengeService;
 
-    private SiteInterface&Stub $site;
+    private Site&Stub $site;
 
     private LoggerInterface&Stub $logger;
 
@@ -70,7 +68,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $this->enforcementService = $this->createStub(FrontendEnforcementService::class);
         $this->siteConfigService  = $this->createStub(SiteConfigurationService::class);
         $this->challengeService   = $this->createStub(ChallengeService::class);
-        $this->site               = $this->createStub(SiteInterface::class);
+        $this->site               = $this->createStub(Site::class);
         $this->logger             = $this->createStub(LoggerInterface::class);
 
         // Default enforcement: off, no passkeys
@@ -98,13 +96,6 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $this->challengeService
             ->method('verifyChallengeToken')
             ->willReturnArgument(0);
-
-        // Set up TYPO3_REQUEST with a site attribute so resolveSite() works
-        $site    = $this->createStub(SiteInterface::class);
-        $request = $this->createStub(ServerRequestInterface::class);
-        $request->method('getAttribute')->willReturnCallback(static fn (string $name): ?SiteInterface => $name === 'site' ? $site : null);
-        $request->method('getUri')->willReturn(new Uri('https://example.com/'));
-        $GLOBALS['TYPO3_REQUEST'] = $request;
 
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
         GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
@@ -409,7 +400,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             'uname'  => 'frontend_user',
             'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
         ];
-        $service->authInfo = ['REMOTE_ADDR' => $remoteAddress];
+        $service->authInfo['REMOTE_ADDR'] = $remoteAddress;
 
         return $service;
     }
@@ -942,7 +933,8 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $subject = new PasskeyFrontendAuthenticationService();
         $this->injectLogger($subject, $this->logger);
 
-        $subject->login = [
+        $subject->authInfo = [];
+        $subject->login    = [
             'uname'  => 'user',
             'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
         ];
@@ -1028,28 +1020,25 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         self::assertSame(100, $result);
     }
 
-    // --- resolveSite() host-matching fallback ---
+    #[Test]
+    public function missingSiteRejectsPasswordAuthentication(): void
+    {
+        $this->subject->authInfo = [];
+        $this->subject->login    = ['uname' => 'editor', 'uident' => 'password'];
+
+        self::assertSame(0, $this->subject->authUser(['uid' => 42, 'username' => 'editor']));
+    }
 
     #[Test]
-    public function resolveSiteFallsBackToHostMatchingWhenRequestHasNoSiteAttribute(): void
+    public function onlyTheVerifiedCredentialOwnerIsAuthenticated(): void
     {
-        $request = $this->createStub(ServerRequestInterface::class);
-        $request->method('getAttribute')->willReturn(null);
-        $request->method('getUri')->willReturn(new Uri('https://match.example.org/login'));
-        $GLOBALS['TYPO3_REQUEST'] = $request;
+        $this->webAuthnService->method('verifyAssertionResponse')->willReturn([
+            'feUserUid'  => 42,
+            'credential' => new FrontendCredential(uid: 10, feUser: 42),
+        ]);
+        $this->subject->login = ['uname' => 'editor', 'uident' => $this->buildPasskeyUident(['valid' => 'assertion'])];
 
-        $site = $this->createStub(SiteInterface::class);
-        $site->method('getBase')->willReturn(new Uri('https://match.example.org/'));
-        $otherSite = $this->createStub(SiteInterface::class);
-        $otherSite->method('getBase')->willReturn(new Uri('https://elsewhere.example.org/'));
-
-        $siteFinder = $this->createStub(SiteFinder::class);
-        $siteFinder->method('getAllSites')->willReturn([$otherSite, $site]);
-        GeneralUtility::addInstance(SiteFinder::class, $siteFinder);
-
-        $method = (new ReflectionClass($this->subject))->getMethod('resolveSite');
-
-        self::assertSame($site, $method->invoke($this->subject));
+        self::assertSame(0, $this->subject->authUser(['uid' => 51, 'username' => 'editor']));
     }
 
     // --- getLogger() lazy initialisation ---
@@ -1071,6 +1060,11 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
     private function injectLogger(object $service, LoggerInterface $logger): void
     {
+        if ($service instanceof PasskeyFrontendAuthenticationService) {
+            $request = $this->createStub(ServerRequestInterface::class);
+            $request->method('getAttribute')->willReturnMap([['site', null, $this->site]]);
+            $service->authInfo['request'] = $request;
+        }
         $reflection = new ReflectionClass($service);
         $parent     = $reflection;
         while ($parent !== false) {
