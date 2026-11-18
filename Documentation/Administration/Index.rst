@@ -19,3 +19,12 @@ administrators managing frontend passkey authentication.
     Dashboard
     Enforcement
     UserManagement
+
+Credential backup eligibility
+-----------------------------
+
+The user record shows whether the authenticator reported that a newly
+registered credential is eligible for backup or is bound to one device.
+Backup eligibility does not establish that a backup has been made.
+Credentials registered before this field was added show an unknown status.
+Apply the database schema update when upgrading the extension.

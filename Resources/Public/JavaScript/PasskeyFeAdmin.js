@@ -181,7 +181,7 @@ class PasskeyFeAdmin {
   }
 
   /**
-   * @param {Array<{uid: number, label: string, siteIdentifier: string, createdAt: number, lastUsedAt: number, isRevoked: boolean}>} credentials
+   * @param {Array<{uid: number, label: string, siteIdentifier: string, createdAt: number, lastUsedAt: number, isRevoked: boolean, backupEligible?: boolean|null}>} credentials
    */
   renderCredentialTable(credentials) {
     const tbody = document.getElementById('passkey-fe-credentials-body');
@@ -197,7 +197,7 @@ class PasskeyFeAdmin {
     if (credentials.length === 0) {
       const row = tbody.insertRow();
       const cell = row.insertCell();
-      cell.colSpan = 6;
+      cell.colSpan = 7;
       cell.className = 'text-variant text-center';
       cell.textContent = this.translate('js.admin.lookup.noCredentials', 'No credentials found.');
       return;
@@ -225,6 +225,17 @@ class PasskeyFeAdmin {
       addTextCell(cred.siteIdentifier);
       addTextCell(formatDate(cred.createdAt));
       addTextCell(formatDate(cred.lastUsedAt));
+
+      switch (cred.backupEligible) {
+        case true:
+          addTextCell(this.translate('js.admin.backup.eligible', 'Backup eligible'));
+          break;
+        case false:
+          addTextCell(this.translate('js.admin.backup.deviceBound', 'Device-bound'));
+          break;
+        default:
+          addTextCell(this.translate('js.admin.backup.unknown', 'Backup eligibility unknown'));
+      }
 
       // Status badge
       const statusCell = row.insertCell();

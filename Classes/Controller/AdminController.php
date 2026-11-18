@@ -79,6 +79,7 @@ final readonly class AdminController
                 'uid'            => $cred->getUid(),
                 'label'          => $cred->getLabel(),
                 'siteIdentifier' => $cred->getSiteIdentifier(),
+                'backupEligible' => $cred->getBackupEligibility(),
                 'createdAt'      => $cred->getCreatedAt(),
                 'lastUsedAt'     => $cred->getLastUsedAt(),
                 'revokedAt'      => $cred->getRevokedAt(),

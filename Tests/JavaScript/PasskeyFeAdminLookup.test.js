@@ -64,6 +64,16 @@ afterEach(() => {
     document.body.replaceChildren();
 });
 
+it.each([[true, 'Backup eligible'], [false, 'Device-bound'], [null, 'Backup eligibility unknown'], [undefined, 'Backup eligibility unknown']])(
+    'renders the backup eligibility reported for the credential (%s)', (backupEligible, label) => {
+        mountLookup('7');
+        admin.renderCredentialTable([{ uid: 1, label: 'Key', backupEligible }]);
+        const cells = document.getElementById('passkey-fe-credentials-body').rows[0].cells;
+        expect(cells[4].textContent).toBe(label);
+        expect(cells).toHaveLength(7);
+    },
+);
+
 describe('handleLoadUser', () => {
     it('keeps the route URL as TYPO3 issued it and sends the uid as a query argument', async () => {
         mountLookup('7');

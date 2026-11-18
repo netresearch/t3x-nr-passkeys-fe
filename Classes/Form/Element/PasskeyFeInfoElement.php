@@ -138,6 +138,25 @@ final class PasskeyFeInfoElement extends AbstractFormElement
                     $childHtml[] = ' &middot; ' . $aaguidLabel . ': <code>' . htmlspecialchars($aaguid) . '</code>';
                 }
 
+                $backupLabel = match ($credential->getBackupEligibility()) {
+                    true => $this->translate(
+                        'js.admin.backup.eligible',
+                        'Backup eligible',
+                        'locallang',
+                    ),
+                    false => $this->translate(
+                        'js.admin.backup.deviceBound',
+                        'Device-bound',
+                        'locallang',
+                    ),
+                    null => $this->translate(
+                        'js.admin.backup.unknown',
+                        'Backup eligibility unknown',
+                        'locallang',
+                    ),
+                };
+                $childHtml[] = ' &middot; ' . htmlspecialchars($backupLabel);
+
                 $childHtml[] = '</small>';
 
                 $childHtml[] = '</li>';
@@ -189,10 +208,10 @@ final class PasskeyFeInfoElement extends AbstractFormElement
         return date($format . ' ' . $timeFormat, $timestamp);
     }
 
-    private function translate(string $key, string $fallback): string
+    private function translate(string $key, string $fallback, string $catalog = 'locallang_db'): string
     {
         $lang       = $this->getLanguageService();
-        $translated = $lang->sL('LLL:EXT:nr_passkeys_fe/Resources/Private/Language/locallang_db.xlf:' . $key);
+        $translated = $lang->sL('LLL:EXT:nr_passkeys_fe/Resources/Private/Language/' . $catalog . '.xlf:' . $key);
         if ($translated !== '') {
             return $translated;
         }

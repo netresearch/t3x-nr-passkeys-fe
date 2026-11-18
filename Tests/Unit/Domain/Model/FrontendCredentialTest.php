@@ -190,7 +190,7 @@ final class FrontendCredentialTest extends TestCase
         $array      = $credential->toArray();
 
         $expectedKeys = [
-            'uid', 'fe_user', 'credential_id', 'public_key_cose', 'sign_count',
+            'uid', 'fe_user', 'credential_id', 'public_key_cose', 'backup_eligible', 'sign_count',
             'user_handle', 'aaguid', 'transports', 'label', 'site_identifier',
             'storage_pid', 'created_at', 'last_used_at', 'revoked_at', 'revoked_by',
         ];

@@ -143,6 +143,7 @@ final class PasskeyFeInfoElementTest extends TestCase
 
         $html = $result['html'] ?? '';
         self::assertStringContainsString('badge-success', $html);
+        self::assertStringContainsString('Backup eligibility unknown', $html);
         self::assertStringContainsString('My iPhone', $html);
     }
 
