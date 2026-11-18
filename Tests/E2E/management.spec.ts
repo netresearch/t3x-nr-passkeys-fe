@@ -59,7 +59,7 @@ test.describe('Passkey management plugin', () => {
             data: { uid: credentials[0].uid },
         });
         expect(staleProof.status()).toBe(403);
-        await signInWithRegisteredPasskey(page);
+        await signInWithRegisteredPasskey(page, cdp, authenticatorId);
 
         const removed = await page.request.post(eidUrl('manageRemove'), {
             headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },

@@ -199,11 +199,15 @@ export async function registerPasskey(
     return { success: true };
 }
 
-/** Remove every credential the seeded user holds, so specs do not inherit each other's. */
-export async function signInWithRegisteredPasskey(page: Page): Promise<void> {
+/** Sign in through the explicit passkey button with the registered resident credential. */
+export async function signInWithRegisteredPasskey(page: Page, cdp: CDPSession, authenticatorId: string): Promise<void> {
+    await setAutomaticPresence(cdp, authenticatorId, false);
     await logOut(page);
     await page.goto('/login-plugin');
-    await page.locator('#nr-passkeys-fe-login-btn').click();
+    const button = page.locator('#nr-passkeys-fe-login-btn');
+    await expect(button).toBeVisible();
+    await button.click();
+    await setAutomaticPresence(cdp, authenticatorId, true);
     await expect.poll(async () => (await page.request.get(eidUrl('manageList'))).status(), { timeout: 30_000 }).toBe(200);
 }
 

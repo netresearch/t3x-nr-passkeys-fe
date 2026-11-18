@@ -48,7 +48,7 @@ test.describe('Passkey enrollment plugin', () => {
         await expect(plugin.getByRole('heading', { name: 'Passkey set up successfully!' })).toBeVisible();
         await expect(page).toHaveURL(/\/enrollment$/);
 
-        await signInWithRegisteredPasskey(page);
+        await signInWithRegisteredPasskey(page, cdp, authenticatorId);
         await removeAllCredentials(page);
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
