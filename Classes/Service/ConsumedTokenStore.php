@@ -29,8 +29,7 @@ final readonly class ConsumedTokenStore
 
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         if (random_int(1, 64) === 1) {
-            $query = $connection->createQueryBuilder();
-            $query->delete(self::TABLE)->where($query->expr()->lte('expires_at', $query->createNamedParameter($now - 3600, ParameterType::INTEGER)))->executeStatement();
+            $this->pruneExpired();
         }
 
         try {
@@ -38,5 +37,14 @@ final readonly class ConsumedTokenStore
         } catch (UniqueConstraintViolationException) {
             return false;
         }
+    }
+
+    /** Retain recently expired claims for an hour to tolerate clock differences between nodes. */
+    public function pruneExpired(): void
+    {
+        $query = $this->connectionPool->getQueryBuilderForTable(self::TABLE);
+        $query->delete(self::TABLE)
+            ->where($query->expr()->lte('expires_at', $query->createNamedParameter(time() - 3600, ParameterType::INTEGER)))
+            ->executeStatement();
     }
 }
