@@ -9,12 +9,15 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
+use Netresearch\NrPasskeysFe\Event\AfterPasskeyAuthenticationEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\NullLogger;
+use TYPO3\CMS\Core\Authentication\Event\AfterUserLoggedInEvent;
 use TYPO3\CMS\Core\Authentication\Event\BeforeRequestTokenProcessedEvent;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Session\UserSession;
@@ -58,5 +61,32 @@ final class FrontendLoginAssuranceTest extends TestCase
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 7, 'shop', true));
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 7, 'other', false));
         self::assertFalse(FrontendLoginAssurance::allowsManagement($user, 8, 'shop', false));
+    }
+
+    #[Test]
+    public function verifiedCredentialIsCreditedOnlyToItsSessionOwnerAndSite(): void
+    {
+        $credential = new FrontendCredential(feUser: 7, siteIdentifier: 'shop');
+        $events     = $this->createMock(EventDispatcherInterface::class);
+        $events->expects(self::once())->method('dispatch')->with(self::callback(
+            static fn (AfterPasskeyAuthenticationEvent $event): bool => $event->feUserUid === 7 && $event->credential === $credential,
+        ))->willReturnArgument(0);
+        $service = new FrontendLoginAssurance($events, new NullLogger());
+        $user    = $this->createMock(FrontendUserAuthentication::class);
+        $user->method('getUserId')->willReturn(7);
+        $user->method('getSession')->willReturn(UserSession::createFromRecord('session', ['ses_userid' => 7]));
+        $user->expects(self::once())->method('setKey')->with('ses', 'nr_passkeys_fe_assurance', self::callback(
+            static fn (array $proof): bool => $proof['uid'] === 7 && $proof['site'] === 'shop' && $proof['method'] === 'passkey',
+        ));
+        $site    = new Site('shop', 1, ['base' => 'https://shop.example/']);
+        $request = (new ServerRequest('https://shop.example/login', 'POST'))->withAttribute('site', $site);
+        $event   = new AfterUserLoggedInEvent($user, $request);
+        $service->verified($user, 8, $credential);
+        $service->complete($event);
+        $service->verified($user, 7, new FrontendCredential(feUser: 7, siteIdentifier: 'other'));
+        $service->complete($event);
+        $service->verified($user, 7, $credential);
+        $service->complete($event);
+        $service->complete($event);
     }
 }
