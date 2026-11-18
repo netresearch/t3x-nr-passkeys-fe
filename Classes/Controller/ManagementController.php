@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\PasskeyRemovedEvent;
@@ -163,6 +164,10 @@ final readonly class ManagementController
 
         try {
             $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
+        } catch (DatabaseException $e) {
+            $this->logger->error('Frontend registration storage unavailable', ['exception' => $e::class]);
+
+            return new JsonResponse(['error' => 'Registration temporarily unavailable. Start registration again.'], 503, ['Retry-After' => '60']);
         } catch (RuntimeException $e) {
             $this->logger->warning('FE registration verify: invalid challenge token', [
                 'fe_user_uid' => $feUserUid,

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Exception\ConnectionException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
@@ -151,6 +152,16 @@ final class ManagementControllerTest extends TestCase
         $response = $this->subject->registrationVerifyAction($request);
 
         self::assertSame(400, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationReturnsARetryableResponseWhenTheChallengeStoreIsUnavailable(): void
+    {
+        $this->challengeService->method('verifyChallengeToken')->willThrowException($this->createStub(ConnectionException::class));
+        $request  = $this->buildRequestWithUser(42, 'user@example.com', ['credential' => ['id' => 'abc'], 'challengeToken' => 'ticket']);
+        $response = $this->subject->registrationVerifyAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
     }
 
     #[Test]
