@@ -472,7 +472,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
-            ->with('42', self::anything());
+            ->with('42', self::anything(), false);
 
         $user = ['uid' => 42, 'username' => 'frontend_user'];
 
@@ -508,7 +508,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
-            ->with('5', self::anything());
+            ->with('5', self::anything(), false);
 
         $logger
             ->expects(self::once())
@@ -549,7 +549,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
-            ->with('7', self::anything());
+            ->with('7', self::anything(), false);
 
         $webAuthnService
             ->expects(self::never())
@@ -993,15 +993,15 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     // --- One-time login token (resolvePasskeyToken / authUser consumption) ---
 
     #[Test]
-    public function authUserAcceptsAndConsumesOneTimeLoginToken(): void
+    public function authUserAcceptsClaimedTokenWhenNonceCacheCleanupFails(): void
     {
         $cache = $this->createMock(FrontendInterface::class);
         $this->site->method('getIdentifier')->willReturn('main');
         $cache->method('get')->with('passkey_login_tok123')->willReturn(json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'site' => 'main', 'storagePid' => 12, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR));
         $store = $this->createStub(ConsumedTokenStore::class);
-        $store->method('claim')->willReturn(true);
+        $store->method('claim')->willReturn(true, false);
         GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
-        $cache->expects(self::once())->method('remove')->with('passkey_login_tok123');
+        $cache->expects(self::once())->method('remove')->with('passkey_login_tok123')->willThrowException(new RuntimeException('Cache unavailable'));
         $cacheManager = $this->createStub(CacheManager::class);
         $cacheManager->method('getCache')->willReturn($cache);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
@@ -1018,6 +1018,10 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']);
 
         self::assertSame(200, $result);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        GeneralUtility::addInstance(FrontendUserLookupService::class, $lookup);
+        $this->setUpFetchUserByUid(42, ['uid' => 42, 'pid' => 12]);
+        self::assertSame(0, $this->subject->authUser(['uid' => 42, 'username' => 'tokenuser']));
     }
 
     #[Test]

@@ -17,8 +17,10 @@ use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Cache\Backend\TransientMemoryBackend;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
 use function json_encode;
 
@@ -39,7 +41,7 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_fe_nonce' => [
-                        'backend' => NullBackend::class,
+                        'backend' => TransientMemoryBackend::class,
                     ],
                 ],
             ],
@@ -61,6 +63,36 @@ final class LoginFlowTest extends AbstractPasskeyFunctionalTestCase
     // ---------------------------------------------------------------
     // Auth service passkey payload detection
     // ---------------------------------------------------------------
+
+    #[Test]
+    public function standaloneTicketLoginHonoursItsFolderAndCoreAccountRestrictions(): void
+    {
+        $user    = new FrontendUserAuthentication();
+        $request = (new ServerRequest())->withAttribute('site', $this->makeSiteWithSettings(['nr_passkeys_fe' => ['userStoragePids' => '1']]));
+        $cache   = $this->get(CacheManager::class)->getCache('nr_passkeys_fe_nonce');
+        $key     = new FrontendCredential(feUser: 1, credentialId: 'standalone-key', publicKeyCose: 'cose', siteIdentifier: 'site-a', storagePid: 1);
+        $this->credentialRepository->save($key);
+        $cache->set('passkey_login_standalone', json_encode(['uid' => 1, 'method' => 'passkey', 'site' => 'site-a', 'storagePid' => 1, 'credentialUid' => $key->getUid(), 'expiresAt' => time() + 120], JSON_THROW_ON_ERROR));
+        $login   = ['uname' => '__passkey__', 'uident' => json_encode(['_type' => 'passkey_token', 'token' => 'standalone'], JSON_THROW_ON_ERROR), 'status' => 'login'];
+        $service = new PasskeyFrontendAuthenticationService();
+        self::assertSame(0, $user->checkPid_value);
+        $service->initAuth('getUserFE', $login, $user->getAuthInfoArray($request), $user);
+        $record = $service->getUser();
+        self::assertIsArray($record);
+        self::assertSame(1, (int) $record['uid']);
+        self::assertSame(0, $user->checkPid_value);
+        $user->checkPid_value = '2';
+        $service->initAuth('getUserFE', $login, $user->getAuthInfoArray($request), $user);
+        self::assertFalse($service->getUser());
+        $user->checkPid_value = 0;
+        $this->getConnectionPool()->getConnectionForTable('fe_users')->update('fe_users', ['endtime' => time() - 3600], ['uid' => 1]);
+        $service->initAuth('getUserFE', $login, $user->getAuthInfoArray($request), $user);
+        self::assertFalse($service->getUser());
+        $this->getConnectionPool()->getConnectionForTable('fe_users')->update('fe_users', ['endtime' => 0], ['uid' => 1]);
+        $service->initAuth('authUserFE', $login, $user->getAuthInfoArray($request), $user);
+        self::assertSame(200, $service->authUser($record));
+        self::assertFalse($service->getUser());
+    }
 
     #[Test]
     public function authServiceReturnsFalseWhenNoPasskeyPayloadInUident(): void

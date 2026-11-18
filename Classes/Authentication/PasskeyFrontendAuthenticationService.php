@@ -29,6 +29,7 @@ use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -82,11 +83,11 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         $username    = is_string($rawUsername) ? $rawUsername : '';
 
         // Check for token-based passkey login (pre-verified by eID endpoint)
-        $ticket   = $this->resolvePasskeyToken();
-        $tokenUid = $ticket['uid'] ?? 0;
-        if ($tokenUid > 0) {
+        $ticket = $this->resolvePasskeyToken();
+        if ($ticket !== null) {
+            $tokenUid = $ticket['uid'];
             $this->getLogger()->info('FE passkey token login', ['fe_user_uid' => $tokenUid]);
-            $user = $this->fetchUserByUid($tokenUid);
+            $user = $this->fetchUserByUid($tokenUid, $ticket['storagePid']);
             if (is_array($user)) {
                 // Mark as token-authenticated so authUser() knows to return 200
                 $this->passkeyPayload = ['_token_authenticated' => true];
@@ -176,7 +177,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             }
 
             $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($tokenUid, $site);
-            if ($pid !== $ticket['storagePid'] || $this->fetchUserByUid($tokenUid) === false
+            if ($pid !== $ticket['storagePid'] || $this->fetchUserByUid($tokenUid, $pid) === false
                 || ($ticket['method'] === 'recovery' && !SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'))) {
                 return 0;
             }
@@ -198,12 +199,17 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
                 if ($this->pObj instanceof FrontendUserAuthentication) {
                     GeneralUtility::makeInstance(FrontendLoginAssurance::class)->verified($this->pObj, $tokenUid, $credential);
                 }
-
-                GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_fe_nonce')->remove('passkey_login_' . $ticket['token']);
             } catch (Throwable $error) {
                 $this->getLogger()->error('Passkey token consumption unavailable', ['exception' => $error::class]);
 
                 return 0;
+            }
+
+            // The database claim already prevents reuse on every application node.
+            try {
+                GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_fe_nonce')->remove('passkey_login_' . $ticket['token']);
+            } catch (Throwable $error) {
+                $this->getLogger()->warning('Consumed login ticket cache cleanup failed', ['exception' => $error::class]);
             }
 
             return 200;
@@ -274,7 +280,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             // Return 200 = authenticated, stop further auth processing
             return 200;
         } catch (Throwable $e) {
-            $this->getRateLimiterService()->recordFailure((string) (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0), $ip);
+            $this->getRateLimiterService()->recordFailure((string) (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0), $ip, false);
 
             $this->getLogger()->warning('FE passkey authentication failed', [
                 'fe_user_uid'   => $user['uid'] ?? 0,
@@ -447,11 +453,35 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
      *
      * @return array<string, mixed>|false
      */
-    private function fetchUserByUid(int $uid): array|false
+    private function fetchUserByUid(int $uid, ?int $ticketPid = null): array|false
     {
         $setup = $this->db_user;
         if (($setup['table'] ?? '') !== 'fe_users' || ($setup['userid_column'] ?? '') !== 'uid') {
             return false;
+        }
+
+        // Without felogin, Core's initial PID 0 survives the active login. Restrict
+        // only this ticket lookup to its server-issued folder. Rebuild Core's other
+        // restrictions on a clone so other auth services keep their original scope.
+        $coreSetup = $this->authInfo['db_user'] ?? null;
+        if ($ticketPid !== null && $ticketPid > 0 && $this->pObj instanceof FrontendUserAuthentication
+            && $this->pObj->checkPid && $this->pObj->checkPid_value === 0
+            && !ExtensionManagementUtility::isLoaded('felogin')
+            && is_array($coreSetup) && isset($coreSetup['enable_clause'])
+            && ($setup['enable_clause'] ?? null) === $coreSetup['enable_clause']) {
+            $request = $this->authInfo['request'] ?? null;
+            if (!$request instanceof ServerRequestInterface) {
+                return false;
+            }
+
+            $scopedUser                 = clone $this->pObj;
+            $scopedUser->checkPid_value = $ticketPid;
+            $scopedSetup                = $scopedUser->getAuthInfoArray($request)['db_user'] ?? null;
+            if (!is_array($scopedSetup) || !isset($scopedSetup['enable_clause'])) {
+                return false;
+            }
+
+            $setup['enable_clause'] = $scopedSetup['enable_clause'];
         }
 
         $setup['username_column'] = 'uid';
