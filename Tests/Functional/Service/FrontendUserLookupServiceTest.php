@@ -28,6 +28,7 @@ final class FrontendUserLookupServiceTest extends AbstractPasskeyFunctionalTestC
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
         $db = $this->getConnectionPool()->getConnectionForTable('pages');
         $db->insert('pages', ['uid' => 1, 'pid' => 0, 'title' => 'Home', 'is_siteroot' => 1, 'doktype' => 1, 'slug' => '/']);
+
         $directory = Environment::getConfigPath() . '/sites/home';
         if (!is_dir($directory)) {
             mkdir($directory, 0o777, true);
