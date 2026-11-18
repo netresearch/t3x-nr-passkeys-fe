@@ -81,6 +81,7 @@ final readonly class InjectPasskeyBanner
         if ($this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier) > 0) {
             return;
         }
+
         $status         = $this->enforcementService->getStatus($feUserUid, $siteIdentifier, $site);
         $effectiveLevel = $status->effectiveLevel;
 

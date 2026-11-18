@@ -13,12 +13,12 @@ use Doctrine\DBAL\ParameterType;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Exception\SiteNotFoundException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 use function count;
 use function is_numeric;
@@ -83,21 +83,25 @@ final readonly class RecoveryCodeService
      */
     public function generate(int $feUserUid, int $count = 10, ?SiteInterface $site = null): array
     {
-        if ($count === 0) { return []; }
+        if ($count === 0) {
+            return [];
+        }
+
         if ($feUserUid <= 0 || $count < 0) {
             throw new InvalidArgumentException('A valid owner and at least one code are required');
         }
+
         $now            = time();
         $plaintextCodes = [];
         $rows           = [];
         for ($i = 0; $i < $count; ++$i) {
             $rawCode = $this->generateRandomCode();
             $rows[]  = [
-                'fe_user'    => $feUserUid,
+                'fe_user'         => $feUserUid,
                 'site_identifier' => $site?->getIdentifier() ?? '',
-                'code_hash'  => password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]),
-                'used_at'    => 0,
-                'created_at' => $now,
+                'code_hash'       => password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]),
+                'used_at'         => 0,
+                'created_at'      => $now,
             ];
             $plaintextCodes[] = $this->formatCode($rawCode);
         }
@@ -106,6 +110,7 @@ final readonly class RecoveryCodeService
         if ($connection !== $this->connectionPool->getConnectionForTable('fe_users')) {
             throw new RuntimeException('Recovery codes and their owner must use the same database connection.');
         }
+
         $connection->beginTransaction();
         try {
             // A stable owner row serializes rotations even when the old set is empty.
@@ -113,11 +118,13 @@ final readonly class RecoveryCodeService
             if ($connection->select(['uid'], 'fe_users', ['uid' => $feUserUid, 'deleted' => 0])->fetchOne() === false) {
                 throw new RuntimeException('Recovery code owner is unavailable');
             }
+
             $this->assignLegacyToHomeSite($feUserUid, $site);
             $connection->delete(self::TABLE, ['fe_user' => $feUserUid, 'site_identifier' => $site?->getIdentifier() ?? '']);
             foreach ($rows as $row) {
                 $connection->insert(self::TABLE, $row);
             }
+
             $connection->commit();
         } catch (Throwable $error) {
             $connection->rollBack();
@@ -220,23 +227,27 @@ final readonly class RecoveryCodeService
 
     private function assignLegacyToHomeSite(int $uid, ?SiteInterface $site): void
     {
-        if ($uid <= 0 || $site === null || $site->getIdentifier() === '') {
+        if ($uid <= 0 || !$site instanceof SiteInterface || $site->getIdentifier() === '') {
             return;
         }
-        $db = $this->connectionPool->getConnectionForTable(self::TABLE);
+
+        $db       = $this->connectionPool->getConnectionForTable(self::TABLE);
         $criteria = ['fe_user' => $uid, 'site_identifier' => ''];
         if ($db->select(['uid'], self::TABLE, $criteria, limit: 1)->fetchOne() === false) {
             return;
         }
+
         $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($uid, $site);
         if ($pid === null) {
             return;
         }
+
         try {
             $home = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pid)->getIdentifier();
         } catch (SiteNotFoundException) {
             return;
         }
+
         if ($home === $site->getIdentifier()) {
             $db->update(self::TABLE, ['site_identifier' => $home], $criteria);
         }

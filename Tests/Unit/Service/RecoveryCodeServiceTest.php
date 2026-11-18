@@ -38,7 +38,7 @@ final class RecoveryCodeServiceTest extends TestCase
         parent::setUp();
         $this->connectionPool = $this->createStub(ConnectionPool::class);
         $this->connection     = $this->createStub(Connection::class);
-        $owner = $this->createStub(Result::class);
+        $owner                = $this->createStub(Result::class);
         $owner->method('fetchOne')->willReturn(1);
         $this->connection->method('select')->willReturn($owner);
 
@@ -106,8 +106,8 @@ final class RecoveryCodeServiceTest extends TestCase
     #[Test]
     public function generateDeletesExistingCodesFirst(): void
     {
-        $connection     = $this->createMock(Connection::class);
-        $owner = $this->createStub(Result::class);
+        $connection = $this->createMock(Connection::class);
+        $owner      = $this->createStub(Result::class);
         $owner->method('fetchOne')->willReturn(1);
         $connection->method('select')->willReturn($owner);
         $connectionPool = $this->createStub(ConnectionPool::class);
@@ -211,8 +211,8 @@ final class RecoveryCodeServiceTest extends TestCase
             ->willReturn($queryBuilder);
 
         // Create a mock connection to verify the code is marked as used
-        $connection     = $this->createMock(Connection::class);
-        $owner = $this->createStub(Result::class);
+        $connection = $this->createMock(Connection::class);
+        $owner      = $this->createStub(Result::class);
         $owner->method('fetchOne')->willReturn(1);
         $connection->method('select')->willReturn($owner);
         $connectionPool = $this->createStub(ConnectionPool::class);

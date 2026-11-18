@@ -26,6 +26,7 @@ use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -201,7 +202,7 @@ final class RecoveryControllerTest extends TestCase
         $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('main');
 
         return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
@@ -211,7 +212,7 @@ final class RecoveryControllerTest extends TestCase
 
     private function buildRequest(array $body): ServerRequest
     {
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('main');
 
         return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
@@ -226,7 +227,7 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionRateLimitsAndChecksTheLockoutForTheAddressFromTheNormalizedParams(): void
     {
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('main');
         $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
         $calls = [];

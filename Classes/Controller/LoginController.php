@@ -249,6 +249,7 @@ final readonly class LoginController
             if ($storagePid === null) {
                 return new JsonResponse(['error' => 'Authentication failed'], 401);
             }
+
             $token = bin2hex(random_bytes(32));
             $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');

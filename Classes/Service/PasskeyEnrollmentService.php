@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysFe\Event\BeforePasskeyEnrollmentEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\PublicKeyCredentialCreationOptions;
 
 use function sprintf;
@@ -88,10 +89,11 @@ final readonly class PasskeyEnrollmentService
             $site,
         );
 
-        $pid = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($feUserUid, $site);
+        $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($feUserUid, $site);
         if ($pid === null) {
             throw new RuntimeException('User outside the configured storage folders');
         }
+
         $credential->setStoragePid($pid);
         $credential->setLabel($label);
 

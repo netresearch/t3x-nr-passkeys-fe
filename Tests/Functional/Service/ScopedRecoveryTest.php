@@ -22,10 +22,10 @@ final class ScopedRecoveryTest extends AbstractPasskeyFunctionalTestCase
     public function rotatingOneSitePreservesTheOtherSitesCodes(): void
     {
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
-        $codes = $this->get(RecoveryCodeService::class);
-        $a = new Site('a', 1, ['base' => 'https://a.example/']);
-        $b = new Site('b', 2, ['base' => 'https://b.example/']);
-        [$first] = $codes->generate(1, 1, $a);
+        $codes    = $this->get(RecoveryCodeService::class);
+        $a        = new Site('a', 1, ['base' => 'https://a.example/']);
+        $b        = new Site('b', 2, ['base' => 'https://b.example/']);
+        [$first]  = $codes->generate(1, 1, $a);
         [$second] = $codes->generate(1, 1, $b);
         self::assertFalse($codes->verify(1, $first, $b));
         self::assertSame(1, $codes->countRemaining(1, $a));

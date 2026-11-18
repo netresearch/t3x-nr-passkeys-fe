@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\PasskeyRemovedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -55,7 +56,7 @@ final readonly class ManagementController
         private ChallengeService $challengeService,
         private EventDispatcherInterface $eventDispatcher,
         private LoggerInterface $logger,
-        private \Netresearch\NrPasskeysFe\Service\FrontendEnforcementService $enforcement,
+        private FrontendEnforcementService $enforcement,
     ) {}
 
     /**
@@ -186,6 +187,7 @@ final readonly class ManagementController
             || ($issued['origin'] ?? null) !== $this->siteConfigurationService->getOrigin($site)) {
             return new JsonResponse(['error' => 'Restart passkey registration in this session'], 403);
         }
+
         $feUser->setKey('ses', 'nr_passkeys_fe_registration', null);
         $feUser->storeSessionData();
 
@@ -299,8 +301,8 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Label must not be empty'], 400);
         }
 
-        $site = $this->siteConfigurationService->getCurrentSite($request);
-        $siteId = $this->siteConfigurationService->getSiteIdentifier($site);
+        $site       = $this->siteConfigurationService->getCurrentSite($request);
+        $siteId     = $this->siteConfigurationService->getSiteIdentifier($site);
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
         if (!$credential instanceof FrontendCredential || $credential->isRevoked() || $credential->getSiteIdentifier() !== $siteId) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
@@ -339,17 +341,17 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Missing credential uid'], 400);
         }
 
-        $site = $this->siteConfigurationService->getCurrentSite($request);
-        $siteId = $this->siteConfigurationService->getSiteIdentifier($site);
+        $site       = $this->siteConfigurationService->getCurrentSite($request);
+        $siteId     = $this->siteConfigurationService->getSiteIdentifier($site);
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
         if (!$credential instanceof FrontendCredential || $credential->isRevoked() || $credential->getSiteIdentifier() !== $siteId) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
         // Soft delete: revoke with the user as revoker
-        $level = $this->enforcement->getStatus($feUserUid,$siteId,$site)->effectiveLevel;
-        if (!$this->credentialRepository->removeOwned($credentialUid,$feUserUid,in_array($level,['required','enforced'],true),$siteId)) {
-            return new JsonResponse(['error'=>'Add a replacement passkey before removing your last passkey.'],409);
+        $level = $this->enforcement->getStatus($feUserUid, $siteId, $site)->effectiveLevel;
+        if (!$this->credentialRepository->removeOwned($credentialUid, $feUserUid, in_array($level, ['required', 'enforced'], true), $siteId)) {
+            return new JsonResponse(['error' => 'Add a replacement passkey before removing your last passkey.'], 409);
         }
 
         $this->eventDispatcher->dispatch(new PasskeyRemovedEvent($credential, $feUserUid));

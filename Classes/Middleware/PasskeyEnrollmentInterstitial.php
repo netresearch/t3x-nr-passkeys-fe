@@ -13,12 +13,16 @@ use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -50,7 +54,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         private FrontendCredentialRepository $credentialRepository,
         private SiteConfigurationService $siteConfigurationService,
         private FrontendConfiguration $frontendConfiguration,
-        private ?\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance $loginAssurance = null,
+        private ?FrontendLoginAssurance $loginAssurance = null,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -87,8 +91,8 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
 
         // Get the current site
         $site = $request->getAttribute('site');
-        if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site) {
-            return new \TYPO3\CMS\Core\Http\HtmlResponse('Login policy is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
+        if (!$site instanceof Site) {
+            return new HtmlResponse('Login policy is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
         }
 
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
@@ -118,7 +122,7 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
         }
 
         $uri        = $request->getUri();
-        $target     = new \TYPO3\CMS\Core\Http\Uri($enrollmentUrl);
+        $target     = new Uri($enrollmentUrl);
         $absolute   = $target->getScheme() !== '' || $target->getAuthority() !== '';
         $sameOrigin = $target->getScheme() === $uri->getScheme() && $target->getAuthority() === $uri->getAuthority();
         if ($enrollmentUrl === '' || !str_starts_with($target->getPath(), '/') || ($absolute && !$sameOrigin)) {
@@ -126,8 +130,9 @@ final readonly class PasskeyEnrollmentInterstitial implements MiddlewareInterfac
                 return $handler->handle($request);
             }
 
-            return new \TYPO3\CMS\Core\Http\HtmlResponse('Passkey enrollment is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
+            return new HtmlResponse('Passkey enrollment is unavailable. Please contact support.', 503, ['Cache-Control' => 'private, no-store']);
         }
+
         $onEnrollmentPage = $target->getPath() === $uri->getPath() && $target->getQuery() === $uri->getQuery();
 
         // Required within the grace period may be skipped for the session;

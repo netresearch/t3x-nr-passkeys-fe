@@ -22,6 +22,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\AttestationStatement\AttestationStatementSupportManager;
 use Webauthn\AttestationStatement\NoneAttestationStatementSupport;
 use Webauthn\AuthenticatorAssertionResponse;
@@ -310,14 +311,16 @@ final class FrontendWebAuthnService
         if ($credential->getSiteIdentifier() !== $siteIdentifier) {
             throw new RuntimeException('Credential outside the current site', 1700200036);
         }
+
         if ($credential->isRevoked()) {
             throw new RuntimeException('Credential has been revoked', 1700200033);
         }
 
-        $pid = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($credential->getFeUser(), $site);
+        $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($credential->getFeUser(), $site);
         if ($pid === null || ($credential->getStoragePid() !== 0 && $credential->getStoragePid() !== $pid)) {
             throw new RuntimeException('Credential outside the configured user pool', 1700200036);
         }
+
         $storedSource = $this->credentialToSource($credential);
 
         $requestOptions = PublicKeyCredentialRequestOptions::create(

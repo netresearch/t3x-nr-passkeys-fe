@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysFe\EventListener;
 
 use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
 use function class_exists;
@@ -60,9 +62,9 @@ final readonly class InjectPasskeyLoginFields
         // The felogin template override reads the eID URL for its passkey tab.
         $event->getView()->assign('passkeyEidUrl', '?eID=nr_passkeys_fe');
         $site = $event->getRequest()->getAttribute('site');
-        if ($site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface) {
-            $event->getView()->assign('passkeyRecoveryDisabled', !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'));
-            $event->getView()->assign('passkeyPasswordDisabled', !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'password'));
+        if ($site instanceof SiteInterface) {
+            $event->getView()->assign('passkeyRecoveryDisabled', !SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'));
+            $event->getView()->assign('passkeyPasswordDisabled', !SiteConfigurationService::allowsRecoveryMethod($site, 'password'));
         }
     }
 }

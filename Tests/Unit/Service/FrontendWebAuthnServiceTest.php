@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
@@ -23,7 +24,14 @@ use ReflectionClass;
 use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use Webauthn\AttestationStatement\AttestationObject;
+use Webauthn\AttestationStatement\AttestationStatement;
+use Webauthn\AuthenticatorAttestationResponse;
+use Webauthn\AuthenticatorData;
+use Webauthn\CeremonyStep\CheckUserVerification;
+use Webauthn\CollectedClientData;
 use Webauthn\CredentialRecord;
+use Webauthn\Exception\AuthenticatorResponseVerificationException;
 use Webauthn\PublicKeyCredentialDescriptor;
 
 use function array_diff;
@@ -72,7 +80,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         // The decoy descriptors are keyed by the encryption key, so the stub
         // answers with the same one the user-handle derivation above uses.
         $this->configurationService = $this->createStub(ExtensionConfigurationService::class);
-        $this->configurationService->method('getConfiguration')->willReturn(new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration());
+        $this->configurationService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
         $this->configurationService->method('getEncryptionKey')->willReturn(str_repeat('a', 64));
 
         $this->subject = new FrontendWebAuthnService(
@@ -147,19 +155,20 @@ final class FrontendWebAuthnServiceTest extends TestCase
     public function registrationVerificationRequiresTheAuthenticatorsUvFlag(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
-        $options = $this->subject->createRegistrationOptions(1, 'owner', 'challenge', $this->site)['options'];
-        $record = $this->createStub(CredentialRecord::class);
-        $client = $this->createStub(\Webauthn\CollectedClientData::class);
-        $statement = $this->createStub(\Webauthn\AttestationStatement\AttestationStatement::class);
-        $step = new \Webauthn\CeremonyStep\CheckUserVerification();
+        $options   = $this->subject->createRegistrationOptions(1, 'owner', 'challenge', $this->site)['options'];
+        $record    = $this->createStub(CredentialRecord::class);
+        $client    = $this->createStub(CollectedClientData::class);
+        $statement = $this->createStub(AttestationStatement::class);
+        $step      = new CheckUserVerification();
         foreach ([true, false] as $verified) {
-            $flags = \Webauthn\AuthenticatorData::FLAG_UP | ($verified ? \Webauthn\AuthenticatorData::FLAG_UV : 0);
-            $authData = \Webauthn\AuthenticatorData::create('', '', chr($flags), 0);
-            $object = \Webauthn\AttestationStatement\AttestationObject::create('', $statement, $authData);
-            $response = \Webauthn\AuthenticatorAttestationResponse::create($client, $object);
+            $flags    = AuthenticatorData::FLAG_UP | ($verified ? AuthenticatorData::FLAG_UV : 0);
+            $authData = AuthenticatorData::create('', '', chr($flags), 0);
+            $object   = AttestationObject::create('', $statement, $authData);
+            $response = AuthenticatorAttestationResponse::create($client, $object);
             if (!$verified) {
-                $this->expectException(\Webauthn\Exception\AuthenticatorResponseVerificationException::class);
+                $this->expectException(AuthenticatorResponseVerificationException::class);
             }
+
             $step->process($record, $response, $options, null, 'example.com');
         }
     }

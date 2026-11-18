@@ -15,6 +15,7 @@ use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Event\EnforcementLevelResolvedEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -291,6 +292,6 @@ final class FrontendEnforcementService
 
     private function levelSeverity(string $level): int
     {
-        return self::SEVERITY_MAP[$level] ?? throw new \RuntimeException('Invalid passkey enforcement policy');
+        return self::SEVERITY_MAP[$level] ?? throw new RuntimeException('Invalid passkey enforcement policy');
     }
 }

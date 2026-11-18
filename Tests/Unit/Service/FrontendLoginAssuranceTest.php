@@ -28,7 +28,7 @@ final class FrontendLoginAssuranceTest extends TestCase
     public function onlyAnObservedLoginCanAuthorizeFirstEnrollment(): void
     {
         $service = new FrontendLoginAssurance($this->createStub(EventDispatcherInterface::class), new NullLogger());
-        $user = $this->createMock(FrontendUserAuthentication::class);
+        $user    = $this->createMock(FrontendUserAuthentication::class);
         $user->method('getUserId')->willReturn(7);
         $session = UserSession::createFromRecord('session', ['ses_userid' => 0]);
         $user->method('getSession')->willReturnCallback(static function () use (&$session): UserSession {
@@ -37,7 +37,7 @@ final class FrontendLoginAssuranceTest extends TestCase
         $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('shop');
         $request = (new ServerRequest('https://example.com/login', 'POST'))->withAttribute('site', $site);
-        $proof = null;
+        $proof   = null;
         $user->expects(self::once())->method('setKey')->willReturnCallback(static function (string $type, string $key, mixed $value) use (&$proof): void {
             self::assertSame('ses', $type);
             self::assertSame('nr_passkeys_fe_assurance', $key);

@@ -12,7 +12,12 @@ namespace Netresearch\NrPasskeysFe\Authentication;
 use JsonException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysFe\Service\ConsumedTokenStore;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
+use Netresearch\NrPasskeysFe\Service\FrontendRateLimiter;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ServerRequestInterface;
@@ -106,9 +111,10 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         if ($username === '' || $username === '__passkey__') {
             // Discoverable login: resolve user from credential ID in the assertion
             $site = $this->resolveSite();
-            if ($site === null) {
+            if (!$site instanceof Site) {
                 return false;
             }
+
             $feUserUid = $this->getWebAuthnService()->findFeUserUidFromAssertion($payload['assertion'] ?? '', $site);
             if ($feUserUid === null) {
                 $this->getLogger()->info('Discoverable login: could not resolve user from assertion');
@@ -165,29 +171,34 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         $tokenUid = $ticket['uid'] ?? 0;
         if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $site = $this->resolveSite();
-            if ($site === null) {
+            if (!$site instanceof Site) {
                 return 0;
             }
-            $pid = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class)->ownerStoragePid($tokenUid, $site);
+
+            $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($tokenUid, $site);
             if ($pid !== $ticket['storagePid'] || $this->fetchUserByUid($tokenUid) === false
                 || ($ticket['method'] === 'recovery' && !SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'))) {
                 return 0;
             }
+
             try {
-                if (!GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class)->claim('login:' . $ticket['token'], $ticket['expiresAt'])) {
+                if (!GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim('login:' . $ticket['token'], $ticket['expiresAt'])) {
                     return 0;
                 }
+
                 $credential = null;
                 if ($ticket['method'] === 'passkey') {
-                    $credential = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->findByUidAndFeUser($ticket['credentialUid'], $tokenUid);
+                    $credential = GeneralUtility::makeInstance(FrontendCredentialRepository::class)->findByUidAndFeUser($ticket['credentialUid'], $tokenUid);
                     if ($credential === null || $credential->isRevoked() || $credential->getSiteIdentifier() !== $site->getIdentifier()
                         || ($credential->getStoragePid() !== 0 && $credential->getStoragePid() !== $pid)) {
                         return 0;
                     }
                 }
+
                 if ($this->pObj instanceof FrontendUserAuthentication) {
-                    GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::class)->verified($this->pObj, $tokenUid, $credential);
+                    GeneralUtility::makeInstance(FrontendLoginAssurance::class)->verified($this->pObj, $tokenUid, $credential);
                 }
+
                 GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_fe_nonce')->remove('passkey_login_' . $ticket['token']);
             } catch (Throwable $error) {
                 $this->getLogger()->error('Passkey token consumption unavailable', ['exception' => $error::class]);
@@ -257,7 +268,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
 
             // Mark session as passkey-authenticated so middleware knows to skip enrollment
             if ($this->pObj instanceof FrontendUserAuthentication) {
-                GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::class)->verified($this->pObj, $candidateUid, $result['credential']);
+                GeneralUtility::makeInstance(FrontendLoginAssurance::class)->verified($this->pObj, $candidateUid, $result['credential']);
             }
 
             // Return 200 = authenticated, stop further auth processing
@@ -299,9 +310,10 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
             if (!SiteConfigurationService::allowsRecoveryMethod($site, 'password')) {
                 return 0;
             }
+
             try {
                 $siteIdentifier = $this->getSiteConfigService()->getSiteIdentifier($site);
-                $status = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
+                $status         = $this->getEnforcementService()->getStatus($uid, $siteIdentifier, $site);
             } catch (Throwable $error) {
                 $this->getLogger()->error('Frontend login policy unavailable', ['fe_user_uid' => $uid, 'exception' => $error::class]);
 
@@ -341,16 +353,19 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         if (!is_string($raw) || !str_starts_with($raw, '{')) {
             return null;
         }
+
         try {
             $input = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
             if (!is_array($input) || ($input['_type'] ?? '') !== 'passkey_token' || !is_string($input['token'] ?? null)) {
                 return null;
             }
+
             $token = $input['token'];
             $site  = $this->resolveSite();
-            if ($site === null || $site->getIdentifier() === '') {
+            if (!$site instanceof Site || $site->getIdentifier() === '') {
                 return null;
             }
+
             $rawTicket = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_fe_nonce')->get('passkey_login_' . $token);
             $ticket    = is_string($rawTicket) ? json_decode($rawTicket, true, 8, JSON_THROW_ON_ERROR) : null;
             if (!is_array($ticket) || ($ticket['site'] ?? null) !== $site->getIdentifier()
@@ -438,6 +453,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
         if (($setup['table'] ?? '') !== 'fe_users' || ($setup['userid_column'] ?? '') !== 'uid') {
             return false;
         }
+
         $setup['username_column'] = 'uid';
 
         return $this->fetchUserRecord((string) $uid, '', $setup);
@@ -494,7 +510,7 @@ final class PasskeyFrontendAuthenticationService extends AbstractAuthenticationS
     private function getRateLimiterService(): RateLimiterService
     {
         if (!$this->rateLimiterService instanceof RateLimiterService) {
-            $this->rateLimiterService = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class)->service;
+            $this->rateLimiterService = GeneralUtility::makeInstance(FrontendRateLimiter::class)->service;
         }
 
         return $this->rateLimiterService;

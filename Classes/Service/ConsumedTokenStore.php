@@ -26,11 +26,13 @@ final readonly class ConsumedTokenStore
         if ($expiresAt <= $now) {
             return false;
         }
+
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         if (random_int(1, 64) === 1) {
             $query = $connection->createQueryBuilder();
             $query->delete(self::TABLE)->where($query->expr()->lte('expires_at', $query->createNamedParameter($now - 3600, ParameterType::INTEGER)))->executeStatement();
         }
+
         try {
             return $connection->insert(self::TABLE, ['token_hash' => hash('sha256', $key), 'expires_at' => $expiresAt]) === 1;
         } catch (UniqueConstraintViolationException) {

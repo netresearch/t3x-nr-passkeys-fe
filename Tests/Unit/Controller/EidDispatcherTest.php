@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysFe\Controller\EnrollmentController;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -25,6 +26,8 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -183,11 +186,11 @@ final class EidDispatcherTest extends TestCase
         $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 42];
 
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('main');
-        $site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         $feUserStub->method('getKey')->willReturn(['uid' => 42, 'site' => 'main', 'method' => 'passkey', 'at' => time()]);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class, $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class));
+        GeneralUtility::addInstance(FrontendCredentialRepository::class, $this->createStub(FrontendCredentialRepository::class));
 
         // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
@@ -328,9 +331,9 @@ final class EidDispatcherTest extends TestCase
 
     private function buildRequest(array $queryParams): ServerRequest
     {
-        $site = $this->createStub(\TYPO3\CMS\Core\Site\Entity\Site::class);
+        $site = $this->createStub(Site::class);
         $site->method('getIdentifier')->willReturn('main');
-        $site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         $read = in_array($queryParams['action'] ?? '', ['loginOptions', 'manageList', 'enrollmentStatus'], true);
 
         return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', $read ? 'GET' : 'POST'))

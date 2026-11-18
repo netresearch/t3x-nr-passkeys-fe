@@ -11,8 +11,10 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -79,10 +81,11 @@ final class ManagementControllerTest extends TestCase
         );
     }
 
-    private function enforcement(): \Netresearch\NrPasskeysFe\Service\FrontendEnforcementService
+    private function enforcement(): FrontendEnforcementService
     {
-        $service = $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendEnforcementService::class);
-        $service->method('getStatus')->willReturn(new \Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus('off','off','off',1,false,null,0));
+        $service = $this->createStub(FrontendEnforcementService::class);
+        $service->method('getStatus')->willReturn(new FrontendEnforcementStatus('off', 'off', 'off', 1, false, null, 0));
+
         return $service;
     }
 
@@ -264,7 +267,7 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(siteIdentifier:'main', uid: 10, feUser: 42, label: 'Old Name');
+        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old Name', siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
         $credentialRepository->expects(self::once())->method('updateLabel')->with(10, 'New Name');
 
@@ -284,7 +287,7 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(siteIdentifier:'main', uid: 10, feUser: 42, label: 'Old');
+        $credential = new FrontendCredential(uid: 10, feUser: 42, label: 'Old', siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
         $credentialRepository->expects(self::once())->method('updateLabel')->with(10, $expectedLabel);
 
@@ -324,7 +327,7 @@ final class ManagementControllerTest extends TestCase
         $credentialRepository = $this->createMock(FrontendCredentialRepository::class);
         $subject              = $this->createSubjectWithCredentialRepository($credentialRepository);
 
-        $credential = new FrontendCredential(siteIdentifier:'main', uid: 10, feUser: 42);
+        $credential = new FrontendCredential(uid: 10, feUser: 42, siteIdentifier: 'main');
         $credentialRepository->method('findByUidAndFeUser')->willReturn($credential);
         $credentialRepository->expects(self::once())->method('removeOwned')->with(10, 42, false, 'main')->willReturn(true);
 

@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\AfterPasskeyEnrollmentEvent;
 use Netresearch\NrPasskeysFe\Event\BeforePasskeyEnrollmentEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -24,6 +25,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function random_bytes;
 
@@ -45,9 +47,9 @@ final class PasskeyEnrollmentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $lookup = $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class);
+        $lookup = $this->createStub(FrontendUserLookupService::class);
         $lookup->method('ownerStoragePid')->willReturn(12);
-        \TYPO3\CMS\Core\Utility\GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class, $lookup);
+        GeneralUtility::addInstance(FrontendUserLookupService::class, $lookup);
 
         $this->webAuthnService      = $this->createStub(FrontendWebAuthnService::class);
         $this->credentialRepository = $this->createStub(FrontendCredentialRepository::class);

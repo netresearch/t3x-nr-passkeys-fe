@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Controller\Plugin;
 
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -49,7 +50,7 @@ final class ManagementPluginController extends ActionController
             $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid, $site);
         }
 
-        $recoveryAllowed = $site instanceof SiteInterface && \Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code');
+        $recoveryAllowed = $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code');
         $this->view->assignMultiple([
             'eidUrl'                 => $eidUrl,
             'siteIdentifier'         => $siteIdentifier,

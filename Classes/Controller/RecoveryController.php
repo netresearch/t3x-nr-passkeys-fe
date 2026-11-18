@@ -21,6 +21,7 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Http\JsonResponse;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -68,9 +69,10 @@ final readonly class RecoveryController
 
         try {
             $site = $request->getAttribute('site');
-            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface || $site->getIdentifier() === '') {
+            if (!$site instanceof SiteInterface || $site->getIdentifier() === '') {
                 return new JsonResponse(['error' => 'A configured site is required'], 403);
             }
+
             $codes = $this->recoveryCodeService->generate($feUserUid, site: $site);
         } catch (Throwable $e) {
             $this->logger->error('FE recovery code generation failed', [
@@ -126,7 +128,7 @@ final readonly class RecoveryController
         }
 
         $site = $request->getAttribute('site');
-        if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\SiteInterface || $site->getIdentifier() === '') {
+        if (!$site instanceof SiteInterface || $site->getIdentifier() === '') {
             return new JsonResponse(['error' => 'Invalid site'], 400);
         }
 
@@ -138,11 +140,13 @@ final readonly class RecoveryController
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
+
         try {
             $this->rateLimiterService->consumeRateLimit('fe_recovery_capacity', 'all-sites');
         } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Recovery temporarily busy'], 429, ['Retry-After' => '60']);
         }
+
         $valid = $this->recoveryCodeService->verify($feUserUid ?? 0, $code, $site);
         if ($feUserUid === null || !$valid) {
             $this->rateLimiterService->recordFailure($account, $ip, false);
@@ -165,6 +169,7 @@ final readonly class RecoveryController
         if ($storagePid === null) {
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
+
         $token = bin2hex(random_bytes(32));
         $cache = GeneralUtility::makeInstance(CacheManager::class)
             ->getCache('nr_passkeys_fe_nonce');

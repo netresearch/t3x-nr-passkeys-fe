@@ -15,7 +15,10 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Authentication\PasskeyFrontendAuthenticationService;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
+use Netresearch\NrPasskeysFe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
+use Netresearch\NrPasskeysFe\Service\FrontendRateLimiter;
+use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -32,9 +35,12 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 use TYPO3\CMS\Core\Log\Logger;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function bin2hex;
@@ -71,7 +77,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $this->site               = $this->createStub(Site::class);
         $this->logger             = $this->createStub(LoggerInterface::class);
 
-        $this->site->method('getSettings')->willReturn(\TYPO3\CMS\Core\Site\Entity\SiteSettings::createFromSettingsTree([]));
+        $this->site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         // Default enforcement: off, no passkeys
         $this->enforcementService
             ->method('getStatus')
@@ -99,7 +105,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturnArgument(0);
 
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $this->webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($this->rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($this->rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -236,7 +242,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             ->willReturn($expectedUser);
 
         // Provide fresh instances for this service instance
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
 
         $rateLimiterService
             ->expects(self::once())
@@ -324,7 +330,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $webAuthnService    = $this->createMock(FrontendWebAuthnService::class);
         $rateLimiterService = $this->createMock(RateLimiterService::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -384,11 +390,11 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
     ): PasskeyFrontendAuthenticationService {
         GeneralUtility::purgeInstances();
         foreach ([
-            FrontendWebAuthnService::class                               => $webAuthnService,
-            \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class => new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService),
-            FrontendEnforcementService::class                            => $this->enforcementService,
-            SiteConfigurationService::class                              => $this->siteConfigService,
-            ChallengeService::class                                      => $this->challengeService,
+            FrontendWebAuthnService::class    => $webAuthnService,
+            FrontendRateLimiter::class        => new FrontendRateLimiter($rateLimiterService),
+            FrontendEnforcementService::class => $this->enforcementService,
+            SiteConfigurationService::class   => $this->siteConfigService,
+            ChallengeService::class           => $this->challengeService,
         ] as $className => $instance) {
             GeneralUtility::addInstance($className, $instance);
         }
@@ -442,7 +448,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $webAuthnService    = $this->createMock(FrontendWebAuthnService::class);
         $rateLimiterService = $this->createMock(RateLimiterService::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -483,7 +489,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $rateLimiterService = $this->createMock(RateLimiterService::class);
         $logger             = $this->createMock(LoggerInterface::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -523,7 +529,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $webAuthnService    = $this->createMock(FrontendWebAuthnService::class);
         $rateLimiterService = $this->createMock(RateLimiterService::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -565,7 +571,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $webAuthnService    = $this->createStub(FrontendWebAuthnService::class);
         $rateLimiterService = $this->createMock(RateLimiterService::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($rateLimiterService));
         GeneralUtility::addInstance(FrontendEnforcementService::class, $this->enforcementService);
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
@@ -863,7 +869,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         $webAuthnService = $this->createMock(FrontendWebAuthnService::class);
         GeneralUtility::addInstance(FrontendWebAuthnService::class, $webAuthnService);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($this->rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($this->rateLimiterService));
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
         GeneralUtility::addInstance(ChallengeService::class, $this->challengeService);
 
@@ -928,7 +934,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
 
         // Need fresh instances without TYPO3_REQUEST
         GeneralUtility::purgeInstances();
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendRateLimiter::class, new \Netresearch\NrPasskeysFe\Service\FrontendRateLimiter($this->rateLimiterService));
+        GeneralUtility::addInstance(FrontendRateLimiter::class, new FrontendRateLimiter($this->rateLimiterService));
         GeneralUtility::addInstance(SiteConfigurationService::class, $this->siteConfigService);
 
         $subject = new PasskeyFrontendAuthenticationService();
@@ -956,7 +962,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
      */
     private function setUpFetchUserByUid(int $uid, ?array $userRow): void
     {
-        GeneralUtility::addInstance(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class, $this->createStub(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class));
+        GeneralUtility::addInstance(DeletedRestriction::class, $this->createStub(DeletedRestriction::class));
         $this->subject->db_user = ['table' => 'fe_users', 'userid_column' => 'uid', 'username_column' => 'username', 'enable_clause' => ''];
         $expressionBuilder      = $this->createStub(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
@@ -965,7 +971,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $result->method('fetchAssociative')->willReturn($userRow ?? false);
 
         $queryBuilder = $this->createStub(QueryBuilder::class);
-        $restrictions = $this->createStub(\TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface::class);
+        $restrictions = $this->createStub(QueryRestrictionContainerInterface::class);
         $restrictions->method('removeAll')->willReturnSelf();
         $restrictions->method('add')->willReturnSelf();
         $queryBuilder->method('getRestrictions')->willReturn($restrictions);
@@ -992,17 +998,17 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
         $cache = $this->createMock(FrontendInterface::class);
         $this->site->method('getIdentifier')->willReturn('main');
         $cache->method('get')->with('passkey_login_tok123')->willReturn(json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'site' => 'main', 'storagePid' => 12, 'method' => 'recovery', 'credentialUid' => 0], JSON_THROW_ON_ERROR));
-        $store = $this->createStub(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class);
+        $store = $this->createStub(ConsumedTokenStore::class);
         $store->method('claim')->willReturn(true);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\ConsumedTokenStore::class, $store);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $cache->expects(self::once())->method('remove')->with('passkey_login_tok123');
         $cacheManager = $this->createStub(CacheManager::class);
         $cacheManager->method('getCache')->willReturn($cache);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
 
-        $lookup = $this->createStub(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class);
+        $lookup = $this->createStub(FrontendUserLookupService::class);
         $lookup->method('ownerStoragePid')->willReturn(12);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysFe\Service\FrontendUserLookupService::class, $lookup);
+        GeneralUtility::addInstance(FrontendUserLookupService::class, $lookup);
         $this->setUpFetchUserByUid(42, ['uid' => 42, 'pid' => 12]);
         $this->subject->login = [
             'uident' => json_encode(['_type' => 'passkey_token', 'token' => 'tok123'], JSON_THROW_ON_ERROR),
@@ -1080,6 +1086,7 @@ final class PasskeyFrontendAuthenticationServiceTest extends TestCase
             $request->method('getAttribute')->willReturnMap([['site', null, $this->site]]);
             $service->authInfo['request'] = $request;
         }
+
         $reflection = new ReflectionClass($service);
         $parent     = $reflection;
         while ($parent !== false) {

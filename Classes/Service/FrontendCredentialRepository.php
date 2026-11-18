@@ -336,16 +336,20 @@ final readonly class FrontendCredentialRepository
     /**
      * Hard-delete a credential record by UID.
      */
-    public function removeOwned(int $uid,int $ownerUid,bool $protectLast, string $siteIdentifier): bool
+    public function removeOwned(int $uid, int $ownerUid, bool $protectLast, string $siteIdentifier): bool
     {
         $db = $this->connectionPool->getConnectionForTable(self::TABLE);
-        return $db->transactional(function () use ($db,$uid,$ownerUid,$protectLast, $siteIdentifier): bool {
+
+        return $db->transactional(function () use ($db, $uid, $ownerUid, $protectLast, $siteIdentifier): bool {
             // Serialize removals before counting the remaining active credentials.
             $lock = $db->createQueryBuilder();
-            $lock->update(self::TABLE)->set('revoked_at',$db->quoteIdentifier('revoked_at'),false)
-                ->where($lock->expr()->eq('fe_user',$lock->createNamedParameter($ownerUid, ParameterType::INTEGER)))->executeStatement();
-            if ($protectLast && $this->countByFeUser($ownerUid, $siteIdentifier) <= 1) {return false;}
-            return $db->update(self::TABLE,['revoked_at'=>time(),'revoked_by'=>$ownerUid,'tstamp'=>time()], ['uid'=>$uid,'fe_user'=>$ownerUid,'revoked_at'=>0,'site_identifier'=>$siteIdentifier]) === 1;
+            $lock->update(self::TABLE)->set('revoked_at', $db->quoteIdentifier('revoked_at'), false)
+                ->where($lock->expr()->eq('fe_user', $lock->createNamedParameter($ownerUid, ParameterType::INTEGER)))->executeStatement();
+            if ($protectLast && $this->countByFeUser($ownerUid, $siteIdentifier) <= 1) {
+                return false;
+            }
+
+            return $db->update(self::TABLE, ['revoked_at' => time(), 'revoked_by' => $ownerUid, 'tstamp' => time()], ['uid' => $uid, 'fe_user' => $ownerUid, 'revoked_at' => 0, 'site_identifier' => $siteIdentifier]) === 1;
         });
     }
 

@@ -48,9 +48,9 @@ final class FrontendLoginAssurance
     #[AsEventListener(identifier: 'nr-passkeys-fe/complete-login')]
     public function complete(AfterUserLoggedInEvent $event): void
     {
-        $user = $event->getUser();
+        $user    = $event->getUser();
         $request = $event->getRequest();
-        if ($user instanceof FrontendUserAuthentication && $request !== null) {
+        if ($user instanceof FrontendUserAuthentication && $request instanceof ServerRequestInterface) {
             $this->completeForRequest($user, $request);
         }
     }
@@ -60,6 +60,7 @@ final class FrontendLoginAssurance
         if (!isset($this->pending[$user])) {
             return;
         }
+
         $proof = $this->pending[$user];
         unset($this->pending[$user]);
         $site = $request->getAttribute('site');
@@ -67,14 +68,17 @@ final class FrontendLoginAssurance
         if (!$site instanceof SiteInterface || $uid <= 0 || $user->getSession()->getUserId() !== $uid || ($proof['uid'] !== 0 && $proof['uid'] !== $uid)) {
             return;
         }
+
         $credential = $proof['credential'];
         if ($credential !== null && ($credential->getFeUser() !== $uid || $credential->getSiteIdentifier() !== $site->getIdentifier())) {
             return;
         }
+
         $user->setKey('ses', 'nr_passkeys_fe_assurance', ['uid' => $uid, 'site' => $site->getIdentifier(), 'method' => $proof['method'], 'at' => time()]);
         if ($credential !== null) {
             $this->events->dispatch(new AfterPasskeyAuthenticationEvent($uid, $credential));
         }
+
         $this->logger->info('Frontend login completed', ['uid' => $uid, 'site' => $site->getIdentifier(), 'method' => $proof['method']]);
     }
 

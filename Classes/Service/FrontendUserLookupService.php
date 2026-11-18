@@ -54,17 +54,19 @@ final readonly class FrontendUserLookupService
                 $queryBuilder->expr()->eq('deleted', 0),
             )
         ;
-        if ($site === null) {
+        if (!$site instanceof SiteInterface) {
             $row = $queryBuilder->executeQuery()->fetchAssociative();
 
             return is_array($row) && is_numeric($row['uid'] ?? null) ? (int) $row['uid'] : null;
         }
+
         $uid = null;
         foreach ($queryBuilder->executeQuery()->iterateAssociative() as $candidate) {
             if (is_numeric($candidate['pid'] ?? null) && $this->allowsStoragePid((int) $candidate['pid'], $site) && is_numeric($candidate['uid'] ?? null)) {
                 if ($uid !== null) {
                     return null;
                 }
+
                 $uid = (int) $candidate['uid'];
             }
         }
@@ -85,12 +87,14 @@ final readonly class FrontendUserLookupService
         if ($pid <= 0 || !$site instanceof Site) {
             return false;
         }
+
         $folders = SiteConfigurationService::setting($site, 'userStoragePids');
         if ($folders !== null && $folders !== '') {
             $values = is_string($folders) ? explode(',', $folders) : $folders;
             if (!is_array($values)) {
                 return false;
             }
+
             foreach ($values as $value) {
                 if ((is_int($value) || is_string($value)) && trim((string) $value) === (string) $pid) {
                     return true;
@@ -99,6 +103,7 @@ final readonly class FrontendUserLookupService
 
             return false;
         }
+
         try {
             return GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pid)->getIdentifier() === $site->getIdentifier();
         } catch (SiteNotFoundException) {

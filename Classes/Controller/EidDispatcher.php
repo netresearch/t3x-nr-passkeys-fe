@@ -9,12 +9,16 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
+use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance;
+use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Log\LogManager;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -97,7 +101,7 @@ final class EidDispatcher
 
         if (in_array($action, ['recoveryGenerate', 'recoveryVerify'], true)) {
             $site = $request->getAttribute('site');
-            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site || !\Netresearch\NrPasskeysFe\Service\SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code')) {
+            if (!$site instanceof Site || !SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code')) {
                 return new JsonResponse(['error' => 'Recovery codes are disabled for this site'], 403);
             }
         }
@@ -148,11 +152,12 @@ final class EidDispatcher
 
         if (in_array($action, ['registrationOptions', 'registrationVerify', 'recoveryGenerate', 'manageRemove'], true)) {
             $site = $request->getAttribute('site');
-            if (!$site instanceof \TYPO3\CMS\Core\Site\Entity\Site || $site->getIdentifier() === '') {
+            if (!$site instanceof Site || $site->getIdentifier() === '') {
                 return new JsonResponse(['error' => 'A configured site is required'], 403);
             }
-            $hasPasskeys = GeneralUtility::makeInstance(\Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository::class)->countByFeUser($feUserUid, $site->getIdentifier());
-            if (!\Netresearch\NrPasskeysFe\Service\FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $site->getIdentifier(), $hasPasskeys > 0)) {
+
+            $hasPasskeys = GeneralUtility::makeInstance(FrontendCredentialRepository::class)->countByFeUser($feUserUid, $site->getIdentifier());
+            if (!FrontendLoginAssurance::allowsManagement($feUser, $feUserUid, $site->getIdentifier(), $hasPasskeys > 0)) {
                 return new JsonResponse(['error' => 'Sign out and sign in again to manage passkeys. Use an existing passkey or recovery code if you have one.'], 403);
             }
         }

@@ -69,7 +69,7 @@ final class LoginPluginController extends ActionController
             'discoverableEnabled' => $discoverableEnabled,
             // The link needs a page to point to: without one, or with one
             // this plugin must not link to, the switch has nothing to show.
-            'recoveryAllowed' => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'),
+            'recoveryAllowed'     => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'recovery_code'),
             'passwordFallbackUrl' => $site instanceof SiteInterface && SiteConfigurationService::allowsRecoveryMethod($site, 'password') && $showPasswordFallback
                 ? $this->resolveSameSitePageUri($this->settings['passwordLoginPage'] ?? null, $site)
                 : null,

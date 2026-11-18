@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysFe\Controller\Plugin\EnrollmentPluginController;
 use Netresearch\NrPasskeysFe\Controller\Plugin\LoginPluginController;
 use Netresearch\NrPasskeysFe\Controller\Plugin\ManagementPluginController;
 use Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement;
+use TYPO3\CMS\Core\Cache\Backend\FileBackend;
 use TYPO3\CMS\Core\Log\LogLevel;
 use TYPO3\CMS\Core\Log\Writer\FileWriter;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -94,4 +95,4 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1742000000] = [
 $GLOBALS['TYPO3_CONF_VARS']['FE']['eID_include']['nr_passkeys_fe']
     = EidDispatcher::class . '::processRequest';
 
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_ratelimit'] ??= ['backend' => TYPO3\CMS\Core\Cache\Backend\FileBackend::class];
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_fe_ratelimit'] ??= ['backend' => FileBackend::class];
