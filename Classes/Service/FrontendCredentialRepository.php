@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -127,7 +128,7 @@ final readonly class FrontendCredentialRepository
                     $queryBuilder->createNamedParameter($siteIdentifier),
                 ),
                 $queryBuilder->expr()->eq('revoked_at', 0),
-                $this->matchesCurrentFolder($queryBuilder, $feUserUid),
+                $this->matchesFolder($queryBuilder, $this->ownerFolder($feUserUid)),
             )
             ->orderBy('created_at', 'DESC')
             ->executeQuery()
@@ -173,6 +174,13 @@ final readonly class FrontendCredentialRepository
      */
     public function countByFeUser(int $feUserUid, ?string $siteIdentifier = null): int
     {
+        $folder = $siteIdentifier === null ? null : $this->ownerFolder($feUserUid);
+
+        return $this->countActive($feUserUid, $siteIdentifier, $folder);
+    }
+
+    private function countActive(int $feUserUid, ?string $siteIdentifier, ?int $folder): int
+    {
         $queryBuilder = $this->getQueryBuilder();
 
         $queryBuilder
@@ -187,7 +195,7 @@ final readonly class FrontendCredentialRepository
             )
         ;
         if ($siteIdentifier !== null) {
-            $queryBuilder->andWhere($this->matchesCurrentFolder($queryBuilder, $feUserUid));
+            $queryBuilder->andWhere($this->matchesFolder($queryBuilder, $folder));
             $queryBuilder->andWhere($queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($siteIdentifier)));
         }
 
@@ -396,12 +404,22 @@ final readonly class FrontendCredentialRepository
         );
     }
 
-    private function matchesCurrentFolder(QueryBuilder $query, int $uid): string
+    private function ownerFolder(int $uid): ?int
     {
-        // The owner is bound on this query so the subquery shares its parameters.
-        $owner = $query->createNamedParameter($uid, ParameterType::INTEGER);
+        $connection = $this->connectionPool->getConnectionForTable('fe_users');
+        $pid        = $connection->select(['pid'], 'fe_users', ['uid' => $uid])->fetchOne();
 
-        return '(storage_pid = 0 OR storage_pid IN (SELECT pid FROM fe_users WHERE uid = ' . $owner . '))';
+        return is_numeric($pid) ? (int) $pid : null;
+    }
+
+    private function matchesFolder(QueryBuilder $query, ?int $pid): string
+    {
+        // Legacy keys have storage_pid 0; an absent owner must never make them usable.
+        if ($pid === null) {
+            return $query->expr()->isNull('fe_user');
+        }
+
+        return $query->expr()->in('storage_pid', $query->createNamedParameter([0, $pid], ArrayParameterType::INTEGER));
     }
 
     private function getQueryBuilder(): QueryBuilder

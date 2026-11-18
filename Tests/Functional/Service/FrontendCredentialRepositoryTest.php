@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
@@ -16,6 +17,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 use function count;
 use function time;
@@ -161,6 +165,28 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
         // The credential records PID 2, but the account's current folder is PID 1.
         self::assertSame([], $credentials);
         self::assertSame(0, $this->repository->countByFeUser(1, 'site-b'));
+    }
+
+    #[Test]
+    public function siteListsAndCountsReadTheFolderFromTheConnectionsAssignedToEachTable(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        // The remote owner table reports folder 2. The local fixture on the
+        // credential connection intentionally reports the old folder, PID 1.
+        $remoteResult = $this->createStub(Result::class);
+        $remoteResult->method('fetchOne')->willReturn(2);
+        $owners = $this->createMock(Connection::class);
+        $owners->expects(self::exactly(2))->method('select')->with(['pid'], 'fe_users', ['uid' => 1])->willReturn($remoteResult);
+        $credentialDb = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysfe_credential');
+        $pool         = $this->createStub(ConnectionPool::class);
+        $pool->method('getConnectionForTable')->willReturnMap([['fe_users', $owners]]);
+        $pool->method('getQueryBuilderForTable')->willReturnCallback(static fn (): QueryBuilder => $credentialDb->createQueryBuilder());
+        $repository = new FrontendCredentialRepository($pool);
+
+        $keys = $repository->findByFeUser(1, 'site-b');
+        self::assertCount(1, $keys);
+        self::assertSame(5, $keys[0]->getUid());
+        self::assertSame(1, $repository->countByFeUser(1, 'site-b'));
     }
 
     #[Test]
