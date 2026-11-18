@@ -90,6 +90,14 @@ describe('submitLoginToken', () => {
         expect(submitSpy).toHaveBeenCalledTimes(1);
     });
 
+    it('selects the felogin handoff when the standalone form appears first', () => {
+        const standalone = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        const felogin = appendForm({ formId: 'nr-passkeys-fe-felogin-token-form' });
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(true);
+        expect(felogin.querySelector('input[name="pass"]').value).toContain('ticket');
+        expect(standalone.querySelector('input[name="pass"]').value).toBe('');
+    });
+
     it('keeps the ticket out of URLs and refuses a foreign destination', () => {
         const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
         form.method = 'get';

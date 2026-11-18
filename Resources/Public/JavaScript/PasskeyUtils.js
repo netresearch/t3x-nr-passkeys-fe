@@ -56,6 +56,7 @@
     // assembled here would be rejected silently, leaving the visitor anonymous
     // after a ceremony that succeeded.
     var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
+      || document.querySelector('#nr-passkeys-fe-felogin-token-form')
       || document.querySelector('#nr-passkeys-fe-token-form');
     if (!form || form.method.toLowerCase() !== 'post') {
       return false;
