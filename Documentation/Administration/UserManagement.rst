@@ -19,10 +19,16 @@ read-only info element shows:
 
 - Number of registered passkeys
 - Last used date
+- Backup eligibility reported by the authenticator during registration
 - Enforcement level applicable to the user
 
 This uses a custom TCA element (``passkey_fe_info``) registered
 by the extension.
+
+The user record and dashboard show whether the authenticator allows a passkey
+to be backed up. A device-bound key cannot be backed up. Credentials registered
+before the database schema update show an unknown status. The flag describes
+the ability to back up a key, independently of its current backup state.
 
 Backend module actions
 -----------------------

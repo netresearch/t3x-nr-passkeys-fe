@@ -487,6 +487,10 @@
                 <source>Last used</source>
                 <target>Dernière utilisation</target>
             </trans-unit>
+            <trans-unit id="dashboard.lookup.column.backup" resname="dashboard.lookup.column.backup">
+                <source>Backup eligibility</source>
+                <target>Sauvegarde possible</target>
+            </trans-unit>
             <trans-unit id="dashboard.lookup.column.status" resname="dashboard.lookup.column.status">
                 <source>Status</source>
                 <target>Statut</target>
@@ -1007,6 +1011,18 @@
                 <source>No credentials found.</source>
                 <target>Aucun identifiant trouvé.</target>
             </trans-unit>
+            <trans-unit id="js.admin.backup.eligible" resname="js.admin.backup.eligible">
+                <source>Backup eligible</source>
+                <target>Sauvegarde possible</target>
+            </trans-unit>
+            <trans-unit id="js.admin.backup.deviceBound" resname="js.admin.backup.deviceBound">
+                <source>Device-bound</source>
+                <target>Liée à l’appareil</target>
+            </trans-unit>
+            <trans-unit id="js.admin.backup.unknown" resname="js.admin.backup.unknown">
+                <source>Backup eligibility unknown</source>
+                <target>Possibilité de sauvegarde inconnue</target>
+            </trans-unit>
             <trans-unit id="js.admin.lookup.status.active" resname="js.admin.lookup.status.active">
                 <source>Active</source>
                 <target>Actif</target>
@@ -1046,22 +1062,6 @@
             <trans-unit id="never" resname="never">
                 <source>Never</source>
                 <target>Jamais</target>
-            </trans-unit>
-            <trans-unit id="dashboard.lookup.column.backup" resname="dashboard.lookup.column.backup">
-                <source>Backup eligibility</source>
-                <target>Sauvegarde possible</target>
-            </trans-unit>
-            <trans-unit id="js.admin.backup.eligible" resname="js.admin.backup.eligible">
-                <source>Backup eligible</source>
-                <target>Sauvegarde possible</target>
-            </trans-unit>
-            <trans-unit id="js.admin.backup.deviceBound" resname="js.admin.backup.deviceBound">
-                <source>Device-bound</source>
-                <target>Liée à l’appareil</target>
-            </trans-unit>
-            <trans-unit id="js.admin.backup.unknown" resname="js.admin.backup.unknown">
-                <source>Backup eligibility unknown</source>
-                <target>Possibilité de sauvegarde inconnue</target>
             </trans-unit>
         </body>
     </file>
