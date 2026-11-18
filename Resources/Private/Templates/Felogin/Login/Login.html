@@ -1,4 +1,4 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true"><f:comment>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" xmlns:passkeys="http://typo3.org/ns/Netresearch/NrPasskeysFe/ViewHelpers" data-namespace-typo3-fluid="true"><f:comment>
     SPDX-License-Identifier: GPL-2.0-or-later AND Apache-2.0
     SPDX-FileCopyrightText: Netresearch DTT GmbH
     SPDX-FileCopyrightText: TYPO3 CMS contributors (form fields taken from the EXT:felogin templates)
@@ -11,6 +11,7 @@
     Recovery code form toggles inline via JS.
 </f:comment>
 
+<f:variable name="loginId" value="{passkeys:loginInstanceId()}" />
 <f:render partial="NrPasskeysFe/LoginAssets" arguments="{includeDefaultCss: settings.passkeys.css.includeDefault}" />
 
 <f:flashMessages/>
@@ -39,13 +40,13 @@
 
 <div class="nr-passkeys-fe-card">
     <!-- Tabs -->
-    <div class="nr-passkeys-fe-tabs" role="tablist">
+    <div class="nr-passkeys-fe-tabs" role="tablist" aria-label="{f:translate(key: 'login.heading', extensionName: 'nr_passkeys_fe')}">
         <button type="button"
                 class="nr-passkeys-fe-tab nr-passkeys-fe-tab--active"
                 role="tab"
                 aria-selected="true"
-                aria-controls="nr-passkeys-fe-panel-passkey"
-                id="nr-passkeys-fe-tab-passkey"
+                aria-controls="nr-passkeys-fe-panel-passkey-{loginId}"
+                id="nr-passkeys-fe-tab-passkey-{loginId}"
                 tabindex="0"
                 data-action="switch-tab"
                 data-tab="passkey">
@@ -56,8 +57,8 @@
                     class="nr-passkeys-fe-tab"
                     role="tab"
                     aria-selected="false"
-                    aria-controls="nr-passkeys-fe-panel-password"
-                    id="nr-passkeys-fe-tab-password"
+                    aria-controls="nr-passkeys-fe-panel-password-{loginId}"
+                    id="nr-passkeys-fe-tab-password-{loginId}"
                     tabindex="-1"
                     data-action="switch-tab"
                     data-tab="password">
@@ -69,14 +70,14 @@
     <!-- Passkey Tab Panel -->
     <div class="nr-passkeys-fe-tabpanel"
          role="tabpanel"
-         id="nr-passkeys-fe-panel-passkey"
-         aria-labelledby="nr-passkeys-fe-tab-passkey"
+         id="nr-passkeys-fe-panel-passkey-{loginId}"
+         aria-labelledby="nr-passkeys-fe-tab-passkey-{loginId}"
          data-nr-passkeys-fe="login"
          data-eid-url="{passkeyEidUrl}"
          data-discoverable="{passkeyDiscoverable}">
 
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
-        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-felogin-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-felogin-login-status-{loginId}" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
 
         <div class="nr-passkeys-fe-passkey-content">
             <div class="nr-passkeys-fe-passkey-icon" aria-hidden="true">
@@ -86,11 +87,11 @@
             <f:if condition="{passkeyDiscoverable}">
                 <f:else>
                     <div class="nr-passkeys-fe-login__field">
-                        <label class="nr-passkeys-fe-login__label" for="nr-passkeys-fe-felogin-login-username">
+                        <label class="nr-passkeys-fe-login__label" for="nr-passkeys-fe-felogin-login-username-{loginId}">
                             <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
                         </label>
                         <input type="text"
-                               id="nr-passkeys-fe-felogin-login-username"
+                               id="nr-passkeys-fe-felogin-login-username-{loginId}"
                                name="nr_passkeys_username"
                                class="nr-passkeys-fe-login__input"
                                autocomplete="username"
@@ -102,24 +103,24 @@
             </f:if>
 
             <button type="button"
-                    id="nr-passkeys-fe-felogin-login-btn"
+                    id="nr-passkeys-fe-felogin-login-btn-{loginId}"
                     class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey"
                     data-action="passkey-login"
-                    aria-describedby="nr-passkeys-fe-felogin-login-status">
+                    aria-describedby="nr-passkeys-fe-felogin-login-status-{loginId}">
                 <span class="nr-passkeys-fe-btn__icon" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor"><path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120ZM760-40l-60-60v-186q-44-13-72-49.5T600-420q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T790-290l50 50-60 60 60 60-80 80ZM440-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/></svg>
                 </span>
-                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-felogin-btn-text">
+                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-felogin-btn-text-{loginId}">
                     <f:translate key="login.button.passkey" extensionName="nr_passkeys_fe" />
                 </span>
-                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-felogin-btn-loading" style="display:none" aria-hidden="true">
+                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-felogin-btn-loading-{loginId}" style="display:none" aria-hidden="true">
                     <f:translate key="login.button.passkey.loading" extensionName="nr_passkeys_fe" />
                 </span>
             </button>
 
             <nav class="nr-passkeys-fe-links" aria-label="Authentication options">
                 <f:if condition="!{passkeyRecoveryDisabled}">
-                    <a href="#nr-passkeys-fe-felogin-recovery"
+                    <a href="#nr-passkeys-fe-felogin-recovery-{loginId}"
                        class="nr-passkeys-fe-link"
                        data-action="show-recovery">
                         <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
@@ -137,7 +138,7 @@
 
         <f:if condition="!{passkeyRecoveryDisabled}">
             <!-- Inline Recovery Form (hidden by default) -->
-            <div id="nr-passkeys-fe-felogin-recovery"
+            <div id="nr-passkeys-fe-felogin-recovery-{loginId}"
                  class="nr-passkeys-fe-recovery"
                  data-nr-passkeys-fe="recovery"
                  data-eid-url="{passkeyEidUrl}"
@@ -152,22 +153,22 @@
 
                 <form data-action="recovery-verify">
                     <div class="nr-passkeys-fe-recovery__field">
-                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-username">
+                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-username-{loginId}">
                             <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
                         </label>
                         <input type="text"
-                               id="nr-passkeys-fe-felogin-recovery-username"
+                               id="nr-passkeys-fe-felogin-recovery-username-{loginId}"
                                name="recovery_username"
                                class="nr-passkeys-fe-recovery__input"
                                autocomplete="username" />
                     </div>
 
                     <div class="nr-passkeys-fe-recovery__field">
-                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-code">
+                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-felogin-recovery-code-{loginId}">
                             <f:translate key="recovery.code.label" extensionName="nr_passkeys_fe" />
                         </label>
                         <input type="text"
-                               id="nr-passkeys-fe-felogin-recovery-code"
+                               id="nr-passkeys-fe-felogin-recovery-code-{loginId}"
                                name="recovery_code"
                                class="nr-passkeys-fe-recovery__input nr-passkeys-fe-recovery__input--code"
                                placeholder="XXXX-XXXX"
@@ -198,7 +199,7 @@
     </div>
 
     <f:if condition="{passkeyPasswordDisabled}">
-        <f:form id="nr-passkeys-fe-felogin-token-form" target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" additionalAttributes="{hidden: 'hidden'}">
+        <f:form id="nr-passkeys-fe-felogin-token-form-{loginId}" target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" data="{nr-passkeys-fe-token-form: 'felogin'}" additionalAttributes="{hidden: 'hidden'}">
             <input type="hidden" name="logintype" value="login" />
             <input type="hidden" name="user" value="__passkey__" />
             <input type="hidden" name="pass" value="" />
@@ -221,23 +222,23 @@
         <!-- Password Tab Panel -->
         <div class="nr-passkeys-fe-tabpanel"
              role="tabpanel"
-             id="nr-passkeys-fe-panel-password"
-             aria-labelledby="nr-passkeys-fe-tab-password"
+             id="nr-passkeys-fe-panel-password-{loginId}"
+             aria-labelledby="nr-passkeys-fe-tab-password-{loginId}"
              style="display:none">
 
-            <f:form target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" spellcheck="false">
+            <f:form target="_top" fieldNamePrefix="" action="login" requestToken="{requestToken}" spellcheck="false" data="{nr-passkeys-fe-token-form: 'felogin'}">
                 <fieldset class="nr-passkeys-fe-fieldset">
                     <div class="nr-passkeys-fe-field">
-                        <label class="nr-passkeys-fe-label" for="tx-felogin-input-username">
+                        <label class="nr-passkeys-fe-label" for="tx-felogin-input-username-{loginId}">
                             <f:translate key="username"/>
                         </label>
-                        <f:form.textfield name="user" required="true" autocomplete="username" id="tx-felogin-input-username" class="nr-passkeys-fe-input"/>
+                        <f:form.textfield name="user" required="true" autocomplete="username" id="tx-felogin-input-username-{loginId}" class="nr-passkeys-fe-input"/>
                     </div>
                     <div class="nr-passkeys-fe-field">
-                        <label class="nr-passkeys-fe-label" for="tx-felogin-input-password">
+                        <label class="nr-passkeys-fe-label" for="tx-felogin-input-password-{loginId}">
                             <f:translate key="password"/>
                         </label>
-                        <f:form.password name="pass" required="required" autocomplete="current-password" id="tx-felogin-input-password" class="nr-passkeys-fe-input"/>
+                        <f:form.password name="pass" required="required" autocomplete="current-password" id="tx-felogin-input-password-{loginId}" class="nr-passkeys-fe-input"/>
                     </div>
 
                     <f:if condition="{permaloginStatus} > -1">
@@ -245,14 +246,14 @@
                             <f:if condition="{permaloginStatus} == 1">
                                 <f:then>
                                     <f:form.hidden name="permalogin" value="0" disabled="disabled"/>
-                                    <f:form.checkbox name="permalogin" id="permalogin" value="1" checked="checked"/>
+                                    <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1" checked="checked"/>
                                 </f:then>
                                 <f:else>
                                     <f:form.hidden name="permalogin" value="0"/>
-                                    <f:form.checkbox name="permalogin" id="permalogin" value="1"/>
+                                    <f:form.checkbox name="permalogin" id="permalogin-{loginId}" value="1"/>
                                 </f:else>
                             </f:if>
-                            <label for="permalogin">
+                            <label for="permalogin-{loginId}">
                                 <f:translate id="permalogin"/>
                             </label>
                         </div>
@@ -279,11 +280,11 @@
             </f:form>
 
             <f:if condition="{settings.showForgotPassword}">
-                <nav class="nr-passkeys-fe-links">
+                <div class="nr-passkeys-fe-links">
                     <f:link.action action="recovery" controller="PasswordRecovery" class="nr-passkeys-fe-link">
                         <f:translate key="login.link.forgotPassword" extensionName="nr_passkeys_fe" />
                     </f:link.action>
-                </nav>
+                </div>
             </f:if>
         </div>
     </f:if>

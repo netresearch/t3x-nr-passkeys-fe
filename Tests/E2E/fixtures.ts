@@ -86,11 +86,11 @@ export async function loginWithPassword(page: Page, user: string = FE_USER): Pro
         await passwordTab.click();
     }
 
-    const username = page.locator('#tx-felogin-input-username');
+    const username = page.locator('input[name="user"][autocomplete="username"]');
     await expect(username, 'the felogin password panel has to be reachable on the login page').toBeVisible({ timeout: 5000 });
     await username.fill(user);
-    await page.locator('#tx-felogin-input-password').fill(FE_PASSWORD);
-    await page.locator('#tx-felogin-input-password').press('Enter');
+    await page.locator('input[name="pass"][type="password"]').fill(FE_PASSWORD);
+    await page.locator('input[name="pass"][type="password"]').press('Enter');
     await page.waitForLoadState('networkidle');
 }
 
@@ -204,7 +204,7 @@ export async function signInWithRegisteredPasskey(page: Page, cdp: CDPSession, a
     await setAutomaticPresence(cdp, authenticatorId, false);
     await logOut(page);
     await page.goto('/login-plugin');
-    const button = page.locator('#nr-passkeys-fe-login-btn');
+    const button = page.locator('[data-action="passkey-login"]');
     await expect(button).toBeVisible();
     await button.click();
     await setAutomaticPresence(cdp, authenticatorId, true);

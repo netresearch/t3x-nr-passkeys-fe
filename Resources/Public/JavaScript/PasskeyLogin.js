@@ -37,7 +37,7 @@
     }
 
     // Initialize tab switching (Layout B)
-    initTabs();
+    document.querySelectorAll('.nr-passkeys-fe-card .nr-passkeys-fe-tabs').forEach(initTabs);
   }
 
   function initContainer(container) {
@@ -125,10 +125,9 @@
    */
   function initRecoveryToggle(container) {
     var recoveryLink = container.querySelector('[data-action="show-recovery"]');
-    // The recovery section can be inside the container or a sibling
-    // Support both standalone (#nr-passkeys-fe-recovery) and felogin (#nr-passkeys-fe-felogin-recovery) IDs
-    var recoverySection = container.querySelector('[id$="-recovery"][data-nr-passkeys-fe="recovery"]')
-      || document.querySelector('[id$="-recovery"][data-nr-passkeys-fe="recovery"]');
+    var card = container.closest('.nr-passkeys-fe-card') || container;
+    var recoverySection = container.querySelector('[data-nr-passkeys-fe="recovery"]')
+      || card.querySelector('[data-nr-passkeys-fe="recovery"]');
     var passkeyContent = container.querySelector('.nr-passkeys-fe-passkey-content');
 
     if (recoveryLink && recoverySection) {
@@ -138,6 +137,7 @@
           passkeyContent.style.display = 'none';
         }
         recoverySection.style.display = '';
+        recoverySection.querySelector('[name="recovery_username"]')?.focus();
       });
 
       var backLink = recoverySection.querySelector('[data-action="hide-recovery"]');
@@ -148,6 +148,7 @@
           if (passkeyContent) {
             passkeyContent.style.display = '';
           }
+          recoveryLink.focus();
         });
       }
     }
@@ -157,75 +158,48 @@
    * Initialize tab switching for Layout B (Tabbed).
    * Looks for [data-action="switch-tab"] buttons in .nr-passkeys-fe-tabs.
    */
-  function initTabs() {
-    var tabButtons = document.querySelectorAll('[data-action="switch-tab"]');
-    var tabBtns = [];
-    for (var i = 0; i < tabButtons.length; i++) {
-      tabBtns.push(tabButtons[i]);
-    }
+  function initTabs(tabList) {
+    var tabs = Array.from(tabList.querySelectorAll('[data-action="switch-tab"]'));
+    var panels = tabList.closest('.nr-passkeys-fe-card').querySelectorAll('.nr-passkeys-fe-tabpanel');
 
-    for (var i = 0; i < tabBtns.length; i++) {
-      tabBtns[i].addEventListener('click', function () {
-        var tabName = this.dataset.tab;
-        var tabContainer = this.closest('.nr-passkeys-fe-card');
-        if (!tabContainer) return;
-
-        // Deactivate all tabs
-        var allTabs = tabContainer.querySelectorAll('.nr-passkeys-fe-tab');
-        for (var j = 0; j < allTabs.length; j++) {
-          allTabs[j].classList.remove('nr-passkeys-fe-tab--active');
-          allTabs[j].setAttribute('aria-selected', 'false');
-          allTabs[j].setAttribute('tabindex', '-1');
-        }
-
-        // Hide all panels
-        var allPanels = tabContainer.querySelectorAll('.nr-passkeys-fe-tabpanel');
-        for (var j = 0; j < allPanels.length; j++) {
-          allPanels[j].style.display = 'none';
-        }
-
-        // Activate clicked tab
-        this.classList.add('nr-passkeys-fe-tab--active');
-        this.setAttribute('aria-selected', 'true');
-        this.setAttribute('tabindex', '0');
-
-        // Show corresponding panel
-        var panelId = 'nr-passkeys-fe-panel-' + tabName;
-        var panel = document.getElementById(panelId);
-        if (panel) {
-          panel.style.display = '';
-        }
+    tabs.forEach(function (tab, index) {
+      tab.tabIndex = tab.classList.contains('nr-passkeys-fe-tab--active') ? 0 : -1;
+      tab.addEventListener('click', function () {
+        var panelId = tab.getAttribute('aria-controls') || 'nr-passkeys-fe-panel-' + tab.dataset.tab;
+        tabs.forEach(function (item) {
+          var selected = item === tab;
+          item.classList.toggle('nr-passkeys-fe-tab--active', selected);
+          item.setAttribute('aria-selected', String(selected));
+          item.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach(function (panel) {
+          panel.style.display = panel.id === panelId ? '' : 'none';
+        });
       });
-    }
 
-    // Set initial tabindex values
-    for (var i = 0; i < tabBtns.length; i++) {
-      if (tabBtns[i].classList.contains('nr-passkeys-fe-tab--active')) {
-        tabBtns[i].setAttribute('tabindex', '0');
-      } else {
-        tabBtns[i].setAttribute('tabindex', '-1');
-      }
-    }
-
-    // Arrow key navigation for tabs (WAI-ARIA tabs pattern)
-    tabBtns.forEach(function(btn) {
-      btn.addEventListener('keydown', function(e) {
-        var index = tabBtns.indexOf(btn);
-        var newIndex = -1;
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-          newIndex = (index + 1) % tabBtns.length;
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          newIndex = (index - 1 + tabBtns.length) % tabBtns.length;
-        } else if (e.key === 'Home') {
-          newIndex = 0;
-        } else if (e.key === 'End') {
-          newIndex = tabBtns.length - 1;
+      tab.addEventListener('keydown', function (event) {
+        var next;
+        switch (event.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            next = (index + 1) % tabs.length;
+            break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            next = (index - 1 + tabs.length) % tabs.length;
+            break;
+          case 'Home':
+            next = 0;
+            break;
+          case 'End':
+            next = tabs.length - 1;
+            break;
+          default:
+            return;
         }
-        if (newIndex >= 0) {
-          e.preventDefault();
-          tabBtns[newIndex].click();
-          tabBtns[newIndex].focus();
-        }
+        event.preventDefault();
+        tabs[next].click();
+        tabs[next].focus();
       });
     });
   }
