@@ -109,7 +109,7 @@ final class FrontendWebAuthnService
             id: $rpId,
         );
 
-        $userHandle = $this->createUserHandle($feUserUid);
+        $userHandle = $this->createUserHandle($feUserUid, $siteIdentifier);
 
         $user = PublicKeyCredentialUserEntity::create(
             name: $username,
@@ -148,7 +148,7 @@ final class FrontendWebAuthnService
     ): FrontendCredential {
         $rpId           = $this->siteConfigurationService->getRpId($site);
         $siteIdentifier = $this->siteConfigurationService->getSiteIdentifier($site);
-        $userHandle     = $this->createUserHandle($feUserUid);
+        $userHandle     = $this->createUserHandle($feUserUid, $siteIdentifier);
 
         $rp   = PublicKeyCredentialRpEntity::create(name: $rpId, id: $rpId);
         $user = PublicKeyCredentialUserEntity::create(
@@ -531,12 +531,12 @@ final class FrontendWebAuthnService
         return hash_hmac('sha256', json_encode($context, JSON_THROW_ON_ERROR), $this->getEncryptionKey(), true);
     }
 
-    private function createUserHandle(int $feUserUid): string
+    private function createUserHandle(int $feUserUid, string $siteIdentifier): string
     {
         $key        = $this->getEncryptionKey();
         $derivedKey = hash_hkdf('sha256', $key, 32, 'nr_passkeys_fe_user_handle');
 
-        return hash_hmac('sha256', (string) $feUserUid, $derivedKey, true);
+        return hash_hmac('sha256', json_encode([$siteIdentifier, $feUserUid], JSON_THROW_ON_ERROR), $derivedKey, true);
     }
 
     private function getEncryptionKey(): string

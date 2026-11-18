@@ -62,11 +62,11 @@ For a TYPO3 installation with two separate domains:
 Shared RP ID across subdomains
 --------------------------------
 
-WebAuthn allows the RP ID to be a registrable domain suffix. For
-example, credentials registered with ``rpId: 'example.com'`` can
-be used on both ``app.example.com`` and ``api.example.com``.
+WebAuthn allows trusted subdomains to share a parent RP ID. TYPO3
+still looks up each credential by the current site's identifier.
+Users who sign in to two TYPO3 sites register a passkey on each site.
 
-To enable this, set all sites to the same parent domain:
+For example, these sites use the same RP ID and distinct origins:
 
 ..  code-block:: yaml
 
@@ -84,9 +84,9 @@ To enable this, set all sites to the same parent domain:
 
 ..  warning::
 
-    Sharing an RP ID means a passkey registered on one subdomain can
-    be used on all other subdomains sharing the same RP ID. Only share
-    RP IDs across subdomains you fully trust.
+    An authenticator may offer credentials for either site when both
+    use the same RP ID. Each site accepts its own registered credentials.
+    Share an RP ID only across subdomains you fully trust.
 
 Database isolation
 ------------------

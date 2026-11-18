@@ -315,6 +315,18 @@ final class FrontendWebAuthnServiceTest extends TestCase
     }
 
     #[Test]
+    public function sitesSharingAnRpIdIssueDistinctHandlesToTheSameAccount(): void
+    {
+        $this->siteConfigService->method('getRpId')->willReturn('example.com');
+        $secondSite = $this->createStub(SiteInterface::class);
+        $this->siteConfigService->method('getSiteIdentifier')->willReturnMap([[$this->site, 'shop'], [$secondSite, 'intranet']]);
+        $challenge = random_bytes(32);
+        $shop      = $this->subject->createRegistrationOptions(42, 'user', $challenge, $this->site);
+        $intranet  = $this->subject->createRegistrationOptions(42, 'user', $challenge, $secondSite);
+        self::assertNotSame($shop['options']->user->id, $intranet['options']->user->id);
+    }
+
+    #[Test]
     public function userHandleDiffersForDifferentUsers(): void
     {
         $this->siteConfigService->method('getRpId')->willReturn('example.com');
