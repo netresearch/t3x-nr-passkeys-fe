@@ -39,29 +39,40 @@
     return (window.NrPasskeysFe.lang && window.NrPasskeysFe.lang[key]) || fallback;
   };
 
-  // Check the actual target again before transferring a single-use login ticket.
-  window.NrPasskeysFe.getLoginTokenForm = function () {
-    // felogin's own form where the plugin sits beside it, and the plugin's
-    // hidden form where it stands alone. Both are rendered by TYPO3 and carry
-    // the `__RequestToken` a frontend login is only accepted with — a form
-    // assembled here would be rejected silently, leaving the visitor anonymous
-    // after a ceremony that succeeded.
-    var form = document.querySelector('#nr-passkeys-fe-panel-password form[action]')
-      || document.querySelector('#nr-passkeys-fe-felogin-token-form')
-      || document.querySelector('#nr-passkeys-fe-token-form');
-    if (!(form instanceof HTMLFormElement) || form.method.toLowerCase() !== 'post') {
-      return null;
+  function isLoginTokenForm(form) {
+    if (!(form instanceof HTMLFormElement) || !form.isConnected || form.method.toLowerCase() !== 'post') {
+      return false;
+    }
+    var requestToken = form.querySelector('input[name="__RequestToken"]:enabled');
+    if (!requestToken || !requestToken.value
+        || form.querySelector('input[name="pass"]:disabled')
+        || !form.querySelector('input[name="user"]:enabled')
+        || !form.querySelector('input[name="logintype"]:enabled')) {
+      return false;
     }
     try {
       var action = new URL(form.action, document.baseURI);
-      if (action.origin !== window.location.origin || !['https:', 'http:'].includes(action.protocol)) {
-        return null;
-      }
+      return action.origin === window.location.origin && ['https:', 'http:'].includes(action.protocol);
     } catch (e) {
-      return null;
+      return false;
     }
+  }
 
-    return form;
+  window.NrPasskeysFe.getLoginTokenForm = function (source) {
+    var card = source && source.closest('.nr-passkeys-fe-card');
+    var scopes = card ? [card, document] : [document];
+    // Keep felogin's configured redirect when the standalone plugin shares a page with it.
+    var selectors = ['#nr-passkeys-fe-panel-password form[action], form#nr-passkeys-fe-felogin-token-form',
+      'form#nr-passkeys-fe-token-form'];
+    for (var selector of selectors) {
+      for (var scope of scopes) {
+        var form = Array.from(scope.querySelectorAll(selector)).find(isLoginTokenForm);
+        if (form) {
+          return form;
+        }
+      }
+    }
+    return null;
   };
 
   /**
@@ -71,12 +82,15 @@
    * submits it. Returns true if the form was found and submitted, false otherwise.
    *
    * @param {string} token - The login token returned by the eID verify endpoint
+   * @param {HTMLFormElement|null} [form] - Previously selected form, rechecked before submission
    * @returns {boolean} Whether the form was found and submitted
    */
 
-  window.NrPasskeysFe.submitLoginToken = function (token) {
-    var form = window.NrPasskeysFe.getLoginTokenForm();
-    if (!form) {
+  window.NrPasskeysFe.submitLoginToken = function (token, form) {
+    if (form === undefined) {
+      form = window.NrPasskeysFe.getLoginTokenForm();
+    }
+    if (!isLoginTokenForm(form)) {
       return false;
     }
 
@@ -89,15 +103,9 @@
     }
     passField.value = JSON.stringify({ _type: 'passkey_token', token: token });
 
-    var userField = form.querySelector('input[name="user"]');
-    if (userField) {
-      userField.value = '__passkey__';
-    }
+    form.querySelector('input[name="user"]:enabled').value = '__passkey__';
 
-    var logintypeField = form.querySelector('input[name="logintype"]');
-    if (logintypeField) {
-      logintypeField.value = 'login';
-    }
+    form.querySelector('input[name="logintype"]:enabled').value = 'login';
 
     HTMLFormElement.prototype.submit.call(form);
     return true;

@@ -61,6 +61,10 @@
     var errorEl = container.querySelector('.nr-passkeys-fe-login__error');
     var usernameInput = container.querySelector('[name="nr_passkeys_username"]');
 
+    if (window.isSecureContext) {
+      initRecoveryToggle(container);
+    }
+
     // Feature detection
     if (!window.PublicKeyCredential) {
       U.showError(errorEl, U.t('js.error.unsupported', 'Your browser does not support Passkeys (WebAuthn). Please use a modern browser.'));
@@ -84,6 +88,7 @@
     // credentials.get({mediation:'conditional'}) the menu has no passkeys to
     // offer. Degrades silently to the button where unsupported.
     var ctx = {
+      container: container,
       eidUrl: eidUrl,
       siteIdentifier: siteIdentifier,
       discoverable: discoverable,
@@ -112,9 +117,6 @@
         handlePasskeyLogin(ctx);
       });
     }
-
-    // Recovery form show/hide toggle
-    initRecoveryToggle(container);
   }
 
   /**
@@ -472,7 +474,7 @@
 
       // Submit the login token via felogin form to establish a real FE session.
       // The eID verified the assertion; the token proves it to the auth service.
-      if (U.submitLoginToken(verifyData.loginToken)) {
+      if (U.submitLoginToken(verifyData.loginToken, U.getLoginTokenForm(ctx.container))) {
         ctx.navigatingAway = true;
         stopConditionalLogin(ctx);
         return true;

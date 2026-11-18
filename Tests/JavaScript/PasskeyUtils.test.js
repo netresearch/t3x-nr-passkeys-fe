@@ -29,9 +29,10 @@ function appendForm({ wrapperId = null, formId = null } = {}) {
     if (formId) {
         form.id = formId;
     }
-    for (const name of ['user', 'pass', 'logintype']) {
+    for (const name of ['user', 'pass', 'logintype', '__RequestToken']) {
         const input = document.createElement('input');
         input.name = name;
+        if (name === '__RequestToken') input.value = 'request-token';
         form.appendChild(input);
     }
 
@@ -96,6 +97,15 @@ describe('submitLoginToken', () => {
         expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(true);
         expect(felogin.querySelector('input[name="pass"]').value).toContain('ticket');
         expect(standalone.querySelector('input[name="pass"]').value).toBe('');
+    });
+
+    it('skips an incomplete felogin form before selecting a valid standalone form', () => {
+        const incomplete = appendForm({ wrapperId: 'nr-passkeys-fe-panel-password' });
+        incomplete.querySelector('[name="__RequestToken"]').remove();
+        const standalone = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        expect(window.NrPasskeysFe.getLoginTokenForm()).toBe(standalone);
+        standalone.querySelector('[name="user"]').disabled = true;
+        expect(window.NrPasskeysFe.getLoginTokenForm()).toBeNull();
     });
 
     it('keeps the ticket out of URLs and refuses a foreign destination', () => {

@@ -106,7 +106,8 @@
       return;
     }
 
-    if (!U.getLoginTokenForm()) {
+    var loginForm = U.getLoginTokenForm(form);
+    if (!loginForm) {
       U.showError(errorEl, U.t('js.login.error.missingForm', 'Sign-in could not be completed. Reload the login page and try again.'));
       return;
     }
@@ -126,7 +127,7 @@
 
       if (response.ok && data.status === 'ok' && data.loginToken) {
         // Submit token via felogin form to establish FE session
-        if (U.submitLoginToken(data.loginToken)) {
+        if (U.submitLoginToken(data.loginToken, loginForm)) {
           return;
         }
         codeInput.value = '';

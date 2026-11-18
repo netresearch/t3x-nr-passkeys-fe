@@ -52,6 +52,12 @@ function createRecoveryContainer({ eidUrl = EID_URL, username = 'jdoe' } = {}) {
     login.id = 'nr-passkeys-fe-token-form';
     login.action = '/login';
     login.method = 'post';
+    for (const name of ['user', 'logintype', '__RequestToken']) {
+        const field = document.createElement('input');
+        field.name = name;
+        field.value = name === '__RequestToken' ? 'request-token' : '';
+        login.appendChild(field);
+    }
     document.body.appendChild(login);
     return { container, form, usernameInput, codeInput, submitBtn, error };
 }
@@ -168,7 +174,7 @@ describe('PasskeyRecovery — submitting', () => {
         expect(url).toContain('action=recoveryVerify');
         expect(init.method).toBe('POST');
         expect(JSON.parse(init.body)).toEqual({ username: 'jdoe', code: 'ABCD-1234' });
-        expect(handOver).toHaveBeenCalledWith('login-token-1');
+        expect(handOver).toHaveBeenCalledWith('login-token-1', document.getElementById('nr-passkeys-fe-token-form'));
     });
 
     it('explains a failed handoff after a code was consumed', async () => {
