@@ -130,7 +130,7 @@ final class LoginPluginController extends ActionController
             ->setLinkAccessRestrictedPages($isLoginTarget)
             ->build();
 
-        return $this->staysOnSite($uri, $site) ? $uri : null;
+        return $this->staysOnSite($uri, $site, $isLoginTarget) ? $uri : null;
     }
 
     /**
@@ -141,7 +141,7 @@ final class LoginPluginController extends ActionController
      * outright: browsers strip or reinterpret them, which is how
      * "/<TAB>/host" and "http://host\@site" read as another host.
      */
-    private function staysOnSite(string $uri, SiteInterface $site): bool
+    private function staysOnSite(string $uri, SiteInterface $site, bool $isLoginTarget): bool
     {
         if ($uri === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $uri) === 1) {
             return false;
@@ -157,7 +157,15 @@ final class LoginPluginController extends ActionController
             parse_url($uri, PHP_URL_PORT),
         );
 
-        return $origin !== null && in_array($origin, $this->allowedOrigins($site), true);
+        if ($origin === null || !in_array($origin, $this->allowedOrigins($site), true)) {
+            return false;
+        }
+
+        // The handoff carries a login ticket. Keep its POST on the current
+        // origin even when a different language host belongs to this site.
+        $requestUri = $this->request->getUri();
+
+        return !$isLoginTarget || $origin === $this->originOf($requestUri->getScheme(), $requestUri->getHost(), $requestUri->getPort());
     }
 
     /**
