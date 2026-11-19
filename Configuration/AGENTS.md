@@ -8,6 +8,8 @@
 
 ## Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **Scope:** TYPO3 configuration files for `nr_passkeys_fe`: TCA, FlexForms,
 DI wiring (Services.yaml + Services.php), TypoScript, backend module and
 middleware registration. All registrations live here — this extension
