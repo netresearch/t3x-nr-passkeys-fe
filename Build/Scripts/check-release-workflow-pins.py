@@ -14,7 +14,7 @@ RAW = "https://raw.githubusercontent.com/netresearch"
 # SHA-256 of the reviewed zero-context unified diff after the publishing pins
 # are applied. The diff includes hunk locations, so it cannot authorize the
 # same change at another call site.
-RELEASE_CHANGE_SHA256 = "8c9b86ce4cd57cb6467756e05e41dd28dd76e4228becdc02ede6e7d6955da4d1"
+RELEASE_CHANGE_SHA256 = "fcd9c5a208e951d6d235d57e72ab38e7f6bc850fd8d83a7b3c62311a9b0c68b2"
 
 
 def upstream(path):
