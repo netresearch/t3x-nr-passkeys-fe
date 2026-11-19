@@ -32,6 +32,8 @@ vi.mock('@typo3/core/ajax/ajax-request.js', () => ({
             return { resolve: async () => ({ credentials: [] }) };
         }
 
+        addMiddleware() { return this; }
+
         async post(body) {
             requests.push({ method: 'POST', url: this.url, body });
             return answer();

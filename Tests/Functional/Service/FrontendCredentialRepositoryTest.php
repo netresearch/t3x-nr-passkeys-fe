@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Tests\Functional\Service;
 
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use Netresearch\NrPasskeysFe\Tests\AbstractPasskeyFunctionalTestCase;
@@ -16,6 +17,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Throwable;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 use function count;
 use function time;
@@ -47,6 +51,20 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
     // ---------------------------------------------------------------
     // findByCredentialId() — global, unscoped
     // ---------------------------------------------------------------
+
+    #[Test]
+    public function protectedRemovalChecksTheOwnerAndKeepsOneActivePasskeyInTheSite(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        self::assertFalse($this->repository->removeOwned(4, 1, true, 'site-a'));
+        self::assertSame(2, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned(1, 1, true, 'site-a'));
+        self::assertFalse($this->repository->removeOwned(2, 1, true, 'site-a'));
+        self::assertSame(1, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned(2, 1, false, 'site-a'));
+        self::assertSame(0, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertSame(1, $this->repository->countByFeUser(2, 'site-a'));
+    }
 
     #[Test]
     public function findByCredentialIdReturnsCredentialWhenFound(): void
@@ -144,9 +162,45 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
 
         $credentials = $this->repository->findByFeUser(1, 'site-b');
 
-        // User 1 has 1 active credential on site-b (credential-id-pid2)
-        self::assertCount(1, $credentials);
-        self::assertSame('site-b', $credentials[0]->getSiteIdentifier());
+        // The credential records PID 2, but the account's current folder is PID 1.
+        self::assertSame([], $credentials);
+        self::assertSame(0, $this->repository->countByFeUser(1, 'site-b'));
+    }
+
+    #[Test]
+    public function siteListsAndCountsReadTheFolderFromTheConnectionsAssignedToEachTable(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        // The remote owner table reports folder 2. The local fixture on the
+        // credential connection intentionally reports the old folder, PID 1.
+        $remoteResult = $this->createStub(Result::class);
+        $remoteResult->method('fetchOne')->willReturn(2);
+        $owners = $this->createMock(Connection::class);
+        $owners->expects(self::exactly(2))->method('select')->with(['pid'], 'fe_users', ['uid' => 1])->willReturn($remoteResult);
+        $credentialDb = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysfe_credential');
+        $pool         = $this->createStub(ConnectionPool::class);
+        $pool->method('getConnectionForTable')->willReturnMap([['fe_users', $owners]]);
+        $pool->method('getQueryBuilderForTable')->willReturnCallback(static fn (): QueryBuilder => $credentialDb->createQueryBuilder());
+        $repository = new FrontendCredentialRepository($pool);
+
+        $keys = $repository->findByFeUser(1, 'site-b');
+        self::assertCount(1, $keys);
+        self::assertSame(5, $keys[0]->getUid());
+        self::assertSame(1, $repository->countByFeUser(1, 'site-b'));
+    }
+
+    #[Test]
+    public function staleFolderCredentialCanBeRemovedWhileTheLastUsableCredentialIsProtected(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysfe_credential.csv');
+        $this->repository->revoke(2, 1);
+        $stale = new FrontendCredential(feUser: 1, credentialId: 'old-folder', publicKeyCose: 'cose', siteIdentifier: 'site-a', storagePid: 88);
+        $this->repository->save($stale);
+        self::assertSame(1, $this->repository->countByFeUser(1, 'site-a'));
+        self::assertTrue($this->repository->removeOwned($stale->getUid(), 1, true, 'site-a'));
+        self::assertNull($this->repository->findByUidAndFeUser($stale->getUid(), 1));
+        self::assertFalse($this->repository->removeOwned(1, 1, true, 'site-a'));
+        self::assertNotNull($this->repository->findByUidAndFeUser(1, 1));
     }
 
     #[Test]

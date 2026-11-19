@@ -178,6 +178,7 @@ describe('PasskeyRecoveryCodes — downloading', () => {
     });
 
     it('uses the file name the template provides', async () => {
+        vi.useFakeTimers();
         const { downloadBtn } = createRecoveryCodes({ codes: ['ABCD-1234'], filename: 'my-codes.txt' });
         await loadModules('PasskeyUtils.js', 'PasskeyRecoveryCodes.js');
         const captured = captureDownload();
@@ -185,6 +186,8 @@ describe('PasskeyRecoveryCodes — downloading', () => {
         downloadBtn.click();
 
         expect(captured.anchor.download).toBe('my-codes.txt');
+        vi.runOnlyPendingTimers();
+        expect(captured.revoke).toHaveBeenCalledWith('blob:recovery-codes');
     });
 
     it('downloads nothing while no codes are shown', async () => {

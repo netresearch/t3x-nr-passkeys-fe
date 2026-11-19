@@ -9,9 +9,20 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
+use InvalidArgumentException;
+use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
+use Psr\Clock\ClockInterface;
+use RuntimeException;
+use Symfony\Component\Clock\NativeClock;
+use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Exception\SiteNotFoundException;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\SiteFinder;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function count;
 use function is_numeric;
@@ -35,6 +46,8 @@ use function trim;
 final readonly class RecoveryCodeService
 {
     private const TABLE = 'tx_nrpasskeysfe_recovery_code';
+
+    private const CAPACITY_TABLE = 'tx_nrpasskeysfe_recovery_capacity';
 
     /**
      * 30-character alphabet excluding 0/O, 1/I/L.
@@ -63,7 +76,47 @@ final readonly class RecoveryCodeService
 
     public function __construct(
         private ConnectionPool $connectionPool,
+        private FrontendConfiguration $configuration = new FrontendConfiguration(),
+        private ClockInterface $clock = new NativeClock(),
     ) {}
+
+    public static function hasValidCodeLength(string $code): bool
+    {
+        return strlen(str_replace('-', '', trim($code))) === self::CODE_LENGTH;
+    }
+
+    /** Reserve one bcrypt verification across all workers and sites. */
+    public function reserveVerificationCapacity(): bool
+    {
+        $db       = $this->connectionPool->getConnectionForTable(self::CAPACITY_TABLE);
+        $minute   = intdiv($this->clock->now()->getTimestamp(), 60);
+        $criteria = ['minute' => $minute];
+        $q        = $db->createQueryBuilder();
+        $q->update(self::CAPACITY_TABLE)
+            ->set('attempts', $db->quoteIdentifier('attempts') . ' + 1', false)
+            ->where(
+                $q->expr()->eq('minute', $q->createNamedParameter($minute, ParameterType::INTEGER)),
+                $q->expr()->lt('attempts', $q->createNamedParameter($this->configuration->getRecoveryVerificationsPerMinute(), ParameterType::INTEGER)),
+            );
+        if ($db->count('*', self::CAPACITY_TABLE, $criteria) > 0) {
+            return $q->executeStatement() === 1;
+        }
+
+        try {
+            $db->insert(self::CAPACITY_TABLE, $criteria + ['attempts' => 1]);
+        } catch (UniqueConstraintViolationException) {
+            // Another worker opened this minute between the count and insert.
+            return $q->executeStatement() === 1;
+        }
+
+        // Only the worker opening a minute prunes. Keep recent counters across clock skew.
+        $cleanup = $db->createQueryBuilder();
+        $cleanup->delete(self::CAPACITY_TABLE)
+            ->where($cleanup->expr()->lt('minute', $cleanup->createNamedParameter($minute - 60, ParameterType::INTEGER)))
+            ->executeStatement();
+
+        return true;
+    }
 
     /**
      * Generate a set of recovery codes for a frontend user.
@@ -74,28 +127,54 @@ final readonly class RecoveryCodeService
      *
      * @return list<string> Plaintext codes in XXXX-XXXX format
      */
-    public function generate(int $feUserUid, int $count = 10): array
+    public function generate(int $feUserUid, int $count = 10, ?SiteInterface $site = null): array
     {
-        // Delete all existing codes for this user
-        $this->deleteAllForUser($feUserUid);
+        if ($count === 0) {
+            return [];
+        }
 
-        $connection     = $this->connectionPool->getConnectionForTable(self::TABLE);
+        if ($feUserUid <= 0 || $count < 0) {
+            throw new InvalidArgumentException('A valid owner and at least one code are required');
+        }
+
         $now            = time();
         $plaintextCodes = [];
-
+        $rows           = [];
         for ($i = 0; $i < $count; ++$i) {
-            $rawCode       = $this->generateRandomCode();
-            $formattedCode = $this->formatCode($rawCode);
-            $hash          = password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]);
+            $rawCode = $this->generateRandomCode();
+            $rows[]  = [
+                'fe_user'         => $feUserUid,
+                'site_identifier' => $site?->getIdentifier() ?? '',
+                'code_hash'       => password_hash($rawCode, PASSWORD_BCRYPT, ['cost' => self::BCRYPT_COST]),
+                'used_at'         => 0,
+                'created_at'      => $now,
+            ];
+            $plaintextCodes[] = $this->formatCode($rawCode);
+        }
 
-            $connection->insert(self::TABLE, [
-                'fe_user'    => $feUserUid,
-                'code_hash'  => $hash,
-                'used_at'    => 0,
-                'created_at' => $now,
-            ]);
+        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
+        if ($connection !== $this->connectionPool->getConnectionForTable('fe_users')) {
+            throw new RuntimeException('Recovery codes and their owner must use the same database connection.');
+        }
 
-            $plaintextCodes[] = $formattedCode;
+        $connection->beginTransaction();
+        try {
+            // A stable owner row serializes rotations even when the old set is empty.
+            $connection->update('fe_users', ['uid' => $feUserUid], ['uid' => $feUserUid]);
+            if ($connection->select(['uid'], 'fe_users', ['uid' => $feUserUid, 'deleted' => 0])->fetchOne() === false) {
+                throw new RuntimeException('Recovery code owner is unavailable');
+            }
+
+            $this->assignLegacyToHomeSite($feUserUid, $site);
+            $connection->delete(self::TABLE, ['fe_user' => $feUserUid, 'site_identifier' => $site?->getIdentifier() ?? '']);
+            foreach ($rows as $row) {
+                $connection->insert(self::TABLE, $row);
+            }
+
+            $connection->commit();
+        } catch (Throwable $error) {
+            $connection->rollBack();
+            throw $error;
         }
 
         return $plaintextCodes;
@@ -112,19 +191,15 @@ final readonly class RecoveryCodeService
      * To prevent timing oracles that leak whether a user has codes,
      * dummy password_verify() calls pad the total to MAX_CODES.
      */
-    public function verify(int $feUserUid, string $code): bool
+    public function verify(int $feUserUid, string $code, ?SiteInterface $site = null): bool
     {
-        $normalised = strtoupper(str_replace('-', '', trim($code)));
-
-        if (strlen($normalised) !== self::CODE_LENGTH) {
-            // Perform dummy bcrypt ops to prevent length-based timing leak
-            for ($i = 0; $i < self::MAX_CODES; ++$i) {
-                password_verify($normalised, self::DUMMY_HASH);
-            }
-
+        if (!self::hasValidCodeLength($code)) {
             return false;
         }
 
+        $normalised = strtoupper(str_replace('-', '', trim($code)));
+
+        $this->assignLegacyToHomeSite($feUserUid, $site);
         $queryBuilder = $this->getQueryBuilder();
         $rows         = $queryBuilder
             ->select('uid', 'code_hash')
@@ -135,6 +210,7 @@ final readonly class RecoveryCodeService
                     $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
                 ),
                 $queryBuilder->expr()->eq('used_at', 0),
+                $queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($site?->getIdentifier() ?? '')),
             )
             ->executeQuery()
             ->fetchAllAssociative();
@@ -146,7 +222,7 @@ final readonly class RecoveryCodeService
         foreach ($rows as $row) {
             $hash = is_string($row['code_hash'] ?? null) ? $row['code_hash'] : '';
 
-            if (!$matched && password_verify($normalised, $hash)) {
+            if (password_verify($normalised, $hash) && !$matched) {
                 $matched    = true;
                 $matchedUid = (int) ($row['uid'] ?? 0);
             }
@@ -157,10 +233,14 @@ final readonly class RecoveryCodeService
             password_verify($normalised, self::DUMMY_HASH);
         }
 
-        if ($matched) {
-            $this->markUsed($matchedUid);
+        if ($matched && $feUserUid > 0) {
+            $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
 
-            return true;
+            return $connection->update(
+                self::TABLE,
+                ['used_at' => time()],
+                ['uid' => $matchedUid, 'fe_user' => $feUserUid, 'site_identifier' => $site?->getIdentifier() ?? '', 'used_at' => 0],
+            ) === 1;
         }
 
         return false;
@@ -169,8 +249,9 @@ final readonly class RecoveryCodeService
     /**
      * Count remaining (unused) recovery codes for a frontend user.
      */
-    public function countRemaining(int $feUserUid): int
+    public function countRemaining(int $feUserUid, ?SiteInterface $site = null): int
     {
+        $this->assignLegacyToHomeSite($feUserUid, $site);
         $queryBuilder = $this->getQueryBuilder();
 
         $result = $queryBuilder
@@ -182,11 +263,40 @@ final readonly class RecoveryCodeService
                     $queryBuilder->createNamedParameter($feUserUid, ParameterType::INTEGER),
                 ),
                 $queryBuilder->expr()->eq('used_at', 0),
+                $queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($site?->getIdentifier() ?? '')),
             )
             ->executeQuery()
             ->fetchOne();
 
         return is_numeric($result) ? (int) $result : 0;
+    }
+
+    private function assignLegacyToHomeSite(int $uid, ?SiteInterface $site): void
+    {
+        if ($uid <= 0 || !$site instanceof SiteInterface || $site->getIdentifier() === '') {
+            return;
+        }
+
+        $db       = $this->connectionPool->getConnectionForTable(self::TABLE);
+        $criteria = ['fe_user' => $uid, 'site_identifier' => ''];
+        if ($db->select(['uid'], self::TABLE, $criteria, limit: 1)->fetchOne() === false) {
+            return;
+        }
+
+        $pid = GeneralUtility::makeInstance(FrontendUserLookupService::class)->ownerStoragePid($uid, $site);
+        if ($pid === null) {
+            return;
+        }
+
+        try {
+            $home = GeneralUtility::makeInstance(SiteFinder::class)->getSiteByPageId($pid)->getIdentifier();
+        } catch (SiteNotFoundException) {
+            return;
+        }
+
+        if ($home === $site->getIdentifier()) {
+            $db->update(self::TABLE, ['site_identifier' => $home], $criteria);
+        }
     }
 
     /**
@@ -210,22 +320,6 @@ final readonly class RecoveryCodeService
     private function formatCode(string $raw): string
     {
         return substr($raw, 0, 4) . '-' . substr($raw, 4, 4);
-    }
-
-    private function deleteAllForUser(int $feUserUid): void
-    {
-        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->delete(self::TABLE, ['fe_user' => $feUserUid]);
-    }
-
-    private function markUsed(int $uid): void
-    {
-        $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->update(
-            self::TABLE,
-            ['used_at' => time()],
-            ['uid' => $uid],
-        );
     }
 
     private function getQueryBuilder(): QueryBuilder

@@ -139,7 +139,7 @@ final readonly class LoginController
         // reads that difference as an answer about the account.
         $deadline = hrtime(true) + self::USERNAME_FIRST_BUDGET_NS;
 
-        $feUserUid = $this->findFeUserUid($username);
+        $feUserUid = $this->userLookupService->findFeUserUidByUsername($username, $site);
         if ($feUserUid === null) {
             // An unknown username is answered like a known one. A 401 here told
             // a caller that the account does not exist outright.
@@ -237,24 +237,30 @@ final readonly class LoginController
                 site: $site,
             );
 
-            $this->rateLimiterService->recordSuccess('', $ip);
+            $this->rateLimiterService->checkLockout((string) $result['feUserUid'], $ip);
+            $this->rateLimiterService->recordSuccess((string) $result['feUserUid'], $ip);
 
             $feUserUid = $result['feUserUid'];
 
             // Store verified result in a short-lived cache token.
             // The JS will submit this token via the felogin form so the auth
             // service can authenticate without needing site context.
+            $storagePid = $this->userLookupService->ownerStoragePid($feUserUid, $site);
+            if ($storagePid === null) {
+                return new JsonResponse(['error' => 'Authentication failed'], 401);
+            }
+
             $token = bin2hex(random_bytes(32));
             $cache = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_fe_nonce');
             $cache->set(
                 'passkey_login_' . $token,
-                (string) $feUserUid,
+                json_encode(['uid' => $feUserUid, 'site' => $site->getIdentifier(), 'storagePid' => $storagePid, 'expiresAt' => time() + 120, 'method' => 'passkey', 'credentialUid' => $result['credential']->getUid()], JSON_THROW_ON_ERROR),
                 [],
                 120, // 2 minutes TTL
             );
 
-            $this->logger->info('FE passkey login successful via eID endpoint', [
+            $this->logger->info('FE passkey login handoff issued', [
                 'fe_user_uid' => $feUserUid,
             ]);
 
@@ -264,8 +270,6 @@ final readonly class LoginController
                 'loginToken' => $token,
             ]);
         } catch (RuntimeException $e) {
-            $this->rateLimiterService->recordFailure('', $ip);
-
             $this->logger->warning('FE passkey assertion verification failed', [
                 'ip'         => $ip,
                 'error_code' => $e->getCode(),
@@ -283,11 +287,6 @@ final readonly class LoginController
 
             return new JsonResponse($payload, 401);
         }
-    }
-
-    private function findFeUserUid(string $username): ?int
-    {
-        return $this->userLookupService->findFeUserUidByUsername($username);
     }
 
     /**

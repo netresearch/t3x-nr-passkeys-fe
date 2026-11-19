@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Netresearch\NrPasskeysFe\Configuration\FrontendConfiguration;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function is_int;
 use function is_string;
@@ -36,8 +39,7 @@ final readonly class SiteConfigurationService
      */
     public function getRpId(SiteInterface $site): string
     {
-        $settings = $site->getSettings();
-        $rpId     = $settings->get('nr_passkeys_fe.rpId', '');
+        $rpId = self::setting($site, 'rpId', '');
 
         if (is_string($rpId) && $rpId !== '') {
             return $rpId;
@@ -59,8 +61,7 @@ final readonly class SiteConfigurationService
      */
     public function getOrigin(SiteInterface $site): string
     {
-        $settings = $site->getSettings();
-        $origin   = $settings->get('nr_passkeys_fe.origin', '');
+        $origin = self::setting($site, 'origin', '');
 
         if (is_string($origin) && $origin !== '') {
             return $origin;
@@ -94,10 +95,14 @@ final readonly class SiteConfigurationService
      */
     public function getEnforcementLevel(SiteInterface $site): string
     {
-        $settings = $site->getSettings();
-        $level    = $settings->get('nr_passkeys_fe.enforcementLevel', 'off');
+        $level = self::setting($site, 'enforcementLevel', 'off');
 
-        return is_string($level) ? $level : 'off';
+        // Older YAML parsers can store an unquoted 'off' as boolean false.
+        if ($level === false) {
+            return 'off';
+        }
+
+        return is_string($level) ? $level : throw new RuntimeException('Invalid site enforcement policy');
     }
 
     /**
@@ -138,10 +143,38 @@ final readonly class SiteConfigurationService
      */
     public function getEnrollmentPageUrl(SiteInterface $site): string
     {
-        $settings = $site->getSettings();
-        $url      = $settings->get('nr_passkeys_fe.enrollmentPageUrl', '');
+        $url = self::setting($site, 'enrollmentPageUrl', '');
 
         return is_string($url) ? trim($url) : '';
+    }
+
+    public static function allowsRecoveryMethod(SiteInterface $site, string $method): bool
+    {
+        if (!$site instanceof Site) {
+            return false;
+        }
+
+        if ($method === 'recovery_code' && !GeneralUtility::makeInstance(FrontendConfiguration::class)->isRecoveryCodesEnabled()) {
+            return false;
+        }
+
+        $methods = $site->getConfiguration()['nr_passkeys_fe_localRecoveryMethods']
+            ?? self::setting($site, 'enabledRecoveryMethods', ['password', 'recovery_code']);
+
+        return is_array($methods) && in_array($method, $methods, true);
+    }
+
+    public static function setting(SiteInterface $site, string $key, mixed $default = null): mixed
+    {
+        if (!$site instanceof Site) {
+            throw new RuntimeException('Passkey settings require a configured TYPO3 site.');
+        }
+
+        $settings = $site->getSettings();
+        $section  = $settings->getAll()['nr_passkeys_fe'] ?? [];
+        $fallback = is_array($section) && array_key_exists($key, $section) ? $section[$key] : $default;
+
+        return $settings->get('nr_passkeys_fe.' . $key, $fallback);
     }
 
     private function isStandardPort(string $scheme, int $port): bool

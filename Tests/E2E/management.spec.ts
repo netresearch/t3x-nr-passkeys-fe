@@ -4,6 +4,7 @@ import {
     eidUrl,
     loginWithPassword,
     registerPasskey,
+    signInWithRegisteredPasskey,
     removeAllCredentials,
     removeVirtualAuthenticator,
 } from './fixtures';
@@ -30,9 +31,9 @@ test.describe('Passkey management plugin', () => {
         await expect(page.locator('link[rel="stylesheet"][href*="passkey-fe.css"]')).toHaveCount(0);
     });
 
-    test('a registered credential appears in the list, can be renamed and removed', async ({ page }) => {
+    test('a registered credential appears in the list, can be renamed and removed', async ({ page }, testInfo) => {
         const { cdp, authenticatorId } = await addVirtualAuthenticator(page);
-        await loginWithPassword(page);
+        await loginWithPassword(page, `e2e_management_${testInfo.retry}`);
         await removeAllCredentials(page);
 
         const registered = await registerPasskey(page, 'E2E management key');
@@ -46,15 +47,22 @@ test.describe('Passkey management plugin', () => {
         expect(credentials[0].label).toBe('E2E management key');
 
         const renamed = await page.request.post(eidUrl('manageRename'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credentials[0].uid, label: 'Renamed by e2e' },
         });
         expect(renamed.status(), await renamed.text()).toBe(200);
         const afterRename = (await (await page.request.get(eidUrl('manageList'))).json()).credentials;
         expect(afterRename[0].label).toBe('Renamed by e2e');
 
+        const staleProof = await page.request.post(eidUrl('manageRemove'), {
+            headers: { Origin: new URL(page.url()).origin },
+            data: { uid: credentials[0].uid },
+        });
+        expect(staleProof.status()).toBe(403);
+        await signInWithRegisteredPasskey(page, cdp, authenticatorId);
+
         const removed = await page.request.post(eidUrl('manageRemove'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: credentials[0].uid },
         });
         expect(removed.status(), await removed.text()).toBe(200);
@@ -72,7 +80,7 @@ test.describe('Passkey management plugin', () => {
         expect(listed.status()).toBeGreaterThanOrEqual(400);
 
         const renamed = await page.request.post(eidUrl('manageRename'), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Origin': new URL(page.url()).origin, 'Content-Type': 'application/json' },
             data: { uid: 1, label: 'anonymous rename' },
         });
         expect(renamed.status()).toBeGreaterThanOrEqual(400);

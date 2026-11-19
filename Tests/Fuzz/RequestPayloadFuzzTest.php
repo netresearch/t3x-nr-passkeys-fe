@@ -34,7 +34,10 @@ use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -313,12 +316,22 @@ final class RequestPayloadFuzzTest extends TestCase
         }
 
         // Track attributes so withAttribute()/getAttribute() work correctly
-        $attributes = [];
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
+        $attributes = ['site' => $site];
         if ($feUser instanceof Stub) {
             $attributes['frontend.user'] = $feUser;
         }
 
         $request = $this->createStub(ServerRequestInterface::class);
+        $request->method('getMethod')->willReturn(in_array($action, ['manageList', 'enrollmentStatus'], true) ? 'GET' : 'POST');
+        $request->method('getUri')->willReturn(new Uri('https://example.com/'));
+        $request->method('getHeaderLine')->willReturnCallback(static fn (string $header): string => match (strtolower($header)) {
+            'origin'       => 'https://example.com',
+            'content-type' => 'application/json',
+            default        => '',
+        });
         $request->method('getQueryParams')->willReturn(['eID' => 'nr_passkeys_fe', 'action' => $action]);
         $request->method('getParsedBody')->willReturn(null);
         $request->method('getBody')->willReturn($stream);

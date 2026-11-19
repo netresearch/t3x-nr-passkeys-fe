@@ -22,6 +22,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
@@ -103,14 +104,11 @@ final class EnforcementFuzzTest extends TestCase
 
     #[Test]
     #[DataProvider('invalidLevelStringProvider')]
-    public function anInvalidGroupLevelNeverRaisesEnforcement(string $rawLevel): void
+    public function anInvalidGroupLevelPreventsAPolicyDecision(string $rawLevel): void
     {
-        // A group value the TCA does not offer counts as off: it neither
-        // escalates the site level nor becomes the group level.
-        $status = $this->statusFor('encourage', [$rawLevel]);
-
-        self::assertSame('encourage', $status->effectiveLevel);
-        self::assertSame('off', $status->groupLevel);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Invalid passkey enforcement policy');
+        $this->statusFor('encourage', [$rawLevel]);
     }
 
     #[Test]

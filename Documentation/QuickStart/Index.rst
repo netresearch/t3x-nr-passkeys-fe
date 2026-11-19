@@ -31,7 +31,7 @@ Manual setup
 Prerequisites
 -------------
 
-- TYPO3 13.4 LTS or 14.3 LTS with HTTPS
+- TYPO3 13.4.20 or later in the 13.4 LTS line, or 14.3 LTS, with HTTPS
 - Composer-based installation
 
 Step 1: Install
@@ -40,9 +40,7 @@ Step 1: Install
 ..  code-block:: bash
 
     composer require netresearch/nr-passkeys-fe
-    vendor/bin/typo3 extension:activate nr_passkeys_be
-    vendor/bin/typo3 extension:activate nr_passkeys_fe
-    vendor/bin/typo3 database:updateschema
+    vendor/bin/typo3 extension:setup
 
 Step 2: Include TypoScript
 ===========================

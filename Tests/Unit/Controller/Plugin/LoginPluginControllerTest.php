@@ -24,8 +24,8 @@ use TYPO3\CMS\Core\Http\ResponseFactory;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Http\StreamFactory;
 use TYPO3\CMS\Core\Site\Entity\Site;
-use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Site\Entity\SiteLanguage;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Site\SiteFinder;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Extbase\Mvc\ExtbaseRequestParameters;
@@ -297,7 +297,7 @@ final class LoginPluginControllerTest extends TestCase
     }
 
     #[Test]
-    public function anAbsoluteLinkOnTheHostOfASiteLanguageIsKept(): void
+    public function tokenFormUsesALanguageHostOnlyWhenItIsTheCurrentOrigin(): void
     {
         $vars = $this->renderWithSettings(
             ['redirectAfterLogin' => '11'],
@@ -305,6 +305,14 @@ final class LoginPluginControllerTest extends TestCase
             languageBases: ['https://main.example.de/'],
         );
 
+        self::assertNull($vars['redirectUrl']);
+
+        $vars = $this->renderWithSettings(
+            ['redirectAfterLogin' => '11'],
+            targets: [11 => ['main', 'https://main.example.de/mitglieder']],
+            languageBases: ['https://main.example.de/'],
+            requestUrl: 'https://main.example.de/anmeldung',
+        );
         self::assertSame('https://main.example.de/mitglieder', $vars['redirectUrl']);
     }
 
@@ -380,6 +388,7 @@ final class LoginPluginControllerTest extends TestCase
         array $languageBases = [],
         string $siteBase = 'https://main.example',
         ?ArrayObject $resolverCalls = null,
+        string $requestUrl = 'https://main.example/page',
     ): array {
         $targets    = array_map($this->normalizeTarget(...), $targets);
         $siteFinder = $this->createStub(SiteFinder::class);
@@ -462,7 +471,7 @@ final class LoginPluginControllerTest extends TestCase
 
         $this->injectExtbaseProperties(
             $subject,
-            $this->buildExtbaseRequest('main', $siteBase, $languageBases, 'https://main.example/page'),
+            $this->buildExtbaseRequest('main', $siteBase, $languageBases, $requestUrl),
             $view,
             ['settings' => $settings, 'uriBuilder' => $uriBuilder],
         );
@@ -517,7 +526,8 @@ final class LoginPluginControllerTest extends TestCase
             $languages[] = new SiteLanguage($languageId + 1, 'de_DE.UTF-8', new Uri($languageBase), []);
         }
 
-        $site = $this->createStub(SiteInterface::class);
+        $site = $this->createStub(Site::class);
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
         $site->method('getIdentifier')->willReturn($siteIdentifier);
         $site->method('getBase')->willReturn(new Uri($baseUrl));
         $site->method('getLanguages')->willReturn($languages);

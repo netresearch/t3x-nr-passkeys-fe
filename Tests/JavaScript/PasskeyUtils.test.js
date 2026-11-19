@@ -25,12 +25,14 @@ function clearBody() {
 function appendForm({ wrapperId = null, formId = null } = {}) {
     const form = document.createElement('form');
     form.setAttribute('action', '/login');
+    form.method = 'post';
     if (formId) {
         form.id = formId;
     }
-    for (const name of ['user', 'pass', 'logintype']) {
+    for (const name of ['user', 'pass', 'logintype', '__RequestToken']) {
         const input = document.createElement('input');
         input.name = name;
+        if (name === '__RequestToken') input.value = 'request-token';
         form.appendChild(input);
     }
 
@@ -87,6 +89,42 @@ describe('submitLoginToken', () => {
             token: 'token-456',
         });
         expect(submitSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('selects the felogin handoff when the standalone form appears first', () => {
+        const standalone = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        const felogin = appendForm({ formId: 'nr-passkeys-fe-felogin-token-form' });
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(true);
+        expect(felogin.querySelector('input[name="pass"]').value).toContain('ticket');
+        expect(standalone.querySelector('input[name="pass"]').value).toBe('');
+    });
+
+    it('skips an incomplete felogin form before selecting a valid standalone form', () => {
+        const incomplete = appendForm({ wrapperId: 'nr-passkeys-fe-panel-password' });
+        incomplete.querySelector('[name="__RequestToken"]').remove();
+        const standalone = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        expect(window.NrPasskeysFe.getLoginTokenForm()).toBe(standalone);
+        standalone.querySelector('[name="user"]').disabled = true;
+        expect(window.NrPasskeysFe.getLoginTokenForm()).toBeNull();
+    });
+
+    it('keeps the ticket out of URLs and refuses a foreign destination', () => {
+        const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        form.method = 'get';
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        form.method = 'post';
+        form.action = 'https://other.example/login';
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        expect(form.querySelector('input[name="pass"]').value).toBe('');
+        expect(submitSpy).not.toHaveBeenCalled();
+    });
+
+    it('leaves the ticket field empty when the configured action is malformed', () => {
+        const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
+        form.setAttribute('action', 'https://[');
+        expect(window.NrPasskeysFe.submitLoginToken('ticket')).toBe(false);
+        expect(form.querySelector('input[name="pass"]').value).toBe('');
+        expect(submitSpy).not.toHaveBeenCalled();
     });
 
     it('refuses when the page carries no form at all', () => {

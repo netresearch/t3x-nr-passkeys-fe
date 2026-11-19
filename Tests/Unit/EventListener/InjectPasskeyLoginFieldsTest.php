@@ -16,6 +16,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\FrontendLogin\Event\ModifyLoginFormViewEvent;
 
@@ -47,6 +49,24 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         $view->expects(self::never())->method('assign');
 
         $subject->__invoke($this->buildEvent($view));
+    }
+
+    #[Test]
+    public function feloginSubmitsToTheResolvedSitesBasePath(): void
+    {
+        $site = $this->createStub(SiteInterface::class);
+        $site->method('getBase')->willReturn(new Uri('https://example.com/members/'));
+        $view        = $this->createMock(ViewInterface::class);
+        $assignments = [];
+        $view->method('assign')->willReturnCallback(static function (string $key, mixed $value) use (&$assignments, $view): ViewInterface {
+            $assignments[$key] = $value;
+
+            return $view;
+        });
+        $request = (new ServerRequest('https://example.com/members/login', 'GET'))->withAttribute('site', $site);
+        $subject = new InjectPasskeyLoginFields(new FrontendConfiguration(enableFePasskeys: true));
+        $subject(new ModifyLoginFormViewEvent($view, $request));
+        self::assertSame('/members/?eID=nr_passkeys_fe', $assignments['passkeyEidUrl']);
     }
 
     #[Test]

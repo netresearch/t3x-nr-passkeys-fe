@@ -32,49 +32,27 @@ This is the recommended way to install the extension:
 
 This also installs ``netresearch/nr-passkeys-be`` as a dependency.
 
-Activate the extension
-======================
-
-After installation, activate the extension in the TYPO3 backend:
-
-1. Go to :guilabel:`Admin Tools > Extensions`
-2. Search for "Passkeys Frontend Authentication"
-3. Click the activate button
-
-Or use the CLI:
-
-..  code-block:: bash
-
-    vendor/bin/typo3 extension:activate nr_passkeys_fe
-
-..  note::
-
-    If ``nr_passkeys_be`` is not already active, activate it first.
-    Both extensions must be active for the frontend login to work.
-
 Database schema update
 ======================
 
-The extension adds two tables and extends two core tables:
+The extension adds four tables and extends two core tables:
 
 - ``tx_nrpasskeysfe_credential`` -- Frontend passkey credentials
 - ``tx_nrpasskeysfe_recovery_code`` -- Bcrypt-hashed recovery codes
+- ``tx_nrpasskeysfe_consumed_token`` -- Single-use login and challenge claims
+- ``tx_nrpasskeysfe_recovery_capacity`` -- Recovery verification budget shared by all workers
 - ``fe_users`` -- Adds ``passkey_grace_period_start`` and
   ``passkey_nudge_until`` columns for enforcement tracking
 - ``fe_groups`` -- Adds ``passkey_enforcement`` and
   ``passkey_grace_period_days`` columns for per-group enforcement
 
-After activation, run the database schema update:
-
-1. Go to :guilabel:`Admin Tools > Maintenance > Analyze Database
-   Structure`
-2. Apply the suggested changes
-
-Or use the CLI:
+Set up both installed extensions before routing traffic to the updated
+workers. Verify the tables in the Maintenance module's database structure
+analyzer on the connections used by the application.
 
 ..  code-block:: bash
 
-    vendor/bin/typo3 database:updateschema
+    vendor/bin/typo3 extension:setup
 
 Include TypoScript
 ==================

@@ -61,6 +61,8 @@ Settings are added to the site's :file:`config.yaml` file or via the
    - ``enforced`` -- Users without passkeys cannot bypass the
      interstitial. Grace period skipping is disabled.
 
+   A stored YAML boolean false also selects the disabled policy.
+
    Per-group enforcement can override this for specific user groups
    (strictest level wins). See :ref:`enforcement`.
 

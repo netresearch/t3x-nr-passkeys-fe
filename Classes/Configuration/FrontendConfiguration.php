@@ -36,6 +36,7 @@ final readonly class FrontendConfiguration
         private bool $magicLinkEnabled = false,
         private bool $enrollmentBannerEnabled = true,
         private bool $postLoginEnrollmentEnabled = true,
+        private int $recoveryVerificationsPerMinute = 30,
     ) {}
 
     public function isEnableFePasskeys(): bool
@@ -73,6 +74,11 @@ final readonly class FrontendConfiguration
         return $this->enrollmentBannerEnabled;
     }
 
+    public function getRecoveryVerificationsPerMinute(): int
+    {
+        return max(1, $this->recoveryVerificationsPerMinute);
+    }
+
     public function isPostLoginEnrollmentEnabled(): bool
     {
         return $this->postLoginEnrollmentEnabled;
@@ -96,6 +102,7 @@ final readonly class FrontendConfiguration
             magicLinkEnabled: self::boolVal($settings['magicLinkEnabled'] ?? null, false),
             enrollmentBannerEnabled: self::boolVal($settings['enrollmentBannerEnabled'] ?? null, true),
             postLoginEnrollmentEnabled: self::boolVal($settings['postLoginEnrollmentEnabled'] ?? null, true),
+            recoveryVerificationsPerMinute: self::intVal($settings['recoveryVerificationsPerMinute'] ?? null, 30),
         );
     }
 

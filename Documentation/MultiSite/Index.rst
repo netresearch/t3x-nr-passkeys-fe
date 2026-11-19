@@ -62,11 +62,11 @@ For a TYPO3 installation with two separate domains:
 Shared RP ID across subdomains
 --------------------------------
 
-WebAuthn allows the RP ID to be a registrable domain suffix. For
-example, credentials registered with ``rpId: 'example.com'`` can
-be used on both ``app.example.com`` and ``api.example.com``.
+WebAuthn allows trusted subdomains to share a parent RP ID. TYPO3
+still looks up each credential by the current site's identifier.
+Users who sign in to two TYPO3 sites register a passkey on each site.
 
-To enable this, set all sites to the same parent domain:
+For example, these sites use the same RP ID and distinct origins:
 
 ..  code-block:: yaml
 
@@ -84,9 +84,9 @@ To enable this, set all sites to the same parent domain:
 
 ..  warning::
 
-    Sharing an RP ID means a passkey registered on one subdomain can
-    be used on all other subdomains sharing the same RP ID. Only share
-    RP IDs across subdomains you fully trust.
+    An authenticator may offer credentials for either site when both
+    use the same RP ID. Each site accepts its own registered credentials.
+    Share an RP ID only across subdomains you fully trust.
 
 Database isolation
 ------------------
@@ -110,3 +110,37 @@ auto-detected RP ID) and later add multiple sites:
 
 Plan migrations carefully and communicate re-enrollment to users in
 advance.
+
+Frontend account folders
+------------------------
+
+By default, a frontend account's current storage page must belong to the
+request's TYPO3 site. For shared user folders configure the comma-separated
+site setting nr_passkeys_fe.userStoragePids with the permitted page IDs.
+An omitted value, an empty string, or an empty list uses the site's own
+page tree. To share a folder, list its page ID on each participating site.
+Credential use also
+requires its original registration site. Existing credentials without a
+stored folder are checked against their owner's current folder and the
+recorded site on each login.
+
+On an enforced site, an enrolled account needs a session established on
+that site with a passkey or a permitted recovery code. Signing in with a
+password allows initial enrollment. After registering the first passkey,
+sign in with it to continue. Existing sessions without a site-bound proof
+require a fresh login when the site enforces passkeys.
+
+Recovery codes and rollout
+--------------------------
+
+Apply the updated database schema and deploy the backend extension update
+before enabling the frontend workers. New recovery sets belong to one site.
+The extension assigns old unscoped codes only to the site containing the
+user's storage folder. A shared folder outside a configured site has no
+automatic assignment. Before cutover, establish a working passkey or
+supervised account recovery for these accounts and reissue their codes.
+Generate a separate set on each site where recovery is enabled.
+
+All sites share a recovery verification budget in addition to the IP and
+account limits. Monitor HTTP 429 responses and size recovery capacity and
+the database limits for the deployment.

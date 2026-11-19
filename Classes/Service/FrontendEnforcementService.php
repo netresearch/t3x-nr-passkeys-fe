@@ -15,6 +15,7 @@ use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
 use Netresearch\NrPasskeysFe\Event\EnforcementLevelResolvedEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Site\Entity\SiteInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -75,8 +76,8 @@ final class FrontendEnforcementService
             return $this->statusCache[$cacheKey];
         }
 
-        $passkeyCount           = $this->credentialRepository->countByFeUser($feUserUid);
-        $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid);
+        $passkeyCount           = $this->credentialRepository->countByFeUser($feUserUid, $siteIdentifier);
+        $recoveryCodesRemaining = $this->recoveryCodeService->countRemaining($feUserUid, $site);
 
         $siteLevel    = $this->siteConfigurationService->getEnforcementLevel($site);
         $siteSeverity = $this->levelSeverity($siteLevel);
@@ -117,6 +118,7 @@ final class FrontendEnforcementService
         $event = new EnforcementLevelResolvedEvent($feUserUid, $effectiveLevel);
         $this->eventDispatcher->dispatch($event);
         $effectiveLevel = $event->getEffectiveLevel();
+        $this->levelSeverity($effectiveLevel);
 
         // Calculate grace period
         $graceValue       = $userRow['passkey_grace_period_start'] ?? 0;
@@ -264,7 +266,7 @@ final class FrontendEnforcementService
 
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
-            $level            = is_string($enforcementValue) ? $enforcementValue : 'off';
+            $level            = is_string($enforcementValue) ? $enforcementValue : '';
             $levelSeverity    = $this->levelSeverity($level);
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
@@ -290,6 +292,6 @@ final class FrontendEnforcementService
 
     private function levelSeverity(string $level): int
     {
-        return self::SEVERITY_MAP[$level] ?? 0;
+        return self::SEVERITY_MAP[$level] ?? throw new RuntimeException('Invalid passkey enforcement policy');
     }
 }

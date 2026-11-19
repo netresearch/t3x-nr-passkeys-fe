@@ -9,10 +9,12 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Controller;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use Netresearch\NrPasskeysFe\Event\PasskeyRemovedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use Netresearch\NrPasskeysFe\Service\FrontendWebAuthnService;
 use Netresearch\NrPasskeysFe\Service\PasskeyEnrollmentService;
 use Netresearch\NrPasskeysFe\Service\SiteConfigurationService;
@@ -55,6 +57,7 @@ final readonly class ManagementController
         private ChallengeService $challengeService,
         private EventDispatcherInterface $eventDispatcher,
         private LoggerInterface $logger,
+        private FrontendEnforcementService $enforcement,
     ) {}
 
     /**
@@ -91,6 +94,12 @@ final readonly class ManagementController
                 challenge: $challenge,
                 site: $site,
             );
+
+            $feUser->setKey('ses', 'nr_passkeys_fe_registration', [
+                'token' => hash('sha256', $challengeToken), 'uid' => $feUserUid, 'site' => $site->getIdentifier(),
+                'rp'    => $this->siteConfigurationService->getRpId($site), 'origin' => $this->siteConfigurationService->getOrigin($site),
+            ]);
+            $feUser->storeSessionData();
 
             return new JsonResponse([
                 'options' => json_decode(
@@ -155,6 +164,10 @@ final readonly class ManagementController
 
         try {
             $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
+        } catch (DatabaseException $e) {
+            $this->logger->error('Frontend registration storage unavailable', ['exception' => $e::class]);
+
+            return new JsonResponse(['error' => 'Registration temporarily unavailable. Start registration again.'], 503, ['Retry-After' => '60']);
         } catch (RuntimeException $e) {
             $this->logger->warning('FE registration verify: invalid challenge token', [
                 'fe_user_uid' => $feUserUid,
@@ -171,6 +184,17 @@ final readonly class ManagementController
 
             return new JsonResponse(['error' => 'Internal error'], 500);
         }
+
+        $issued = $feUser->getKey('ses', 'nr_passkeys_fe_registration');
+        if (!is_array($issued) || ($issued['token'] ?? null) !== hash('sha256', $challengeToken)
+            || ($issued['uid'] ?? null) !== $feUserUid || ($issued['site'] ?? null) !== $site->getIdentifier()
+            || ($issued['rp'] ?? null) !== $this->siteConfigurationService->getRpId($site)
+            || ($issued['origin'] ?? null) !== $this->siteConfigurationService->getOrigin($site)) {
+            return new JsonResponse(['error' => 'Restart passkey registration in this session'], 403);
+        }
+
+        $feUser->setKey('ses', 'nr_passkeys_fe_registration', null);
+        $feUser->storeSessionData();
 
         try {
             $credential = $this->enrollmentService->completeEnrollment(
@@ -282,8 +306,10 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Label must not be empty'], 400);
         }
 
+        $site       = $this->siteConfigurationService->getCurrentSite($request);
+        $siteId     = $this->siteConfigurationService->getSiteIdentifier($site);
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
-        if (!$credential instanceof FrontendCredential) {
+        if (!$credential instanceof FrontendCredential || $credential->isRevoked() || $credential->getSiteIdentifier() !== $siteId) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
@@ -320,13 +346,18 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Missing credential uid'], 400);
         }
 
+        $site       = $this->siteConfigurationService->getCurrentSite($request);
+        $siteId     = $this->siteConfigurationService->getSiteIdentifier($site);
         $credential = $this->credentialRepository->findByUidAndFeUser($credentialUid, $feUserUid);
-        if (!$credential instanceof FrontendCredential) {
+        if (!$credential instanceof FrontendCredential || $credential->isRevoked() || $credential->getSiteIdentifier() !== $siteId) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
         // Soft delete: revoke with the user as revoker
-        $this->credentialRepository->revoke($credentialUid, $feUserUid);
+        $level = $this->enforcement->getStatus($feUserUid, $siteId, $site)->effectiveLevel;
+        if (!$this->credentialRepository->removeOwned($credentialUid, $feUserUid, in_array($level, ['required', 'enforced'], true), $siteId)) {
+            return new JsonResponse(['error' => 'Add a replacement passkey before removing your last passkey.'], 409);
+        }
 
         $this->eventDispatcher->dispatch(new PasskeyRemovedEvent($credential, $feUserUid));
 

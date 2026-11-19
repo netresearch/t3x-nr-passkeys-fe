@@ -895,6 +895,10 @@
                 <source>Registration failed. Please try again.</source>
                 <target>Registrierung fehlgeschlagen. Bitte versuchen Sie es erneut.</target>
             </trans-unit>
+            <trans-unit id="js.enrollment.error.postponeFailed" resname="js.enrollment.error.postponeFailed">
+                <source>Could not postpone enrollment. Reload and try again.</source>
+                <target>Die Einrichtung konnte nicht verschoben werden. Laden Sie die Seite neu und versuchen Sie es erneut.</target>
+            </trans-unit>
             <trans-unit id="js.enrollment.error.startFailed" resname="js.enrollment.error.startFailed">
                 <source>Failed to start registration. Please try again.</source>
                 <target>Registrierung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.</target>
@@ -958,6 +962,14 @@
             <trans-unit id="js.recovery.error.noUsername" resname="js.recovery.error.noUsername">
                 <source>Please enter your username.</source>
                 <target>Bitte geben Sie Ihren Benutzernamen ein.</target>
+            </trans-unit>
+            <trans-unit id="js.login.error.missingForm" resname="js.login.error.missingForm">
+                <source>Sign-in could not be completed. Reload the login page and try again.</source>
+                <target>Die Anmeldung konnte nicht abgeschlossen werden. Laden Sie die Anmeldeseite neu und versuchen Sie es erneut.</target>
+            </trans-unit>
+            <trans-unit id="js.recovery.error.missingForm" resname="js.recovery.error.missingForm">
+                <source>The code was accepted, but sign-in could not be completed. Contact support before using another code.</source>
+                <target>Ihr Code wurde angenommen. Die Anmeldung konnte nicht abgeschlossen werden. Wenden Sie sich an den Support, bevor Sie einen weiteren Code verwenden.</target>
             </trans-unit>
             <trans-unit id="js.recovery.error.rateLimit" resname="js.recovery.error.rateLimit">
                 <source>Too many attempts. Please try again later.</source>

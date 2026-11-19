@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysFe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Event\RecoveryCodesGeneratedEvent;
 use Netresearch\NrPasskeysFe\Service\FrontendUserLookupService;
 use Netresearch\NrPasskeysFe\Service\RecoveryCodeService;
 use Netresearch\NrPasskeysFe\Tests\Unit\Controller\Fixtures\RateLimitExceeded;
@@ -26,6 +27,7 @@ use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -43,13 +45,17 @@ final class RecoveryControllerTest extends TestCase
 
     private RecoveryController $subject;
 
+    private bool $capacityAvailable = true;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->recoveryCodeService = $this->createStub(RecoveryCodeService::class);
-        $this->rateLimiterService  = $this->createStub(RateLimiterService::class);
-        $this->userLookupService   = $this->createStub(FrontendUserLookupService::class);
+        $this->recoveryCodeService->method('reserveVerificationCapacity')->willReturnCallback(fn (): bool => $this->capacityAvailable);
+        $this->rateLimiterService = $this->createStub(RateLimiterService::class);
+        $this->userLookupService  = $this->createStub(FrontendUserLookupService::class);
+        $this->userLookupService->method('ownerStoragePid')->willReturn(12);
 
         // Register a cache stub for the login token
         $cacheStub        = $this->createStub(FrontendInterface::class);
@@ -76,13 +82,35 @@ final class RecoveryControllerTest extends TestCase
         $codes = ['ABCD-EFGH', 'WXYZ-1234', 'MNOP-QRST'];
         $this->recoveryCodeService->method('generate')->willReturn($codes);
 
-        $request  = $this->buildRequestWithUser(42);
-        $response = $this->subject->generateAction($request);
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::once())->method('dispatch')->willReturnCallback(static function (RecoveryCodesGeneratedEvent $event): object {
+            self::assertSame('main', $event->siteIdentifier);
+            self::assertSame(42, $event->feUserUid);
+            self::assertSame(3, $event->codeCount);
+
+            return $event;
+        });
+        $this->subject = new RecoveryController($this->recoveryCodeService, $this->rateLimiterService, $this->userLookupService, $dispatcher, new NullLogger());
+        $request       = $this->buildRequestWithUser(42);
+        $response      = $this->subject->generateAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeBody($response);
         self::assertSame($codes, $body['codes']);
         self::assertSame(3, $body['count']);
+    }
+
+    #[Test]
+    public function generateActionChecksTheCurrentOwnerFolderBeforeReplacingCodes(): void
+    {
+        $lookup = $this->createStub(FrontendUserLookupService::class);
+        $lookup->method('ownerStoragePid')->willReturn(null);
+        $codes = $this->createMock(RecoveryCodeService::class);
+        $codes->expects(self::never())->method('generate');
+        $dispatcher = $this->createMock(EventDispatcherInterface::class);
+        $dispatcher->expects(self::never())->method('dispatch');
+        $controller = new RecoveryController($codes, $this->rateLimiterService, $lookup, $dispatcher, new NullLogger());
+        self::assertSame(403, $controller->generateAction($this->buildRequestWithUser(42))->getStatusCode());
     }
 
     #[Test]
@@ -155,6 +183,18 @@ final class RecoveryControllerTest extends TestCase
     }
 
     #[Test]
+    public function sharedRecoveryLimitAppliesOnlyToWellFormedCodes(): void
+    {
+        $this->capacityAvailable = false;
+        $short                   = $this->subject->verifyAction($this->buildRequest(['username' => 'known', 'code' => 'ABC']));
+        self::assertSame(401, $short->getStatusCode());
+
+        $full = $this->subject->verifyAction($this->buildRequest(['username' => 'known', 'code' => 'ABCD-EFGH']));
+        self::assertSame(429, $full->getStatusCode());
+        self::assertSame('60', $full->getHeaderLine('Retry-After'));
+    }
+
+    #[Test]
     public function verifyActionCreatesOneTimeLoginTokenOnSuccess(): void
     {
         $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
@@ -166,7 +206,11 @@ final class RecoveryControllerTest extends TestCase
             ->method('set')
             ->with(
                 self::callback(static fn (string $key): bool => str_starts_with($key, 'passkey_login_')),
-                '42',
+                self::callback(static function (string $raw): bool {
+                    $ticket = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
+
+                    return $ticket['uid'] === 42 && $ticket['site'] === 'main' && $ticket['method'] === 'recovery' && $ticket['expiresAt'] > time();
+                }),
                 [],
                 120,
             );
@@ -196,14 +240,20 @@ final class RecoveryControllerTest extends TestCase
         $feUser       = $this->createStub(FrontendUserAuthentication::class);
         $feUser->user = ['uid' => $uid];
 
-        return (new ServerRequest('https://example.com/', 'POST'))
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+
+        return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
             ->withAttribute('frontend.user', $feUser)
             ->withParsedBody([]);
     }
 
     private function buildRequest(array $body): ServerRequest
     {
-        return (new ServerRequest('https://example.com/', 'POST'))
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+
+        return (new ServerRequest('https://example.com/', 'POST'))->withAttribute('site', $site)
             ->withParsedBody($body);
     }
 
@@ -215,6 +265,9 @@ final class RecoveryControllerTest extends TestCase
     #[Test]
     public function verifyActionRateLimitsAndChecksTheLockoutForTheAddressFromTheNormalizedParams(): void
     {
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $this->userLookupService->method('findFeUserUidByUsername')->willReturn(42);
         $calls = [];
         $this->rateLimiterService->method('consumeRateLimit')->willReturnCallback(
             static function (string $endpoint, string $ip) use (&$calls): void {
@@ -229,7 +282,7 @@ final class RecoveryControllerTest extends TestCase
         );
 
         $request = (new ServerRequest('https://example.com/', 'POST', 'php://input', [], ['REMOTE_ADDR' => '192.0.2.1']))
-            ->withParsedBody(['username' => 'jdoe', 'code' => 'ABCD-1234'])
+            ->withAttribute('site', $site)->withParsedBody(['username' => 'jdoe', 'code' => 'ABCD-1234'])
             // Set by core's normalized-params-attribute middleware; the
             // differing server param must not be used.
             ->withAttribute('normalizedParams', new NormalizedParams(['REMOTE_ADDR' => '203.0.113.11'], [], '', ''));
@@ -237,6 +290,6 @@ final class RecoveryControllerTest extends TestCase
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(429, $response->getStatusCode());
-        self::assertSame(['rate:fe_recovery_verify@203.0.113.11', 'lockout:jdoe@203.0.113.11'], $calls);
+        self::assertSame(['rate:fe_recovery_verify@203.0.113.11', 'lockout:42@203.0.113.11'], $calls);
     }
 }

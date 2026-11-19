@@ -15,6 +15,8 @@ use Netresearch\NrPasskeysFe\Controller\EnrollmentController;
 use Netresearch\NrPasskeysFe\Controller\LoginController;
 use Netresearch\NrPasskeysFe\Controller\ManagementController;
 use Netresearch\NrPasskeysFe\Controller\RecoveryController;
+use Netresearch\NrPasskeysFe\Domain\Dto\FrontendEnforcementStatus;
+use Netresearch\NrPasskeysFe\Service\FrontendEnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -25,6 +27,8 @@ use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Site\Entity\SiteSettings;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Authentication\FrontendUserAuthentication;
 
@@ -36,10 +40,17 @@ final class EidDispatcherTest extends TestCase
 {
     private EidDispatcher $subject;
 
+    private string $level = 'off';
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->subject = new EidDispatcher();
+        $enforcement   = $this->createStub(FrontendEnforcementService::class);
+        $enforcement->method('getStatus')->willReturnCallback(
+            fn (): FrontendEnforcementStatus => new FrontendEnforcementStatus($this->level, $this->level, 'off', 1, false, null, 0),
+        );
+        GeneralUtility::addInstance(FrontendEnforcementService::class, $enforcement);
 
         // Register a Context singleton so bootstrapFrontendUser() can set aspects
         GeneralUtility::setSingletonInstance(Context::class, new Context());
@@ -183,8 +194,14 @@ final class EidDispatcherTest extends TestCase
         $feUserStub       = $this->createStub(FrontendUserAuthentication::class);
         $feUserStub->user = ['uid' => 42];
 
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
+        $feUserStub->method('getKey')->willReturn(['uid' => 42, 'site' => 'main', 'method' => 'passkey', 'at' => time()]);
+
         // Already has frontend.user → bootstrapFrontendUser() skips
         $request = $this->buildRequest(['action' => $action])
+            ->withAttribute('site', $site)
             ->withAttribute('frontend.user', $feUserStub);
 
         $response = $this->subject->processRequest($request);
@@ -214,6 +231,17 @@ final class EidDispatcherTest extends TestCase
 
         self::assertSame(500, $response->getStatusCode());
         $this->assertJsonBodyEquals(['error' => 'Internal error'], $response);
+    }
+
+    #[Test]
+    public function anEnforcedSiteRequiresItsOwnLoginProofForPrivateActions(): void
+    {
+        $this->level = 'enforced';
+        $user        = $this->createStub(FrontendUserAuthentication::class);
+        $user->user  = ['uid' => 42];
+        $user->method('getKey')->willReturn(['uid' => 42, 'site' => 'other', 'method' => 'passkey', 'at' => time()]);
+        $response = $this->subject->processRequest($this->buildRequest(['action' => 'manageList'])->withAttribute('frontend.user', $user));
+        self::assertSame(403, $response->getStatusCode());
     }
 
     #[Test]
@@ -305,9 +333,29 @@ final class EidDispatcherTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------
 
+    #[Test]
+    public function rejectsUnsafeManagementRequestsBeforeSessionBootstrap(): void
+    {
+        $request     = $this->buildRequest(['action' => 'recoveryGenerate']);
+        $methodError = $this->subject->processRequest($request->withMethod('GET'));
+        self::assertSame(405, $methodError->getStatusCode());
+        self::assertSame('POST', $methodError->getHeaderLine('Allow'));
+        foreach (['', 'null', 'https://other.example.com'] as $origin) {
+            $response = $this->subject->processRequest($request->withHeader('Origin', $origin));
+            self::assertSame(403, $response->getStatusCode());
+            self::assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'));
+        }
+    }
+
     private function buildRequest(array $queryParams): ServerRequest
     {
-        return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', 'GET'))
+        $site = $this->createStub(Site::class);
+        $site->method('getIdentifier')->willReturn('main');
+        $site->method('getSettings')->willReturn(SiteSettings::createFromSettingsTree([]));
+        $read = in_array($queryParams['action'] ?? '', ['loginOptions', 'manageList', 'enrollmentStatus'], true);
+
+        return (new ServerRequest('https://example.com/?eID=nr_passkeys_fe', $read ? 'GET' : 'POST'))
+            ->withAttribute('site', $site)->withHeader('Origin', 'https://example.com')
             ->withQueryParams($queryParams);
     }
 

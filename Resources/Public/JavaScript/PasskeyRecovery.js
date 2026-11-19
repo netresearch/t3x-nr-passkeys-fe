@@ -106,6 +106,12 @@
       return;
     }
 
+    var loginForm = U.getLoginTokenForm(form);
+    if (!loginForm) {
+      U.showError(errorEl, U.t('js.login.error.missingForm', 'Sign-in could not be completed. Reload the login page and try again.'));
+      return;
+    }
+
     U.setLoading(true, submitBtn, btnText, btnLoading);
 
     try {
@@ -121,11 +127,12 @@
 
       if (response.ok && data.status === 'ok' && data.loginToken) {
         // Submit token via felogin form to establish FE session
-        if (U.submitLoginToken(data.loginToken)) {
+        if (U.submitLoginToken(data.loginToken, loginForm)) {
           return;
         }
-        // Fallback: reload
-        window.location.reload();
+        codeInput.value = '';
+        U.showError(errorEl, U.t('js.recovery.error.missingForm', 'The code was accepted, but sign-in could not be completed. Contact support before using another code.'));
+        U.setLoading(false, submitBtn, btnText, btnLoading);
         return;
       }
 

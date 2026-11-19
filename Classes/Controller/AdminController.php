@@ -197,12 +197,12 @@ final readonly class AdminController
         }
 
         // Clear the rate-limiter lockout state for this FE user
-        $this->rateLimiterService->resetLockout($username);
+        $this->rateLimiterService->resetLockout((string) $feUserUid);
 
         $this->logger->info('Admin unlocked FE user account', [
-            'admin_uid'   => $adminUid,
-            'fe_user_uid' => $feUserUid,
-            'username'    => $username,
+            'admin_uid'     => $adminUid,
+            'fe_user_uid'   => $feUserUid,
+            'username_hash' => hash('sha256', $username),
         ]);
 
         return new JsonResponse(['status' => 'ok']);

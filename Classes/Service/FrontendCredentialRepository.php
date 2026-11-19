@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysFe\Service;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysFe\Domain\Model\FrontendCredential;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -127,6 +128,7 @@ final readonly class FrontendCredentialRepository
                     $queryBuilder->createNamedParameter($siteIdentifier),
                 ),
                 $queryBuilder->expr()->eq('revoked_at', 0),
+                $this->matchesFolder($queryBuilder, $this->ownerFolder($feUserUid)),
             )
             ->orderBy('created_at', 'DESC')
             ->executeQuery()
@@ -170,11 +172,18 @@ final readonly class FrontendCredentialRepository
     /**
      * Count active (non-revoked) credentials for a frontend user (across all sites).
      */
-    public function countByFeUser(int $feUserUid): int
+    public function countByFeUser(int $feUserUid, ?string $siteIdentifier = null): int
+    {
+        $folder = $siteIdentifier === null ? null : $this->ownerFolder($feUserUid);
+
+        return $this->countActive($feUserUid, $siteIdentifier, $folder);
+    }
+
+    private function countActive(int $feUserUid, ?string $siteIdentifier, ?int $folder): int
     {
         $queryBuilder = $this->getQueryBuilder();
 
-        $result = $queryBuilder
+        $queryBuilder
             ->count('uid')
             ->from(self::TABLE)
             ->where(
@@ -184,6 +193,13 @@ final readonly class FrontendCredentialRepository
                 ),
                 $queryBuilder->expr()->eq('revoked_at', 0),
             )
+        ;
+        if ($siteIdentifier !== null) {
+            $queryBuilder->andWhere($this->matchesFolder($queryBuilder, $folder));
+            $queryBuilder->andWhere($queryBuilder->expr()->eq('site_identifier', $queryBuilder->createNamedParameter($siteIdentifier)));
+        }
+
+        $result = $queryBuilder
             ->executeQuery()
             ->fetchOne();
 
@@ -326,8 +342,37 @@ final readonly class FrontendCredentialRepository
     }
 
     /**
-     * Hard-delete a credential record by UID.
+     * Revoke an active credential owned by this account on this site.
      */
+    public function removeOwned(int $uid, int $ownerUid, bool $protectLast, string $siteIdentifier): bool
+    {
+        $db = $this->connectionPool->getConnectionForTable(self::TABLE);
+
+        return $db->transactional(function () use ($db, $uid, $ownerUid, $protectLast, $siteIdentifier): bool {
+            // Serialize simultaneous removals before deciding which active key remains.
+            $lock = $db->createQueryBuilder();
+            $lock->update(self::TABLE)->set('revoked_at', $db->quoteIdentifier('revoked_at'), false)
+                ->where($lock->expr()->eq('fe_user', $lock->createNamedParameter($ownerUid, ParameterType::INTEGER)))->executeStatement();
+            $target = ['uid' => $uid, 'fe_user' => $ownerUid, 'site_identifier' => $siteIdentifier, 'revoked_at' => 0];
+            if ($protectLast) {
+                $storagePid = $db->select(['storage_pid'], self::TABLE, $target)->fetchOne();
+                if (!is_numeric($storagePid)) {
+                    return false;
+                }
+
+                $folder = $this->ownerFolder($ownerUid);
+                if (((int) $storagePid === 0 || (int) $storagePid === $folder)
+                    && $this->countActive($ownerUid, $siteIdentifier, $folder) <= 1) {
+                    return false;
+                }
+            }
+
+            $now = time();
+
+            return $db->update(self::TABLE, ['revoked_at' => $now, 'revoked_by' => $ownerUid, 'tstamp' => $now], $target) === 1;
+        });
+    }
+
     public function delete(int $uid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
@@ -369,6 +414,24 @@ final readonly class FrontendCredentialRepository
             ],
             ['uid' => $uid],
         );
+    }
+
+    private function ownerFolder(int $uid): ?int
+    {
+        $connection = $this->connectionPool->getConnectionForTable('fe_users');
+        $pid        = $connection->select(['pid'], 'fe_users', ['uid' => $uid])->fetchOne();
+
+        return is_numeric($pid) ? (int) $pid : null;
+    }
+
+    private function matchesFolder(QueryBuilder $query, ?int $pid): string
+    {
+        // Legacy keys have storage_pid 0; an absent owner must never make them usable.
+        if ($pid === null) {
+            return $query->expr()->isNull('fe_user');
+        }
+
+        return $query->expr()->in('storage_pid', $query->createNamedParameter([0, $pid], ArrayParameterType::INTEGER));
     }
 
     private function getQueryBuilder(): QueryBuilder

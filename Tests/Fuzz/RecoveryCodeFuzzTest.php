@@ -60,6 +60,9 @@ final class RecoveryCodeFuzzTest extends TestCase
         $queryBuilder->method('executeQuery')->willReturn($resultStub);
 
         $connection = $this->createStub(Connection::class);
+        $owner      = $this->createStub(Result::class);
+        $owner->method('fetchOne')->willReturn(1);
+        $connection->method('select')->willReturn($owner);
         $connection->method('insert')->willReturn(1);
         $connection->method('delete')->willReturn(1);
         $connection->method('lastInsertId')->willReturn('1');
