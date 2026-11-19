@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysFe\Form\Element\PasskeyFeInfoElement;
 use Netresearch\NrPasskeysFe\Service\FrontendCredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -334,5 +335,33 @@ final class PasskeyFeInfoElementTest extends TestCase
             },
         );
         $GLOBALS['LANG'] = $languageService;
+    }
+
+    #[Test]
+    #[TestWith([true, 'Backup eligible'])]
+    #[TestWith([false, 'Device-bound'])]
+    public function rendersTheRecordedBackupFlag(
+        bool $eligible,
+        string $label,
+    ): void {
+        $this->setUpLanguageService();
+        $subject = $this->createSubject(
+            [
+                'tableName'      => 'fe_users',
+                'databaseRow'    => ['uid' => 42],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
+        $credential = new FrontendCredential(
+            feUser: 42,
+            label: 'My passkey',
+            backupEligible: $eligible,
+        );
+        $this->credentialRepository
+            ->method('findAllByFeUser')
+            ->willReturn([$credential]);
+        $html = $subject->render()['html'] ?? '';
+        self::assertStringContainsString($label, $html);
+        self::assertStringNotContainsString('Backup eligibility unknown', $html);
     }
 }
