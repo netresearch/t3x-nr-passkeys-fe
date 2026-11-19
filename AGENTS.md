@@ -10,6 +10,8 @@
 
 ## Project Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **nr_passkeys_fe** -- TYPO3 extension for passwordless **frontend** authentication via WebAuthn/FIDO2
 Passkeys. Supports TouchID, FaceID, YubiKey, Windows Hello for frontend users (``fe_users``).
 Includes felogin integration, self-service management, recovery codes, per-site + per-group

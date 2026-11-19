@@ -8,6 +8,8 @@
 
 ## Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **Scope:** Fluid templates, vanilla-JS WebAuthn modules, XLIFF translations,
 and public assets (SVG icons). The JS modules have zero npm runtime
 dependencies and are loaded via TYPO3's ES module import map.

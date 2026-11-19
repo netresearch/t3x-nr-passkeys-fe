@@ -6,6 +6,9 @@
 
 <!-- AGENTS-GENERATED:START overview -->
 ## Overview
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 DDEV local development environment for **EXT:nr_passkeys_fe** (TYPO3 frontend passkey authentication).
 Supports TYPO3 v13.4 LTS and v14.x. Requires the sibling BE extension (`t3x-nr-passkeys-be/main`)
 mounted as a path repository. Uses **PHP 8.5**, **MariaDB 11.4**, and **NodeJS 20** (for Vitest JS tests).

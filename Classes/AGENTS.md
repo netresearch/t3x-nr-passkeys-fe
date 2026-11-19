@@ -8,6 +8,8 @@
 
 ## Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **Scope:** PHP source code for `nr_passkeys_fe`. All classes live under
 `Netresearch\NrPasskeysFe\` (PSR-4 from `Classes/`). Layering (inner to outer):
 Domain (Model + Dto) -> Service -> Controller / Authentication / Middleware /

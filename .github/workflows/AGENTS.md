@@ -8,6 +8,8 @@
 
 ## Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **Scope:** GitHub Actions CI/CD for `nr_passkeys_fe`. Every workflow is a thin
 caller of a central reusable in `netresearch/typo3-ci-workflows` or
 `netresearch/.github` — action pinning and hardening are maintained there.
@@ -47,7 +49,7 @@ materialize on merge_group refs). Any job added there MUST also be added to
 
 ## Workflow conventions
 
-- All workflow files must pin actions to SHA (not tags)
+- Pin third-party GitHub Actions to full commit SHAs.
 - Use `fail_level: error` for all reviewdog-based linting actions
 - Do NOT use `--no-verify` in any workflow step
 - Secrets: `TYPO3_TER_ACCESS_TOKEN`, `CODECOV_TOKEN` (set in repo secrets)
