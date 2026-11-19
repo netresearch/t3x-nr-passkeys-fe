@@ -62,8 +62,10 @@
     var card = source && source.closest('.nr-passkeys-fe-card');
     var scopes = card ? [card, document] : [document];
     // Keep felogin's configured redirect when the standalone plugin shares a page with it.
-    var selectors = ['#nr-passkeys-fe-panel-password form[action], form#nr-passkeys-fe-felogin-token-form',
-      'form#nr-passkeys-fe-token-form'];
+    var selectors = [
+      'form[data-nr-passkeys-fe-token-form="felogin"], #nr-passkeys-fe-panel-password form[action], form#nr-passkeys-fe-felogin-token-form',
+      'form[data-nr-passkeys-fe-token-form="standalone"], form#nr-passkeys-fe-token-form',
+    ];
     for (var selector of selectors) {
       for (var scope of scopes) {
         var form = Array.from(scope.querySelectorAll(selector)).find(isLoginTokenForm);

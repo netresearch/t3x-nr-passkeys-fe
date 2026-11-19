@@ -108,6 +108,24 @@ describe('submitLoginToken', () => {
         expect(window.NrPasskeysFe.getLoginTokenForm()).toBeNull();
     });
 
+    it('prefers the current felogin instance and supports standalone forms with unique IDs', () => {
+        const addCard = (kind, id) => {
+            const card = document.createElement('div');
+            card.className = 'nr-passkeys-fe-card';
+            const form = appendForm({ formId: id });
+            form.dataset.nrPasskeysFeTokenForm = kind;
+            card.appendChild(form);
+            document.body.appendChild(card);
+            return form;
+        };
+        const standalone = addCard('standalone', 'standalone-1');
+        expect(window.NrPasskeysFe.getLoginTokenForm(standalone)).toBe(standalone);
+        const first = addCard('felogin', 'felogin-1');
+        const second = addCard('felogin', 'felogin-2');
+        expect(window.NrPasskeysFe.getLoginTokenForm(second)).toBe(second);
+        expect(window.NrPasskeysFe.getLoginTokenForm(standalone)).toBe(first);
+    });
+
     it('keeps the ticket out of URLs and refuses a foreign destination', () => {
         const form = appendForm({ formId: 'nr-passkeys-fe-token-form' });
         form.method = 'get';

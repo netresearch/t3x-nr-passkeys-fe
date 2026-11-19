@@ -1,4 +1,4 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true"><f:comment>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" xmlns:passkeys="http://typo3.org/ns/Netresearch/NrPasskeysFe/ViewHelpers" data-namespace-typo3-fluid="true"><f:comment>
     SPDX-License-Identifier: GPL-2.0-or-later AND Apache-2.0
     SPDX-FileCopyrightText: Netresearch DTT GmbH
     SPDX-FileCopyrightText: Google LLC (Material Symbols "passkey" SVG path data, Apache-2.0 licence, see NOTICE)
@@ -6,6 +6,7 @@
 <f:layout name="Default" />
 
 <f:section name="Content">
+<f:variable name="loginId" value="{passkeys:loginInstanceId()}" />
 <f:render partial="NrPasskeysFe/LoginAssets" arguments="{includeDefaultCss: settings.css.includeDefault}" />
 
 <div class="nr-passkeys-fe-card nr-passkeys-fe-card--stacked{f:if(condition: settings.cssClass, then: ' {settings.cssClass}')}">
@@ -36,11 +37,12 @@
             <f:then><f:variable name="tokenFormAction" value="{redirectUrl}" /></f:then>
             <f:else><f:variable name="tokenFormAction" value="{f:uri.page()}" /></f:else>
         </f:if>
-        <f:form id="nr-passkeys-fe-token-form"
+        <f:form id="nr-passkeys-fe-token-form-{loginId}"
                 actionUri="{tokenFormAction}"
                 method="post"
                 requestToken="{loginRequestToken}"
                 fieldNamePrefix=""
+                data="{nr-passkeys-fe-token-form: 'standalone'}"
                 additionalAttributes="{style: 'display:none'}">
             <input type="hidden" name="logintype" value="login" />
             <input type="hidden" name="user" value="__passkey__" />
@@ -48,16 +50,16 @@
         </f:form>
 
         <div class="nr-passkeys-fe-login__error" role="alert" aria-live="polite" style="display:none"></div>
-        <div class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-login-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+        <output class="nr-passkeys-fe-login__status" id="nr-passkeys-fe-login-status-{loginId}" aria-live="polite" aria-atomic="true" style="display:none"></output>
 
         <div class="nr-passkeys-fe-passkey-content">
             <f:if condition="{showUsernameField}">
                 <div class="nr-passkeys-fe-login__field">
-                    <label class="nr-passkeys-fe-login__label" for="nr-passkeys-fe-login-username">
+                    <label class="nr-passkeys-fe-login__label" for="nr-passkeys-fe-login-username-{loginId}">
                         <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
                     </label>
                     <input type="text"
-                           id="nr-passkeys-fe-login-username"
+                           id="nr-passkeys-fe-login-username-{loginId}"
                            name="nr_passkeys_username"
                            class="nr-passkeys-fe-login__input"
                            autocomplete="username"
@@ -68,17 +70,17 @@
             </f:if>
 
             <button type="button"
-                    id="nr-passkeys-fe-login-btn"
+                    id="nr-passkeys-fe-login-btn-{loginId}"
                     class="nr-passkeys-fe-btn nr-passkeys-fe-btn--passkey nr-passkeys-fe-btn--fullwidth"
                     data-action="passkey-login"
-                    aria-describedby="nr-passkeys-fe-login-status">
+                    aria-describedby="nr-passkeys-fe-login-status-{loginId}">
                 <span class="nr-passkeys-fe-btn__icon" aria-hidden="true">
                     <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" width="20" fill="currentColor"><path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120ZM760-40l-60-60v-186q-44-13-72-49.5T600-420q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 80T790-290l50 50-60 60 60 60-80 80ZM440-480q-66 0-113-47t-47-113q0-66 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 17 11.5 28.5T740-400Z"/></svg>
                 </span>
-                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-btn-text">
+                <span class="nr-passkeys-fe-btn__text" id="nr-passkeys-fe-btn-text-{loginId}">
                     <f:translate key="login.button.passkey" extensionName="nr_passkeys_fe" />
                 </span>
-                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-btn-loading" style="display:none" aria-hidden="true">
+                <span class="nr-passkeys-fe-btn__loading" id="nr-passkeys-fe-btn-loading-{loginId}" style="display:none" aria-hidden="true">
                     <f:translate key="login.button.passkey.loading" extensionName="nr_passkeys_fe" />
                 </span>
             </button>
@@ -92,7 +94,7 @@
                     <span class="nr-passkeys-fe-links__separator" aria-hidden="true">|</span>
                 </f:if>
                 <f:if condition="{recoveryAllowed}">
-                    <a href="#nr-passkeys-fe-recovery"
+                    <a href="#nr-passkeys-fe-recovery-{loginId}"
                        class="nr-passkeys-fe-link"
                        data-action="show-recovery">
                         <f:translate key="login.link.useRecoveryCode" extensionName="nr_passkeys_fe" />
@@ -110,7 +112,7 @@
 
         <f:if condition="{recoveryAllowed}">
             <!-- Inline Recovery Form (hidden by default) -->
-            <div id="nr-passkeys-fe-recovery"
+            <div id="nr-passkeys-fe-recovery-{loginId}"
                  class="nr-passkeys-fe-recovery"
                  data-nr-passkeys-fe="recovery"
                  data-eid-url="{eidUrl}"
@@ -126,22 +128,22 @@
 
                 <form data-action="recovery-verify">
                     <div class="nr-passkeys-fe-recovery__field">
-                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-username">
+                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-username-{loginId}">
                             <f:translate key="login.username.label" extensionName="nr_passkeys_fe" />
                         </label>
                         <input type="text"
-                               id="nr-passkeys-fe-recovery-username"
+                               id="nr-passkeys-fe-recovery-username-{loginId}"
                                name="recovery_username"
                                class="nr-passkeys-fe-recovery__input"
                                autocomplete="username" />
                     </div>
 
                     <div class="nr-passkeys-fe-recovery__field">
-                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-code">
+                        <label class="nr-passkeys-fe-recovery__label" for="nr-passkeys-fe-recovery-code-{loginId}">
                             <f:translate key="recovery.code.label" extensionName="nr_passkeys_fe" />
                         </label>
                         <input type="text"
-                               id="nr-passkeys-fe-recovery-code"
+                               id="nr-passkeys-fe-recovery-code-{loginId}"
                                name="recovery_code"
                                class="nr-passkeys-fe-recovery__input nr-passkeys-fe-recovery__input--code"
                                placeholder="XXXX-XXXX"

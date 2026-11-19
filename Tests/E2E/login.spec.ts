@@ -27,7 +27,7 @@ test.describe('Passkey login plugin', () => {
         await expect(plugin).toBeVisible();
         await expect(plugin).toHaveAttribute('data-eid-url', /eID=nr_passkeys_fe/);
 
-        const button = page.locator('#nr-passkeys-fe-login-btn');
+        const button = page.locator('[data-action="passkey-login"]');
         await expect(button).toBeVisible();
         await expect(button).toBeEnabled();
 
@@ -63,7 +63,7 @@ test.describe('Passkey login plugin', () => {
         await expect(username).toHaveAttribute('name', 'nr_passkeys_username');
 
         // PasskeyLogin.js refuses the username-first ceremony without a name.
-        await page.locator('#nr-passkeys-fe-login-btn').click();
+        await page.locator('[data-action="passkey-login"]').click();
         await expect(plugin.locator('.nr-passkeys-fe-login__error')).toHaveText('Please enter your username.');
         await expect(username).toBeFocused();
     });
@@ -129,7 +129,7 @@ test.describe('Passkey login plugin', () => {
 
         await page.goto('/login-plugin');
         await page.waitForLoadState('networkidle');
-        const button = page.locator('#nr-passkeys-fe-login-btn');
+        const button = page.locator('[data-action="passkey-login"]');
         await expect(button).toBeVisible({ timeout: 5000 });
 
         await setAutomaticPresence(cdp, authenticatorId, true);
@@ -171,9 +171,9 @@ test.describe('Passkey login plugin', () => {
         await page.goto('/login-plugin-redirect', { waitUntil: 'load' });
         // The server resolved the page to a link on this site; the browser
         // never sees the page uid.
-        await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', /\/member$/);
+        await expect(page.locator('form[data-nr-passkeys-fe-token-form="standalone"]')).toHaveAttribute('action', /\/member$/);
 
-        const button = page.locator('#nr-passkeys-fe-login-btn');
+        const button = page.locator('[data-action="passkey-login"]');
         await expect(button).toBeVisible({ timeout: 5000 });
         await setAutomaticPresence(cdp, authenticatorId, true);
         await button.click();
@@ -211,7 +211,7 @@ test.describe('Passkey login plugin', () => {
         test(`${what} is neither the login target nor the password link`, async ({ page }) => {
             await page.goto(path, { waitUntil: 'load' });
 
-            await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', new RegExp(`${path}$`));
+            await expect(page.locator('form[data-nr-passkeys-fe-token-form="standalone"]')).toHaveAttribute('action', new RegExp(`${path}$`));
             await expect(
                 page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' }),
             ).toHaveCount(0);
@@ -225,7 +225,7 @@ test.describe('Passkey login plugin', () => {
         const prefix = process.env.E2E_SITE_BASE_HOST === '1' ? `http://${process.env.E2E_SECURE_ALIAS_HOST}` : '';
         await page.goto('/login-plugin-absolute', { waitUntil: 'load' });
 
-        await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', `${prefix}/member`);
+        await expect(page.locator('form[data-nr-passkeys-fe-token-form="standalone"]')).toHaveAttribute('action', `${prefix}/member`);
         await expect(
             page.locator('[data-nr-passkeys-fe="login"]').getByRole('link', { name: 'Use password instead' }),
         ).toHaveAttribute('href', `${prefix}/login`);
@@ -255,9 +255,9 @@ test.describe('Passkey login plugin', () => {
             await logOut(page);
 
             await page.goto(path, { waitUntil: 'load' });
-            await expect(page.locator('#nr-passkeys-fe-token-form')).toHaveAttribute('action', new RegExp(`${landing}$`));
+            await expect(page.locator('form[data-nr-passkeys-fe-token-form="standalone"]')).toHaveAttribute('action', new RegExp(`${landing}$`));
 
-            const button = page.locator('#nr-passkeys-fe-login-btn');
+            const button = page.locator('[data-action="passkey-login"]');
             await expect(button).toBeVisible({ timeout: 5000 });
             await setAutomaticPresence(cdp, authenticatorId, true);
             const landed = page.waitForResponse(
@@ -305,10 +305,54 @@ test.describe('Passkey login plugin', () => {
 test.describe('Passkey tab in the felogin form', () => {
     const stylesheet = 'link[rel="stylesheet"][href*="passkey-fe.css"]';
 
+    test('repeated login widgets have independent tabs, labels and form references', async ({ page }) => {
+        await page.goto('/login-widgets');
+        const cards = page.locator('.nr-passkeys-fe-card');
+        await expect(cards).toHaveCount(4);
+        await expect(cards.locator('form[data-nr-passkeys-fe-token-form="felogin"]')).toHaveCount(2);
+        await expect(cards.locator('form[data-nr-passkeys-fe-token-form="standalone"]')).toHaveCount(2);
+        const ids = await cards.locator('[id]').evaluateAll(elements => elements.map(el => el.id));
+        expect(new Set(ids).size).toBe(ids.length);
+        for (const card of await cards.all()) {
+            const references = await card.locator('[for], [aria-controls], [aria-labelledby], [aria-describedby], a[href^="#nr-passkeys-fe-"]').evaluateAll(elements =>
+                elements.every(el => ['for', 'aria-controls', 'aria-labelledby', 'aria-describedby', 'href'].every(attribute => {
+                    const value = el.getAttribute(attribute);
+                    return !value || el.closest('.nr-passkeys-fe-card')?.contains(document.getElementById(value.replace(/^#/, '')));
+                })),
+            );
+            expect(references).toBe(true);
+        }
+
+        const tabLists = page.getByRole('tablist', { name: 'Sign in' });
+        await expect(tabLists).toHaveCount(2);
+        const first = tabLists.first().getByRole('tab', { name: 'Passkey' });
+        const second = tabLists.last().getByRole('tab', { name: 'Passkey' });
+        await second.press('ArrowLeft');
+        const password = tabLists.last().getByRole('tab', { name: 'Password' });
+        await expect(password).toBeFocused();
+        const passwordPanel = page.getByRole('tabpanel', { name: 'Password' });
+        await expect(passwordPanel).toBeVisible();
+        await expect(passwordPanel.getByRole('textbox', { name: 'Username', exact: true })).toBeVisible();
+        await expect(passwordPanel.getByLabel('Password', { exact: true })).toBeVisible();
+        await expect(passwordPanel.getByRole('button', { name: 'Login', exact: true })).toBeVisible();
+        await expect(first).toHaveAttribute('aria-selected', 'true');
+        await password.press('ArrowRight');
+        await expect(second).toBeFocused();
+        await expect(page.getByRole('tabpanel', { name: 'Password' })).toHaveCount(0);
+    });
+
+    test('the logout button is named by the felogin label', async ({ page }) => {
+        await loginWithPassword(page);
+        await page.goto('/login');
+        const logout = page.getByRole('button', { name: 'Logout', exact: true });
+        await expect(logout).toBeVisible();
+        await expect(logout.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+    });
+
     test('it logs in discoverably by default, with the default CSS', async ({ page }) => {
         await page.goto('/login', { waitUntil: 'load' });
 
-        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        const panel = page.getByRole('tabpanel', { name: 'Passkey' });
         await expect(panel).toHaveAttribute('data-discoverable', '1');
         await expect(panel.locator('[name="nr_passkeys_username"]')).toHaveCount(0);
         // The eID controllers take the site from the request; the attribute
@@ -326,7 +370,7 @@ test.describe('Passkey tab in the felogin form', () => {
         // Both constants are 0 for this page (runTests.conf, ts-constants).
         await page.goto('/login-username', { waitUntil: 'load' });
 
-        const panel = page.locator('#nr-passkeys-fe-panel-passkey');
+        const panel = page.getByRole('tabpanel', { name: 'Passkey' });
         await expect(panel).toHaveAttribute('data-discoverable', '0');
         await expect(page.locator(stylesheet)).toHaveCount(0);
 
@@ -334,7 +378,7 @@ test.describe('Passkey tab in the felogin form', () => {
         await expect(username).toBeVisible();
         await expect(username).toHaveAttribute('name', 'nr_passkeys_username');
 
-        await page.locator('#nr-passkeys-fe-felogin-login-btn').click();
+        await page.locator('[data-action="passkey-login"]').click();
         await expect(panel.locator('.nr-passkeys-fe-login__error')).toHaveText('Please enter your username.');
         await expect(username).toBeFocused();
     });

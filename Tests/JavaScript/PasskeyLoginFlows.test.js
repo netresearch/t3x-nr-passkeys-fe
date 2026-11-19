@@ -44,6 +44,7 @@ function buildLogin({ eidUrl = EID_URL, discoverable = '0', username = 'jdoe' } 
         <div class="nr-passkeys-fe-login__error" style="display:none"></div>
         <input name="nr_passkeys_username" />
         <div id="nr-passkeys-fe-recovery" data-nr-passkeys-fe="recovery" style="display:none">
+            <input name="recovery_username" />
             <a href="#" data-action="hide-recovery">Back</a>
         </div>
     `));
@@ -412,8 +413,8 @@ describe('PasskeyLogin — autofill ceremony failures', () => {
 });
 
 describe('PasskeyLogin — tabs', () => {
-    function buildTabs() {
-        document.body.appendChild(fragment(`
+    function buildTabs(suffix = '') {
+        const fixture = fragment(`
             <div class="nr-passkeys-fe-card">
                 <div class="nr-passkeys-fe-tabs" role="tablist">
                     <button class="nr-passkeys-fe-tab nr-passkeys-fe-tab--active" data-action="switch-tab" data-tab="passkey" role="tab">Passkey</button>
@@ -424,8 +425,16 @@ describe('PasskeyLogin — tabs', () => {
                 <div class="nr-passkeys-fe-tabpanel" id="nr-passkeys-fe-panel-password" style="display:none"></div>
                 <div class="nr-passkeys-fe-tabpanel" id="nr-passkeys-fe-panel-other" style="display:none"></div>
             </div>
-        `));
-        return Array.from(document.querySelectorAll('[data-action="switch-tab"]'));
+        `);
+        const card = fixture.querySelector('.nr-passkeys-fe-card');
+        const tabs = Array.from(card.querySelectorAll('[data-action="switch-tab"]'));
+        for (const tab of tabs) {
+            const panel = card.querySelector('#nr-passkeys-fe-panel-' + tab.dataset.tab);
+            panel.id += suffix;
+            tab.setAttribute('aria-controls', panel.id);
+        }
+        document.body.appendChild(fixture);
+        return tabs;
     }
 
     function panel(name) {
@@ -475,6 +484,20 @@ describe('PasskeyLogin — tabs', () => {
         expect(document.activeElement).toBe(tabs[to]);
     });
 
+    it('keeps panel selection and keyboard wrap-around inside the second login card', async () => {
+        const first = buildTabs('-first');
+        const second = buildTabs('-second');
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+
+        second[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true }));
+        expect(document.activeElement).toBe(second[2]);
+        expect(panel('other-second').style.display).toBe('');
+        expect(panel('passkey-second').style.display).toBe('none');
+        expect(panel('passkey-first').style.display).toBe('');
+        expect(panel('other-first').style.display).toBe('none');
+        expect(first.map(tab => tab.tabIndex)).toEqual([0, -1, -1]);
+    });
+
     it('ignores other keys', async () => {
         const tabs = buildTabs();
 
@@ -501,6 +524,23 @@ describe('PasskeyLogin — tabs', () => {
 });
 
 describe('PasskeyLogin — recovery form toggle', () => {
+    it('opens a sibling recovery form and returns focus within its own card', async () => {
+        const first = buildLogin();
+        const second = buildLogin();
+        const card = document.createElement('div');
+        card.className = 'nr-passkeys-fe-card';
+        document.body.appendChild(card);
+        card.append(second.container, second.recovery);
+        await loadModules('PasskeyUtils.js', 'PasskeyLogin.js');
+
+        const show = second.container.querySelector('[data-action="show-recovery"]');
+        show.click();
+        expect(first.recovery.style.display).toBe('none');
+        expect(document.activeElement).toBe(second.recovery.querySelector('[name="recovery_username"]'));
+        second.recovery.querySelector('[data-action="hide-recovery"]').click();
+        expect(document.activeElement).toBe(show);
+    });
+
     it.each([true, false])('opens and closes recovery with WebAuthn available: %s', async (supported) => {
         if (supported) {
             installWebAuthn(async () => fakeAssertion());
