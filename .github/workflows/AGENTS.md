@@ -28,7 +28,8 @@ caller of a central reusable in `netresearch/typo3-ci-workflows` or
 | `labeler.yml` | pull_request_target | Auto-label PRs by path |
 | `auto-merge-deps.yml` | pull_request_target | Auto-merge minor/patch dependency PRs |
 | `community.yml` | schedule, issues, PR target | Stale/lock/greetings automation |
-| `release.yml` | push tag `v*` | GitHub release with SBOM, signatures and attestations; also publishes to TER (typo3-ci-workflows `release-typo3-extension.yml`, `skip-ter` defaults to false) |
+| `release.yml` | push tag `v*` | Calls the local pinned release workflow with this extension’s package name and TER key |
+| `release-typo3-extension-pinned.yml` | workflow_call | Builds and signs archives, publishes the GitHub release, then runs the pinned TER, Packagist and documentation workflows |
 
 ## Build & test pipeline (ci.yml)
 
