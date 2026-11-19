@@ -23,15 +23,17 @@ use TYPO3\CMS\Core\Core\Environment;
 #[CoversClass(SendEnrollmentNotification::class)]
 final class SendEnrollmentNotificationTest extends AbstractPasskeyFunctionalTestCase
 {
-    private string $mailbox;
+    /** @var resource|null */
+    private mixed $mailbox = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/fe_users.csv');
-        $this->mailbox                                                = Environment::getVarPath() . '/enrollment-' . bin2hex(random_bytes(10)) . '.mbox';
+        $this->mailbox = tmpfile();
+        self::assertIsResource($this->mailbox);
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport']              = 'mbox';
-        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file']    = $this->mailbox;
+        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file']    = stream_get_meta_data($this->mailbox)['uri'];
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'no-reply@example.test';
         $db                                                           = $this->getConnectionPool()->getConnectionForTable('fe_users');
         $db->update('fe_users', ['email' => 'owner@example.test'], ['uid' => 1]);
@@ -59,8 +61,7 @@ final class SendEnrollmentNotificationTest extends AbstractPasskeyFunctionalTest
     public function notifiesOnlyTheOwnerThroughTheConfiguredTransport(): void
     {
         $this->enroll();
-        self::assertFileExists($this->mailbox);
-        $message = file_get_contents($this->mailbox);
+        $message = stream_get_contents($this->mailbox);
         self::assertIsString($message);
         self::assertStringContainsString('To: owner@example.test', $message);
         self::assertStringContainsString('From:', $message);
@@ -85,7 +86,7 @@ final class SendEnrollmentNotificationTest extends AbstractPasskeyFunctionalTest
             ->getConnectionForTable('fe_users')
             ->update('fe_users', ['email' => ''], ['uid' => 1]);
         $this->enroll();
-        self::assertFileDoesNotExist($this->mailbox);
+        self::assertSame('', stream_get_contents($this->mailbox));
     }
 
     #[Test]
@@ -93,7 +94,7 @@ final class SendEnrollmentNotificationTest extends AbstractPasskeyFunctionalTest
     {
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'no-such-transport';
         $this->enroll();
-        self::assertFileDoesNotExist($this->mailbox);
+        self::assertSame('', stream_get_contents($this->mailbox));
         self::assertSame(
             1,
             $this
@@ -121,8 +122,8 @@ final class SendEnrollmentNotificationTest extends AbstractPasskeyFunctionalTest
 
     protected function tearDown(): void
     {
-        if (isset($this->mailbox) && is_file($this->mailbox)) {
-            unlink($this->mailbox);
+        if (is_resource($this->mailbox)) {
+            fclose($this->mailbox);
         }
 
         parent::tearDown();
