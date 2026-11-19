@@ -63,7 +63,7 @@ describe('renderCredentialTable', () => {
         // and on a cell inside it at the same time.
         expect(row.className).toBe('');
         const muted = [...row.cells].filter((cell) => cell.classList.contains('text-variant'));
-        expect(muted).toHaveLength(4);
+        expect(muted).toEqual([...row.cells].slice(0, 5));
         expect(row.querySelectorAll('.text-variant .text-variant')).toHaveLength(0);
     });
 

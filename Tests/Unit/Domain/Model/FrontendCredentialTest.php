@@ -190,7 +190,7 @@ final class FrontendCredentialTest extends TestCase
         $array      = $credential->toArray();
 
         $expectedKeys = [
-            'uid', 'fe_user', 'credential_id', 'public_key_cose', 'sign_count',
+            'uid', 'fe_user', 'credential_id', 'public_key_cose', 'backup_eligible', 'sign_count',
             'user_handle', 'aaguid', 'transports', 'label', 'site_identifier',
             'storage_pid', 'created_at', 'last_used_at', 'revoked_at', 'revoked_by',
         ];
@@ -238,5 +238,25 @@ final class FrontendCredentialTest extends TestCase
         self::assertSame(200, $credential->getLastUsedAt());
         self::assertSame(300, $credential->getRevokedAt());
         self::assertSame(4, $credential->getRevokedBy());
+    }
+
+    #[Test]
+    public function backupEligibilityPreservesKnownFlagsAndLegacyValues(): void
+    {
+        foreach ([
+            [1, true],
+            ['1', true],
+            [0, false],
+            ['0', false],
+            [null, null],
+            ['invalid', null],
+        ] as [$stored, $flag]) {
+            $credential = FrontendCredential::fromArray(['backup_eligible' => $stored]);
+            self::assertSame($flag, $credential->getBackupEligibility());
+            self::assertSame(
+                $flag === null ? null : (int) $flag,
+                $credential->toArray()['backup_eligible'],
+            );
+        }
     }
 }

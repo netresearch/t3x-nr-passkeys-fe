@@ -573,6 +573,7 @@ final class FrontendWebAuthnService
             credentialPublicKey: $credential->getPublicKeyCose(),
             userHandle: $credential->getUserHandle(),
             counter: $credential->getSignCount(),
+            backupEligible: $credential->getBackupEligibility(),
         );
     }
 
@@ -590,6 +591,7 @@ final class FrontendWebAuthnService
             aaguid: $source->aaguid->toString(),
             transports: json_encode($source->transports, JSON_THROW_ON_ERROR),
             siteIdentifier: $siteIdentifier,
+            backupEligible: $source->backupEligible,
         );
     }
 

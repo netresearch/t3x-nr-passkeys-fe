@@ -586,4 +586,26 @@ final class FrontendCredentialRepositoryTest extends AbstractPasskeyFunctionalTe
 
         self::assertTrue($hasRevoked, 'findAllByFeUser should include revoked credentials');
     }
+
+    #[Test]
+    public function backupEligibilitySurvivesStorageIncludingUnknownLegacyValues(): void
+    {
+        foreach ([true, false, null] as $i => $eligible) {
+            $id         = 'eligibility-' . $i;
+            $credential = new FrontendCredential(
+                feUser: 1,
+                credentialId: $id,
+                publicKeyCose: 'test-key',
+                backupEligible: $eligible,
+            );
+            $this->repository->save($credential);
+            $stored = $this->repository->findByCredentialId($id);
+            self::assertInstanceOf(FrontendCredential::class, $stored);
+            self::assertSame($eligible, $stored->getBackupEligibility());
+        }
+
+        self::assertNull(
+            FrontendCredential::fromArray([])->getBackupEligibility(),
+        );
+    }
 }

@@ -207,6 +207,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
             $credential = $this->subject->verifyRegistrationResponse($response, $rawChallenge, 1, $this->site);
             self::assertSame(1, $credential->getFeUser());
             self::assertSame('unit-test-credential', $credential->getCredentialId());
+            self::assertFalse($credential->getBackupEligibility());
         }
     }
 
@@ -521,6 +522,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
             signCount: 7,
             userHandle: 'uh',
             aaguid: '01234567-89ab-cdef-0123-456789abcdef',
+            backupEligible: true,
         );
 
         $record = $this->callCredentialToSource($credential);
@@ -528,6 +530,7 @@ final class FrontendWebAuthnServiceTest extends TestCase
         self::assertSame('01234567-89ab-cdef-0123-456789abcdef', $record->aaguid->toRfc4122());
         self::assertSame('cid', $record->publicKeyCredentialId);
         self::assertSame(7, $record->counter);
+        self::assertTrue($record->backupEligible);
     }
 
     #[Test]

@@ -375,6 +375,9 @@
             <trans-unit id="dashboard.lookup.column.last_used" resname="dashboard.lookup.column.last_used">
                 <source>Last used</source>
             </trans-unit>
+            <trans-unit id="dashboard.lookup.column.backup" resname="dashboard.lookup.column.backup">
+                <source>Backup eligibility</source>
+            </trans-unit>
             <trans-unit id="dashboard.lookup.column.status" resname="dashboard.lookup.column.status">
                 <source>Status</source>
             </trans-unit>
@@ -687,6 +690,15 @@
             </trans-unit>
             <trans-unit id="js.admin.lookup.status.revoked" resname="js.admin.lookup.status.revoked">
                 <source>Revoked</source>
+            </trans-unit>
+            <trans-unit id="js.admin.backup.eligible" resname="js.admin.backup.eligible">
+                <source>Backup eligible</source>
+            </trans-unit>
+            <trans-unit id="js.admin.backup.deviceBound" resname="js.admin.backup.deviceBound">
+                <source>Device-bound</source>
+            </trans-unit>
+            <trans-unit id="js.admin.backup.unknown" resname="js.admin.backup.unknown">
+                <source>Backup eligibility unknown</source>
             </trans-unit>
             <trans-unit id="js.admin.lookup.status.active" resname="js.admin.lookup.status.active">
                 <source>Active</source>
