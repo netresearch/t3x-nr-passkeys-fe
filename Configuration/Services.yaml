@@ -115,3 +115,11 @@ services:
     public: true
     arguments:
       $service: '@nr_passkeys_fe.limiter'
+
+  Netresearch\NrPasskeysFe\EventListener\SendEnrollmentNotification:
+    arguments:
+      $mailer: !service_closure '@TYPO3\CMS\Core\Mail\MailerInterface'
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-fe/enrollment-email'
+        event: Netresearch\NrPasskeysFe\Event\AfterPasskeyEnrollmentEvent

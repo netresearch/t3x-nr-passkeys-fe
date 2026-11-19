@@ -802,6 +802,12 @@
             <trans-unit id="never" resname="never">
                 <source>Never</source>
             </trans-unit>
+            <trans-unit id="enrollment.email.subject" resname="enrollment.email.subject">
+                <source>A passkey was added to your account</source>
+            </trans-unit>
+            <trans-unit id="enrollment.email.body" resname="enrollment.email.body">
+                <source>A new passkey was registered for your account on %s. If you added it, no action is needed. If you did not add it, contact your administrator immediately to revoke the passkey and review your account.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
