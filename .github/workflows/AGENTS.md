@@ -59,6 +59,8 @@ materialize on merge_group refs). Any job added there MUST also be added to
   `SECURITY.md` to the new major; `Tests/Unit/SecurityPolicyTest.php` fails
   otherwise
 
+If TER refuses the upload comment, rerunning the same tag reuses the refused text. Add a reworded CHANGELOG.md entry for a new patch version and publish that version through the normal tag workflow.
+
 ## Security
 
 - Central reusables carry harden-runner and SHA-pinned actions; do not inline
