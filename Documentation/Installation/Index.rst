@@ -13,7 +13,7 @@ Prerequisites
 =============
 
 - TYPO3 13.4 LTS or TYPO3 14.3 LTS
-- PHP 8.2, 8.3, 8.4, or 8.5
+- PHP 8.2, 8.3, 8.4, 8.5, or 8.6
 - ``netresearch/nr-passkeys-be`` ^1.0 (installed automatically)
 - HTTPS is **required** for WebAuthn (except ``localhost`` during
   development)
